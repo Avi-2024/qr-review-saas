@@ -58,7 +58,7 @@ export class LocalReviewGenerator implements ReviewGenerator {
     const details = topics.map((topic) => phraseMap[topic.id] ?? topic.label.toLowerCase());
     const closing = this.closing(rating, variation);
 
-    const sentences = [opening];
+    const sentences: string[] = [opening];
     if (details.length) sentences.push(`${joinSentences(details)}.`);
     if (note?.trim()) sentences.push(polish(note));
     sentences.push(closing);
