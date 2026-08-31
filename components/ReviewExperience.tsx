@@ -1,9 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { generateReview, polishText, Rating, TOPICS } from "@/lib/review";
+import { useEffect, useMemo, useState } from "react";
+import { polishText, type Rating } from "@/lib/review";
+import {
+  generateReviewDraft,
+  getLocation,
+  recordReviewEvent,
+  startReviewSession,
+  type LocationDto,
+} from "@/lib/review-api";
 
-const GOOGLE_REVIEW_URL = "https://search.google.com/local/writereview?placeid=ChIJIxP2kbaJgzkR6h4dYXKWCcI";
+const LOCATION_PUBLIC_ID = "mangal-traders";
+const FALLBACK_REVIEW_URL = "https://search.google.com/local/writereview?placeid=ChIJIxP2kbaJgzkR6h4dYXKWCcI";
 const ratingLabels = ["", "Very poor", "Could be better", "Okay", "Good", "Excellent"];
 
 async function copyText(value: string) {
@@ -22,6 +30,9 @@ async function copyText(value: string) {
 }
 
 export default function ReviewExperience() {
+  const [location, setLocation] = useState<LocationDto | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(null);
   const [rating, setRating] = useState<Rating | 0>(0);
   const [selected, setSelected] = useState<string[]>([]);
   const [note, setNote] = useState("");
@@ -29,6 +40,18 @@ export default function ReviewExperience() {
   const [variation, setVariation] = useState(0);
   const [screen, setScreen] = useState<"compose" | "review">("compose");
   const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    getLocation(LOCATION_PUBLIC_ID)
+      .then((data) => active && setLocation(data))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const selectedCount = selected.length;
   const progress = screen === "review" ? 100 : rating ? 58 : 18;
@@ -38,6 +61,13 @@ export default function ReviewExperience() {
     return `${selectedCount} detail${selectedCount === 1 ? "" : "s"} selected`;
   }, [rating, selectedCount]);
 
+  async function ensureSession() {
+    if (sessionId) return sessionId;
+    const created = await startReviewSession(LOCATION_PUBLIC_ID);
+    setSessionId(created.sessionId);
+    return created.sessionId;
+  }
+
   function toggleTopic(id: string) {
     setSelected((current) => {
       if (current.includes(id)) return current.filter((item) => item !== id);
@@ -46,42 +76,56 @@ export default function ReviewExperience() {
     });
   }
 
-  function handleGenerate() {
+  async function createDraft(nextVariation: number) {
     if (!rating) return;
-    const next = generateReview(rating, selected, note, variation);
-    setReview(next);
-    setCopied(false);
-    setScreen("review");
+    setError("");
+    setIsGenerating(true);
+    try {
+      const activeSessionId = await ensureSession();
+      const generated = await generateReviewDraft({
+        sessionId: activeSessionId,
+        rating,
+        topicIds: selected,
+        note: note.trim() || undefined,
+        variation: nextVariation,
+      });
+      setReview(generated.text);
+      setDraftId(generated.draftId);
+      setVariation(nextVariation);
+      setCopied(false);
+      setScreen("review");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not generate the review. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   async function handleCopy() {
     await copyText(review);
     setCopied(true);
+    if (draftId) void recordReviewEvent(draftId, "REVIEW_COPIED").catch(() => undefined);
   }
 
   async function handleGoogle() {
     await copyText(review);
     setCopied(true);
+    if (draftId) void recordReviewEvent(draftId, "GOOGLE_REVIEW_OPENED").catch(() => undefined);
     window.setTimeout(() => {
-      window.location.href = GOOGLE_REVIEW_URL;
-    }, 380);
-  }
-
-  function tryAnother() {
-    if (!rating) return;
-    const nextVariation = variation + 1;
-    setVariation(nextVariation);
-    setReview(generateReview(rating, selected, note, nextVariation));
-    setCopied(false);
+      window.location.href = location?.googleReviewUrl || FALLBACK_REVIEW_URL;
+    }, 280);
   }
 
   function reset() {
+    setSessionId(null);
+    setDraftId(null);
     setRating(0);
     setSelected([]);
     setNote("");
     setReview("");
     setVariation(0);
     setCopied(false);
+    setError("");
     setScreen("compose");
   }
 
@@ -97,8 +141,8 @@ export default function ReviewExperience() {
               <div className="brandMark" aria-hidden="true">MT</div>
               <div>
                 <span className="eyebrow">QUICK REVIEW</span>
-                <h1>Mangal Traders</h1>
-                <p>Fast feedback. No login required.</p>
+                <h1>{location?.name || "Mangal Traders"}</h1>
+                <p>{location?.subtitle || "Fast feedback. No login required."}</p>
               </div>
             </div>
             <span className="secureBadge">Secure</span>
@@ -149,7 +193,7 @@ export default function ReviewExperience() {
                 </div>
 
                 <div className="chipGrid">
-                  {TOPICS.map((topic) => {
+                  {(location?.topics ?? []).map((topic) => {
                     const isActive = selected.includes(topic.id);
                     return (
                       <button
@@ -172,7 +216,7 @@ export default function ReviewExperience() {
                   <div>
                     <span className="eyebrow">OPTIONAL</span>
                     <h3>Add your own words</h3>
-                    <p>If you type something, we can polish it before generation.</p>
+                    <p>Keep the customer in control; enhancement never changes the intended sentiment.</p>
                   </div>
                   <button
                     className="textAction"
@@ -197,13 +241,19 @@ export default function ReviewExperience() {
                 </div>
               </section>
 
-              <button className="primaryAction" disabled={!rating} onClick={handleGenerate}>
+              {error ? <p className="microCopy" role="alert">{error}</p> : null}
+
+              <button
+                className="primaryAction"
+                disabled={!rating || isGenerating}
+                onClick={() => void createDraft(variation)}
+              >
                 <span className="actionIcon">✦</span>
-                <span>Generate my review</span>
+                <span>{isGenerating ? "Generating…" : "Generate my review"}</span>
                 <span className="actionArrow">→</span>
               </button>
 
-              <p className="microCopy">Demo uses local generation. Production can switch this action to a low-cost AI endpoint.</p>
+              <p className="microCopy">Generated through the backend API. No external AI key is required for this partner demo.</p>
             </div>
           ) : (
             <div className="contentPane reviewPane">
@@ -217,12 +267,16 @@ export default function ReviewExperience() {
               <div className="reviewEditor">
                 <textarea value={review} onChange={(event) => setReview(event.target.value)} aria-label="Generated review" />
                 <div className="editorToolbar">
-                  <button onClick={tryAnother}>↻ Try another</button>
-                  <button onClick={handleCopy}>{copied ? "✓ Copied" : "⧉ Copy"}</button>
+                  <button disabled={isGenerating} onClick={() => void createDraft(variation + 1)}>
+                    {isGenerating ? "Generating…" : "↻ Try another"}
+                  </button>
+                  <button onClick={() => void handleCopy()}>{copied ? "✓ Copied" : "⧉ Copy"}</button>
                 </div>
               </div>
 
-              <button className="primaryAction googleAction" onClick={handleGoogle} disabled={!review.trim()}>
+              {error ? <p className="microCopy" role="alert">{error}</p> : null}
+
+              <button className="primaryAction googleAction" onClick={() => void handleGoogle()} disabled={!review.trim()}>
                 <span className="googleG">G</span>
                 <span>{copied ? "Copied — open Google review" : "Copy & open Google review"}</span>
                 <span className="actionArrow">↗</span>
@@ -245,21 +299,21 @@ export default function ReviewExperience() {
       <aside className="partnerPanel">
         <div className="panelTopline">
           <span className="statusDot" />
-          PARTNER DEMO · WORKING FRONTEND
+          PARTNER DEMO · FULL-STACK FLOW
         </div>
 
         <div className="partnerHero">
           <span className="panelEyebrow">QR REVIEW SYSTEM</span>
           <h2>From real-world experience to Google review in seconds.</h2>
-          <p>A premium, zero-friction customer flow designed for retail, dining, clinics, salons and multi-location businesses.</p>
+          <p>A premium, zero-friction customer flow backed by a clean API, analytics events and a production-ready PostgreSQL path.</p>
         </div>
 
         <div className="flowList">
           {[
-            ["01", "Scan", "QR/NFC opens a lightweight mobile page."],
-            ["02", "Tap", "Rating + contextual chips capture the experience."],
-            ["03", "Generate", "A natural review is prepared in one action."],
-            ["04", "Post", "Review is copied and the Google review composer opens."],
+            ["01", "Scan", "Public location configuration loads from the backend."],
+            ["02", "Tap", "Rating + contextual chips capture the customer experience."],
+            ["03", "Generate", "Backend validates, generates and stores an editable draft."],
+            ["04", "Post", "Copy/open events are recorded before Google review handoff."],
           ].map(([number, title, text]) => (
             <div className="flowItem" key={number}>
               <span>{number}</span>
@@ -272,15 +326,15 @@ export default function ReviewExperience() {
         </div>
 
         <div className="metricGrid">
-          <div><strong>0</strong><span>Login steps</span></div>
-          <div><strong>0</strong><span>Voice cost</span></div>
-          <div><strong>1</strong><span>Generate action</span></div>
+          <div><strong>API</strong><span>Versioned routes</span></div>
+          <div><strong>PG</strong><span>Production adapter</span></div>
+          <div><strong>12</strong><span>Rate limit / 10m</span></div>
           <div><strong>100%</strong><span>Editable</span></div>
         </div>
 
         <div className="panelFootnote">
-          <span>Built for partner validation first.</span>
-          <span>Next: API + analytics + merchant dashboard.</span>
+          <span>Clean service + repository architecture.</span>
+          <span>Next: merchant auth, dashboard and AI provider.</span>
         </div>
       </aside>
     </main>
