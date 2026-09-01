@@ -1,6 +1,9 @@
 import type {
   CreateSessionInput,
+  CreateSessionResult,
+  GenerationClaim,
   LocationConfig,
+  QrCodeConfig,
   RecordEventInput,
   ReviewDraft,
   ReviewSession,
@@ -10,9 +13,12 @@ import type {
 export interface ReviewRepository {
   getLocationByPublicId(publicId: string): Promise<LocationConfig | null>;
   getLocationById(id: string): Promise<LocationConfig | null>;
-  createSession(input: CreateSessionInput): Promise<ReviewSession>;
+  getQrByToken(publicToken: string): Promise<QrCodeConfig | null>;
+  createSession(input: CreateSessionInput): Promise<CreateSessionResult>;
   getSession(id: string): Promise<ReviewSession | null>;
-  saveDraft(input: SaveDraftInput): Promise<ReviewDraft>;
+  claimGeneration(sessionId: string, requestId: string): Promise<GenerationClaim>;
+  releaseGenerationClaim(sessionId: string, requestId: string): Promise<void>;
+  saveGeneratedDraft(input: SaveDraftInput): Promise<ReviewDraft>;
   getDraft(id: string): Promise<ReviewDraft | null>;
   recordEvent(input: RecordEventInput): Promise<void>;
 }
