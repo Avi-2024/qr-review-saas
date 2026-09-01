@@ -178,6 +178,19 @@ export class PostgresReviewRepository implements ReviewRepository {
 
     if (inserted.rows[0]) return { status: "claimed" };
 
+    const reclaimed = await this.pool.query<{ request_id: string }>(
+      `UPDATE review_generation_requests
+       SET updated_at = NOW()
+       WHERE session_id = $1
+         AND request_id = $2
+         AND status = 'processing'
+         AND updated_at < NOW() - INTERVAL '2 minutes'
+       RETURNING request_id`,
+      [sessionId, requestId],
+    );
+
+    if (reclaimed.rows[0]) return { status: "claimed" };
+
     const existing = await this.pool.query<GenerationRow>(
       `SELECT status, draft_id
        FROM review_generation_requests
