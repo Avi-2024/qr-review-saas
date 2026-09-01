@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 
 export function getClientIp(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -6,6 +6,9 @@ export function getClientIp(request: Request) {
   return request.headers.get("x-real-ip") ?? "unknown";
 }
 
-export function hashIp(ip: string) {
-  return createHash("sha256").update(ip).digest("hex").slice(0, 32);
+export function hashIp(ip: string, secret?: string) {
+  if (!ip || ip === "unknown") return undefined;
+
+  const key = secret || "development-only-ip-hash-secret";
+  return createHmac("sha256", key).update(ip).digest("hex").slice(0, 32);
 }

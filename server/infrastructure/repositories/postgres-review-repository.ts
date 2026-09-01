@@ -2,7 +2,9 @@ import type { Pool, PoolClient } from "pg";
 import type { ReviewRepository } from "@/server/application/ports/review-repository";
 import type {
   CreateSessionInput,
+  GenerationClaim,
   LocationConfig,
+  QrCodeConfig,
   RecordEventInput,
   ReviewDraft,
   ReviewSession,
@@ -23,6 +25,20 @@ interface TopicRow {
   label: string;
   icon: string;
   sort_order: number;
+}
+
+interface QrRow {
+  id: string;
+  location_id: string;
+  public_token: string;
+  name: string;
+  source_type: string;
+  reference: string | null;
+}
+
+interface GenerationRow {
+  status: "processing" | "completed";
+  draft_id: string | null;
 }
 
 export class PostgresReviewRepository implements ReviewRepository {
@@ -50,19 +66,99 @@ export class PostgresReviewRepository implements ReviewRepository {
     return this.hydrateLocation(result.rows[0] ?? null);
   }
 
-  async createSession(input: CreateSessionInput) {
-    const result = await this.pool.query<ReviewSession>(
-      `INSERT INTO review_sessions (location_id, user_agent, ip_hash)
-       VALUES ($1, $2, $3)
-       RETURNING id, location_id AS "locationId", started_at AS "startedAt"`,
-      [input.locationId, input.userAgent ?? null, input.ipHash ?? null],
+  async getQrByToken(publicToken: string): Promise<QrCodeConfig | null> {
+    const result = await this.pool.query<QrRow>(
+      `SELECT id, location_id, public_token, name, source_type, reference
+       FROM qr_codes
+       WHERE public_token = $1 AND is_active = TRUE
+       LIMIT 1`,
+      [publicToken],
     );
-    return result.rows[0];
+
+    const row = result.rows[0];
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      locationId: row.location_id,
+      publicToken: row.public_token,
+      name: row.name,
+      sourceType: row.source_type,
+      reference: row.reference,
+    };
+  }
+
+  async createSession(input: CreateSessionInput) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query("BEGIN");
+      const inserted = await client.query<ReviewSession>(
+        `INSERT INTO review_sessions
+           (location_id, qr_code_id, client_session_id, user_agent, ip_hash, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (qr_code_id, client_session_id) DO NOTHING
+         RETURNING
+           id,
+           location_id AS "locationId",
+           qr_code_id AS "qrCodeId",
+           client_session_id AS "clientSessionId",
+           started_at AS "startedAt",
+           expires_at AS "expiresAt"`,
+        [
+          input.locationId,
+          input.qrCodeId,
+          input.clientSessionId,
+          input.userAgent ?? null,
+          input.ipHash ?? null,
+          input.expiresAt,
+        ],
+      );
+
+      if (inserted.rows[0]) {
+        const session = inserted.rows[0];
+        await client.query(
+          `INSERT INTO review_events (session_id, event_type, metadata)
+           VALUES ($1, 'QR_SCANNED', '{}'::jsonb)`,
+          [session.id],
+        );
+        await client.query("COMMIT");
+        return { session, created: true };
+      }
+
+      const existing = await client.query<ReviewSession>(
+        `SELECT
+           id,
+           location_id AS "locationId",
+           qr_code_id AS "qrCodeId",
+           client_session_id AS "clientSessionId",
+           started_at AS "startedAt",
+           expires_at AS "expiresAt"
+         FROM review_sessions
+         WHERE qr_code_id = $1 AND client_session_id = $2
+         LIMIT 1`,
+        [input.qrCodeId, input.clientSessionId],
+      );
+
+      await client.query("COMMIT");
+      return { session: existing.rows[0], created: false };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async getSession(id: string) {
     const result = await this.pool.query<ReviewSession>(
-      `SELECT id, location_id AS "locationId", started_at AS "startedAt"
+      `SELECT
+         id,
+         location_id AS "locationId",
+         qr_code_id AS "qrCodeId",
+         client_session_id AS "clientSessionId",
+         started_at AS "startedAt",
+         expires_at AS "expiresAt"
        FROM review_sessions
        WHERE id = $1
        LIMIT 1`,
@@ -71,29 +167,100 @@ export class PostgresReviewRepository implements ReviewRepository {
     return result.rows[0] ?? null;
   }
 
-  async saveDraft(input: SaveDraftInput) {
+  async claimGeneration(sessionId: string, requestId: string): Promise<GenerationClaim> {
+    const inserted = await this.pool.query<{ request_id: string }>(
+      `INSERT INTO review_generation_requests (session_id, request_id, status)
+       VALUES ($1, $2, 'processing')
+       ON CONFLICT (session_id, request_id) DO NOTHING
+       RETURNING request_id`,
+      [sessionId, requestId],
+    );
+
+    if (inserted.rows[0]) return { status: "claimed" };
+
+    const reclaimed = await this.pool.query<{ request_id: string }>(
+      `UPDATE review_generation_requests
+       SET updated_at = NOW()
+       WHERE session_id = $1
+         AND request_id = $2
+         AND status = 'processing'
+         AND updated_at < NOW() - INTERVAL '2 minutes'
+       RETURNING request_id`,
+      [sessionId, requestId],
+    );
+
+    if (reclaimed.rows[0]) return { status: "claimed" };
+
+    const existing = await this.pool.query<GenerationRow>(
+      `SELECT status, draft_id
+       FROM review_generation_requests
+       WHERE session_id = $1 AND request_id = $2
+       LIMIT 1`,
+      [sessionId, requestId],
+    );
+
+    const row = existing.rows[0];
+    if (row?.status === "completed" && row.draft_id) {
+      return { status: "completed", draftId: row.draft_id };
+    }
+
+    return { status: "in_progress" };
+  }
+
+  async releaseGenerationClaim(sessionId: string, requestId: string) {
+    await this.pool.query(
+      `DELETE FROM review_generation_requests
+       WHERE session_id = $1 AND request_id = $2 AND status = 'processing'`,
+      [sessionId, requestId],
+    );
+  }
+
+  async saveGeneratedDraft(input: SaveDraftInput) {
     const client = await this.pool.connect();
+
     try {
       await client.query("BEGIN");
       const result = await client.query<ReviewDraft>(
         `INSERT INTO review_drafts
-           (session_id, rating, note, draft_text, generation_provider, variation)
-         VALUES ($1, $2, $3, $4, $5, $6)
+           (session_id, request_id, rating, note, draft_text, generation_provider, variation)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING
            id,
            session_id AS "sessionId",
+           request_id AS "requestId",
            rating,
            note,
            draft_text AS text,
            generation_provider AS provider,
            variation,
            created_at AS "createdAt"`,
-        [input.sessionId, input.rating, input.note?.trim() || null, input.text, input.provider, input.variation],
+        [
+          input.sessionId,
+          input.requestId,
+          input.rating,
+          input.note?.trim() || null,
+          input.text,
+          input.provider,
+          input.variation,
+        ],
       );
 
-      await this.insertDraftTopics(client, result.rows[0].id, input.topicIds);
+      const draft = result.rows[0];
+      await this.insertDraftTopics(client, draft.id, input.sessionId, input.topicIds);
+      await client.query(
+        `INSERT INTO review_events (session_id, review_draft_id, event_type, metadata)
+         VALUES ($1, $2, $3, $4::jsonb)`,
+        [input.sessionId, draft.id, input.eventType, JSON.stringify({ provider: input.provider })],
+      );
+      await client.query(
+        `UPDATE review_generation_requests
+         SET status = 'completed', draft_id = $3, updated_at = NOW()
+         WHERE session_id = $1 AND request_id = $2`,
+        [input.sessionId, input.requestId, draft.id],
+      );
+
       await client.query("COMMIT");
-      return { ...result.rows[0], topicIds: [...input.topicIds] };
+      return { ...draft, topicIds: [...input.topicIds] };
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
@@ -107,6 +274,7 @@ export class PostgresReviewRepository implements ReviewRepository {
       `SELECT
          id,
          session_id AS "sessionId",
+         request_id AS "requestId",
          rating,
          note,
          draft_text AS text,
@@ -131,9 +299,17 @@ export class PostgresReviewRepository implements ReviewRepository {
 
   async recordEvent(input: RecordEventInput) {
     await this.pool.query(
-      `INSERT INTO review_events (session_id, review_draft_id, event_type, metadata)
-       VALUES ($1, $2, $3, $4::jsonb)`,
-      [input.sessionId, input.draftId ?? null, input.type, JSON.stringify(input.metadata ?? {})],
+      `INSERT INTO review_events
+         (session_id, review_draft_id, client_event_id, event_type, metadata)
+       VALUES ($1, $2, $3, $4, $5::jsonb)
+       ON CONFLICT (client_event_id) WHERE client_event_id IS NOT NULL DO NOTHING`,
+      [
+        input.sessionId,
+        input.draftId ?? null,
+        input.clientEventId ?? null,
+        input.type,
+        JSON.stringify(input.metadata ?? {}),
+      ],
     );
   }
 
@@ -163,16 +339,21 @@ export class PostgresReviewRepository implements ReviewRepository {
     };
   }
 
-  private async insertDraftTopics(client: PoolClient, draftId: string, topicIds: string[]) {
+  private async insertDraftTopics(
+    client: PoolClient,
+    draftId: string,
+    sessionId: string,
+    topicIds: string[],
+  ) {
     if (!topicIds.length) return;
-    const values: unknown[] = [draftId];
-    const tuples = topicIds.map((topicId, index) => {
-      values.push(topicId);
-      return `($1, $${index + 2})`;
-    });
+
     await client.query(
-      `INSERT INTO review_draft_topics (draft_id, topic_id) VALUES ${tuples.join(", ")}`,
-      values,
+      `INSERT INTO review_draft_topics (draft_id, location_id, topic_id)
+       SELECT $1, s.location_id, topic_id
+       FROM review_sessions s
+       CROSS JOIN UNNEST($3::text[]) AS selected(topic_id)
+       WHERE s.id = $2`,
+      [draftId, sessionId, topicIds],
     );
   }
 }
