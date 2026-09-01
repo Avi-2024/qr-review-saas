@@ -12,7 +12,27 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: qr_review
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d qr_review"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/qr_review
+      REVIEW_REPOSITORY: postgres
+      IP_HASH_SECRET: ci-only-secret-that-is-long-enough-for-validation
 
     steps:
       - name: Checkout
@@ -25,6 +45,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+
+      - name: Validate database migrations
+        run: npm run db:migrate
 
       - name: Typecheck
         run: npm run typecheck
