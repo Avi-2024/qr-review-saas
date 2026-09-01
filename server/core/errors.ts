@@ -22,6 +22,12 @@ export class ValidationError extends AppError {
   }
 }
 
+export class ConflictError extends AppError {
+  constructor(message: string, code = "CONFLICT") {
+    super(message, 409, code);
+  }
+}
+
 export class RateLimitError extends AppError {
   constructor(message = "Too many requests. Please try again shortly.") {
     super(message, 429, "RATE_LIMITED");
