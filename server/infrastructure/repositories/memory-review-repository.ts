@@ -2,7 +2,9 @@ import { randomUUID } from "node:crypto";
 import type { ReviewRepository } from "@/server/application/ports/review-repository";
 import type {
   CreateSessionInput,
+  GenerationClaim,
   LocationConfig,
+  QrCodeConfig,
   RecordEventInput,
   ReviewDraft,
   ReviewSession,
@@ -28,11 +30,28 @@ const MANGAL_TRADERS: LocationConfig = {
   ],
 };
 
+const MANGAL_COUNTER_QR: QrCodeConfig = {
+  id: "qr_mangal_counter",
+  locationId: MANGAL_TRADERS.id,
+  publicToken: "mangal-counter-demo",
+  name: "Main Counter",
+  sourceType: "counter",
+  reference: "main-counter",
+};
+
+type MemoryGenerationState =
+  | { status: "in_progress" }
+  | { status: "completed"; draftId: string };
+
 export class MemoryReviewRepository implements ReviewRepository {
   private readonly locations = new Map([[MANGAL_TRADERS.id, MANGAL_TRADERS]]);
+  private readonly qrCodes = new Map([[MANGAL_COUNTER_QR.id, MANGAL_COUNTER_QR]]);
   private readonly sessions = new Map<string, ReviewSession>();
+  private readonly sessionsByClientKey = new Map<string, string>();
+  private readonly generationClaims = new Map<string, MemoryGenerationState>();
   private readonly drafts = new Map<string, ReviewDraft>();
   private readonly events: RecordEventInput[] = [];
+  private readonly clientEventIds = new Set<string>();
 
   async getLocationByPublicId(publicId: string) {
     return [...this.locations.values()].find((location) => location.publicId === publicId) ?? null;
@@ -42,24 +61,66 @@ export class MemoryReviewRepository implements ReviewRepository {
     return this.locations.get(id) ?? null;
   }
 
+  async getQrByToken(publicToken: string) {
+    return [...this.qrCodes.values()].find((qr) => qr.publicToken === publicToken) ?? null;
+  }
+
   async createSession(input: CreateSessionInput) {
+    const clientKey = `${input.qrCodeId}:${input.clientSessionId}`;
+    const existingId = this.sessionsByClientKey.get(clientKey);
+    const existing = existingId ? this.sessions.get(existingId) : undefined;
+
+    if (existing) {
+      return { session: existing, created: false };
+    }
+
     const session: ReviewSession = {
       id: randomUUID(),
       locationId: input.locationId,
+      qrCodeId: input.qrCodeId,
+      clientSessionId: input.clientSessionId,
       startedAt: new Date(),
+      expiresAt: input.expiresAt,
     };
+
     this.sessions.set(session.id, session);
-    return session;
+    this.sessionsByClientKey.set(clientKey, session.id);
+    this.events.push({ sessionId: session.id, type: "QR_SCANNED" });
+
+    return { session, created: true };
   }
 
   async getSession(id: string) {
     return this.sessions.get(id) ?? null;
   }
 
-  async saveDraft(input: SaveDraftInput) {
+  async claimGeneration(sessionId: string, requestId: string): Promise<GenerationClaim> {
+    const key = this.generationKey(sessionId, requestId);
+    const existing = this.generationClaims.get(key);
+
+    if (!existing) {
+      this.generationClaims.set(key, { status: "in_progress" });
+      return { status: "claimed" };
+    }
+
+    if (existing.status === "completed") {
+      return { status: "completed", draftId: existing.draftId };
+    }
+
+    return { status: "in_progress" };
+  }
+
+  async releaseGenerationClaim(sessionId: string, requestId: string) {
+    const key = this.generationKey(sessionId, requestId);
+    const existing = this.generationClaims.get(key);
+    if (existing?.status === "in_progress") this.generationClaims.delete(key);
+  }
+
+  async saveGeneratedDraft(input: SaveDraftInput) {
     const draft: ReviewDraft = {
       id: randomUUID(),
       sessionId: input.sessionId,
+      requestId: input.requestId,
       rating: input.rating,
       topicIds: [...input.topicIds],
       note: input.note?.trim() || null,
@@ -68,7 +129,19 @@ export class MemoryReviewRepository implements ReviewRepository {
       variation: input.variation,
       createdAt: new Date(),
     };
+
     this.drafts.set(draft.id, draft);
+    this.generationClaims.set(this.generationKey(input.sessionId, input.requestId), {
+      status: "completed",
+      draftId: draft.id,
+    });
+    this.events.push({
+      sessionId: input.sessionId,
+      draftId: draft.id,
+      type: input.eventType,
+      metadata: { provider: input.provider },
+    });
+
     return draft;
   }
 
@@ -77,6 +150,15 @@ export class MemoryReviewRepository implements ReviewRepository {
   }
 
   async recordEvent(input: RecordEventInput) {
+    if (input.clientEventId) {
+      if (this.clientEventIds.has(input.clientEventId)) return;
+      this.clientEventIds.add(input.clientEventId);
+    }
+
     this.events.push(input);
+  }
+
+  private generationKey(sessionId: string, requestId: string) {
+    return `${sessionId}:${requestId}`;
   }
 }
