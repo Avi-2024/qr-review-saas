@@ -11,14 +11,22 @@ export interface RateLimitDecision {
 
 export class InMemoryRateLimiter {
   private readonly buckets = new Map<string, Bucket>();
+  private checks = 0;
 
   constructor(
     private readonly maxRequests: number,
     private readonly windowMs: number,
+    private readonly cleanupInterval = 100,
   ) {}
 
   check(key: string): RateLimitDecision {
     const now = Date.now();
+    this.checks += 1;
+
+    if (this.checks % this.cleanupInterval === 0) {
+      this.cleanupExpired(now);
+    }
+
     const existing = this.buckets.get(key);
 
     if (!existing || existing.resetAt <= now) {
@@ -40,5 +48,11 @@ export class InMemoryRateLimiter {
       remaining: this.maxRequests - existing.count,
       retryAfterSeconds: 0,
     };
+  }
+
+  private cleanupExpired(now: number) {
+    for (const [key, bucket] of this.buckets) {
+      if (bucket.resetAt <= now) this.buckets.delete(key);
+    }
   }
 }
