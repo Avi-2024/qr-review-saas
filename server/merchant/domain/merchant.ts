@@ -1,4 +1,5 @@
 export type MerchantRole = "owner" | "admin" | "manager" | "viewer";
+export type MerchantOnboardingStage = "business" | "location" | "topics" | "qr" | "ready" | "complete";
 
 export interface MerchantIdentity {
   userId: string;
@@ -6,7 +7,18 @@ export interface MerchantIdentity {
   name: string;
   organizationId: string;
   organizationName: string;
+  businessType: string | null;
+  onboardingStage: MerchantOnboardingStage;
+  onboardingCompletedAt: Date | null;
   role: MerchantRole;
+}
+
+export interface MerchantOrganizationProfile {
+  id: string;
+  name: string;
+  businessType: string | null;
+  onboardingStage: MerchantOnboardingStage;
+  onboardingCompletedAt: Date | null;
 }
 
 export interface MerchantLocation {
@@ -20,6 +32,14 @@ export interface MerchantLocation {
   createdAt: Date;
 }
 
+export interface MerchantTopicConfig {
+  id: string;
+  label: string;
+  icon: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
 export interface MerchantQrCode {
   id: string;
   locationId: string;
@@ -30,6 +50,13 @@ export interface MerchantQrCode {
   reference: string | null;
   isActive: boolean;
   createdAt: Date;
+}
+
+export interface MerchantOnboardingState {
+  organization: MerchantOrganizationProfile;
+  locations: MerchantLocation[];
+  topics: MerchantTopicConfig[];
+  qrCodes: MerchantQrCode[];
 }
 
 export interface DashboardSummary {
