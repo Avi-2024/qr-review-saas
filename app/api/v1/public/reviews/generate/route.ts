@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
-    const decision = getGenerateRateLimiter().check(`generate:${ip}`);
+    const decision = await getGenerateRateLimiter().check(`generate:${ip}`);
     if (!decision.allowed) throw new RateLimitError();
 
     const body = generateReviewSchema.parse(await request.json());
