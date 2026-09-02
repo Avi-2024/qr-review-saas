@@ -12,7 +12,7 @@ export async function POST(
 ) {
   try {
     const ip = getClientIp(request);
-    const decision = getEventRateLimiter().check(`draft-event:${ip}`);
+    const decision = await getEventRateLimiter().check(`draft-event:${ip}`);
     if (!decision.allowed) throw new RateLimitError();
 
     const { reviewId } = await context.params;
