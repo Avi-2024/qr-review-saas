@@ -80,7 +80,7 @@ describeDb("PostgresMerchantRepository", () => {
     expect(summary.qrCodes).toBe(0);
   });
 
-  it("does not allow repository-level QR activation while the location is inactive", async () => {
+  it("rejects QR activation for an inactive location in repository and raw SQL paths", async () => {
     const activation = await repo.updateQrCodeStatus(orgOne, qrCodeId, true);
     expect(activation).toBeNull();
 
@@ -90,6 +90,15 @@ describeDb("PostgresMerchantRepository", () => {
       name: "Inactive Counter",
       sourceType: "counter",
     })).rejects.toThrow("Active location not found");
+
+    await expect(pool.query(`UPDATE qr_codes SET is_active=TRUE WHERE id=$1`, [qrCodeId]))
+      .rejects.toMatchObject({ code: "23514" });
+
+    await expect(pool.query(
+      `INSERT INTO qr_codes(location_id, public_token, name, source_type, is_active)
+       VALUES ($1,$2,$3,$4,TRUE)`,
+      [locationId, `raw-inactive-${suffix}`, "Raw Inactive", "counter"],
+    )).rejects.toMatchObject({ code: "23514" });
   });
 
   it("can reactivate the location and then activate its QR code", async () => {
