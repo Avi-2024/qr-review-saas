@@ -33,6 +33,10 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/qr_review
       REVIEW_REPOSITORY: postgres
       IP_HASH_SECRET: ci-only-secret-that-is-long-enough-for-validation
+      RATE_LIMIT_BACKEND: upstash
+      RATE_LIMIT_KEY_PREFIX: qr-review-ci
+      UPSTASH_REDIS_REST_URL: https://ci-placeholder.upstash.io
+      UPSTASH_REDIS_REST_TOKEN: ci-placeholder-token-long-enough
 
     steps:
       - name: Checkout
@@ -42,9 +46,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
 
       - name: Validate database migrations
         run: npm run db:migrate
