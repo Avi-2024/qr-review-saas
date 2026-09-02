@@ -1,15 +1,22 @@
-import type { Pool } from "pg";
+import type { Pool, PoolClient } from "pg";
 import type { MerchantRepository } from "@/server/merchant/application/ports/merchant-repository";
 import type {
   DashboardSummary,
   FunnelPoint,
   MerchantIdentity,
   MerchantLocation,
+  MerchantOrganizationProfile,
   MerchantQrCode,
+  MerchantTopicConfig,
   TrendPoint,
 } from "@/server/merchant/domain/merchant";
 
 interface LoginRow extends MerchantIdentity { passwordHash: string }
+
+const ORGANIZATION_SELECT = `
+  SELECT id, name, business_type AS "businessType", onboarding_stage AS "onboardingStage",
+         onboarding_completed_at AS "onboardingCompletedAt"
+  FROM organizations`;
 
 const LOCATION_SELECT = `
   SELECT id, public_id AS "publicId", name, subtitle, google_place_id AS "googlePlaceId",
@@ -21,6 +28,14 @@ const QR_SELECT = `
          q.name, q.source_type AS "sourceType", q.reference, q.is_active AS "isActive", q.created_at AS "createdAt"
   FROM qr_codes q
   JOIN locations l ON l.id = q.location_id`;
+
+const TOPIC_SELECT = `
+  SELECT id, label, icon, sort_order AS "sortOrder", is_active AS "isActive"
+  FROM review_topics`;
+
+async function rollbackQuietly(client: PoolClient) {
+  await client.query("ROLLBACK").catch(() => undefined);
+}
 
 export class PostgresMerchantRepository implements MerchantRepository {
   constructor(private readonly pool: Pool) {}
@@ -34,6 +49,9 @@ export class PostgresMerchantRepository implements MerchantRepository {
          u.password_hash AS "passwordHash",
          o.id AS "organizationId",
          o.name AS "organizationName",
+         o.business_type AS "businessType",
+         o.onboarding_stage AS "onboardingStage",
+         o.onboarding_completed_at AS "onboardingCompletedAt",
          m.role
        FROM merchant_users u
        JOIN organization_memberships m ON m.user_id = u.id
@@ -64,6 +82,9 @@ export class PostgresMerchantRepository implements MerchantRepository {
          u.name,
          o.id AS "organizationId",
          o.name AS "organizationName",
+         o.business_type AS "businessType",
+         o.onboarding_stage AS "onboardingStage",
+         o.onboarding_completed_at AS "onboardingCompletedAt",
          m.role
        FROM merchant_sessions s
        JOIN merchant_users u ON u.id = s.user_id AND u.is_active = TRUE
@@ -94,6 +115,232 @@ export class PostgresMerchantRepository implements MerchantRepository {
          AND last_seen_at < NOW() - INTERVAL '5 minutes'`,
       [tokenHash],
     );
+  }
+
+  async getOrganizationProfile(organizationId: string): Promise<MerchantOrganizationProfile | null> {
+    const result = await this.pool.query<MerchantOrganizationProfile>(
+      `${ORGANIZATION_SELECT} WHERE id=$1 LIMIT 1`,
+      [organizationId],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async saveOnboardingBusiness(organizationId: string, input: { name: string; businessType: string }): Promise<MerchantOrganizationProfile | null> {
+    const result = await this.pool.query<MerchantOrganizationProfile>(
+      `UPDATE organizations
+       SET name=$2,
+           business_type=$3,
+           onboarding_stage=CASE WHEN onboarding_stage='business' THEN 'location' ELSE onboarding_stage END,
+           updated_at=NOW()
+       WHERE id=$1 AND onboarding_completed_at IS NULL
+       RETURNING id, name, business_type AS "businessType", onboarding_stage AS "onboardingStage",
+                 onboarding_completed_at AS "onboardingCompletedAt"`,
+      [organizationId, input.name, input.businessType],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async createOnboardingLocation(organizationId: string, input: Omit<MerchantLocation, "id" | "createdAt">): Promise<MerchantLocation | null> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const state = await client.query<{ onboardingStage: string }>(
+        `SELECT onboarding_stage AS "onboardingStage"
+         FROM organizations
+         WHERE id=$1 AND onboarding_completed_at IS NULL
+         FOR UPDATE`,
+        [organizationId],
+      );
+      if (state.rows[0]?.onboardingStage !== "location") {
+        await rollbackQuietly(client);
+        return null;
+      }
+
+      const result = await client.query<MerchantLocation>(
+        `INSERT INTO locations (organization_id, public_id, name, subtitle, google_place_id, google_review_url, is_active)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
+         RETURNING id, public_id AS "publicId", name, subtitle, google_place_id AS "googlePlaceId",
+                   google_review_url AS "googleReviewUrl", is_active AS "isActive", created_at AS "createdAt"`,
+        [organizationId, input.publicId, input.name, input.subtitle, input.googlePlaceId, input.googleReviewUrl, input.isActive],
+      );
+
+      await client.query(
+        `UPDATE organizations SET onboarding_stage='topics',updated_at=NOW() WHERE id=$1`,
+        [organizationId],
+      );
+      await client.query("COMMIT");
+      return result.rows[0] ?? null;
+    } catch (error) {
+      await rollbackQuietly(client);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async listLocationTopics(organizationId: string, locationId: string): Promise<MerchantTopicConfig[]> {
+    const result = await this.pool.query<MerchantTopicConfig>(
+      `${TOPIC_SELECT}
+       WHERE location_id=$2
+         AND EXISTS (SELECT 1 FROM locations l WHERE l.id=$2 AND l.organization_id=$1)
+       ORDER BY sort_order,id`,
+      [organizationId, locationId],
+    );
+    return result.rows;
+  }
+
+  async replaceOnboardingTopics(organizationId: string, locationId: string, topics: Array<{ label: string; icon: string }>): Promise<MerchantTopicConfig[] | null> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const state = await client.query<{ onboardingStage: string }>(
+        `SELECT onboarding_stage AS "onboardingStage"
+         FROM organizations
+         WHERE id=$1 AND onboarding_completed_at IS NULL
+         FOR UPDATE`,
+        [organizationId],
+      );
+      if (state.rows[0]?.onboardingStage !== "topics") {
+        await rollbackQuietly(client);
+        return null;
+      }
+
+      const location = await client.query<{ id: string }>(
+        `SELECT id FROM locations WHERE id=$1 AND organization_id=$2 AND is_active=TRUE LIMIT 1 FOR UPDATE`,
+        [locationId, organizationId],
+      );
+      if (!location.rows[0]) {
+        await rollbackQuietly(client);
+        return null;
+      }
+
+      const qrCount = await client.query<{ count: number }>(
+        `SELECT COUNT(*)::int AS count FROM qr_codes WHERE location_id=$1`,
+        [locationId],
+      );
+      if ((qrCount.rows[0]?.count ?? 0) > 0) {
+        await rollbackQuietly(client);
+        return null;
+      }
+
+      await client.query(`DELETE FROM review_topics WHERE location_id=$1`, [locationId]);
+      for (const [index, topic] of topics.entries()) {
+        await client.query(
+          `INSERT INTO review_topics(id,location_id,label,icon,sort_order,is_active)
+           VALUES ($1,$2,$3,$4,$5,TRUE)`,
+          [`topic-${index + 1}`, locationId, topic.label, topic.icon, (index + 1) * 10],
+        );
+      }
+
+      await client.query(`UPDATE organizations SET onboarding_stage='qr',updated_at=NOW() WHERE id=$1`, [organizationId]);
+      const result = await client.query<MerchantTopicConfig>(
+        `${TOPIC_SELECT} WHERE location_id=$1 ORDER BY sort_order,id`,
+        [locationId],
+      );
+      await client.query("COMMIT");
+      return result.rows;
+    } catch (error) {
+      await rollbackQuietly(client);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async createOnboardingQrCode(organizationId: string, input: { locationId: string; publicToken: string; name: string; sourceType: string; reference?: string | null }): Promise<MerchantQrCode | null> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const state = await client.query<{ onboardingStage: string }>(
+        `SELECT onboarding_stage AS "onboardingStage"
+         FROM organizations
+         WHERE id=$1 AND onboarding_completed_at IS NULL
+         FOR UPDATE`,
+        [organizationId],
+      );
+      if (state.rows[0]?.onboardingStage !== "qr") {
+        await rollbackQuietly(client);
+        return null;
+      }
+
+      const result = await client.query<MerchantQrCode>(
+        `INSERT INTO qr_codes (location_id, public_token, name, source_type, reference)
+         SELECT l.id,$3,$4,$5,$6
+         FROM locations l
+         WHERE l.id=$1 AND l.organization_id=$2 AND l.is_active=TRUE
+         RETURNING id, location_id AS "locationId", ''::text AS "locationName", public_token AS "publicToken",
+                   name, source_type AS "sourceType", reference, is_active AS "isActive", created_at AS "createdAt"`,
+        [input.locationId, organizationId, input.publicToken, input.name, input.sourceType, input.reference ?? null],
+      );
+      if (!result.rows[0]) {
+        await rollbackQuietly(client);
+        return null;
+      }
+
+      const location = await client.query<{ name: string }>(`SELECT name FROM locations WHERE id=$1`, [input.locationId]);
+      await client.query(`UPDATE organizations SET onboarding_stage='ready',updated_at=NOW() WHERE id=$1`, [organizationId]);
+      await client.query("COMMIT");
+      return { ...result.rows[0], locationName: location.rows[0]?.name ?? "" };
+    } catch (error) {
+      await rollbackQuietly(client);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async completeOnboarding(organizationId: string): Promise<MerchantOrganizationProfile | null> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const state = await client.query<{ onboardingStage: string; onboardingCompletedAt: Date | null }>(
+        `SELECT onboarding_stage AS "onboardingStage", onboarding_completed_at AS "onboardingCompletedAt"
+         FROM organizations WHERE id=$1 FOR UPDATE`,
+        [organizationId],
+      );
+      if (!state.rows[0]) {
+        await rollbackQuietly(client);
+        return null;
+      }
+      if (state.rows[0].onboardingStage === "complete" && state.rows[0].onboardingCompletedAt) {
+        await client.query("COMMIT");
+        return this.getOrganizationProfile(organizationId);
+      }
+      if (state.rows[0].onboardingStage !== "ready") {
+        await rollbackQuietly(client);
+        return null;
+      }
+
+      const prerequisites = await client.query<{ ready: boolean }>(
+        `SELECT EXISTS(
+           SELECT 1 FROM locations l WHERE l.organization_id=$1 AND l.is_active=TRUE
+         ) AND EXISTS(
+           SELECT 1 FROM qr_codes q JOIN locations l ON l.id=q.location_id
+           WHERE l.organization_id=$1 AND l.is_active=TRUE AND q.is_active=TRUE
+         ) AS ready`,
+        [organizationId],
+      );
+      if (!prerequisites.rows[0]?.ready) {
+        await rollbackQuietly(client);
+        return null;
+      }
+
+      const result = await client.query<MerchantOrganizationProfile>(
+        `UPDATE organizations
+         SET onboarding_stage='complete',onboarding_completed_at=NOW(),updated_at=NOW()
+         WHERE id=$1
+         RETURNING id,name,business_type AS "businessType",onboarding_stage AS "onboardingStage",
+                   onboarding_completed_at AS "onboardingCompletedAt"`,
+        [organizationId],
+      );
+      await client.query("COMMIT");
+      return result.rows[0] ?? null;
+    } catch (error) {
+      await rollbackQuietly(client);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async getDashboardSummary(organizationId: string, days: number): Promise<DashboardSummary> {
@@ -225,7 +472,7 @@ export class PostgresMerchantRepository implements MerchantRepository {
       );
       const existing = current.rows[0];
       if (!existing) {
-        await client.query("ROLLBACK");
+        await rollbackQuietly(client);
         return null;
       }
 
@@ -248,7 +495,7 @@ export class PostgresMerchantRepository implements MerchantRepository {
       await client.query("COMMIT");
       return result.rows[0] ?? null;
     } catch (error) {
-      await client.query("ROLLBACK");
+      await rollbackQuietly(client);
       throw error;
     } finally {
       client.release();
