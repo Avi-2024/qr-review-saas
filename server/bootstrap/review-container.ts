@@ -1,16 +1,17 @@
 import { ReviewService } from "@/server/application/services/review-service";
 import { getEnv } from "@/server/config/env";
 import { getPool } from "@/server/infrastructure/database/pool";
+import { createConfiguredRateLimiter } from "@/server/infrastructure/rate-limit/configured-rate-limiter";
+import type { RateLimiter } from "@/server/infrastructure/rate-limit/rate-limiter";
 import { MemoryReviewRepository } from "@/server/infrastructure/repositories/memory-review-repository";
 import { PostgresReviewRepository } from "@/server/infrastructure/repositories/postgres-review-repository";
 import { LocalReviewGenerator } from "@/server/infrastructure/review-generators/local-review-generator";
-import { InMemoryRateLimiter } from "@/server/infrastructure/rate-limit/in-memory-rate-limiter";
 
 const globalForReview = globalThis as typeof globalThis & {
   __reviewService?: ReviewService;
-  __reviewSessionRateLimiter?: InMemoryRateLimiter;
-  __reviewGenerateRateLimiter?: InMemoryRateLimiter;
-  __reviewEventRateLimiter?: InMemoryRateLimiter;
+  __reviewSessionRateLimiter?: RateLimiter;
+  __reviewGenerateRateLimiter?: RateLimiter;
+  __reviewEventRateLimiter?: RateLimiter;
 };
 
 export function getReviewService() {
@@ -34,7 +35,8 @@ export function getReviewService() {
 export function getSessionRateLimiter() {
   if (globalForReview.__reviewSessionRateLimiter) return globalForReview.__reviewSessionRateLimiter;
   const env = getEnv();
-  globalForReview.__reviewSessionRateLimiter = new InMemoryRateLimiter(
+  globalForReview.__reviewSessionRateLimiter = createConfiguredRateLimiter(
+    "review-session",
     env.REVIEW_SESSION_RATE_LIMIT_MAX,
     env.REVIEW_RATE_LIMIT_WINDOW_MS,
   );
@@ -44,7 +46,8 @@ export function getSessionRateLimiter() {
 export function getGenerateRateLimiter() {
   if (globalForReview.__reviewGenerateRateLimiter) return globalForReview.__reviewGenerateRateLimiter;
   const env = getEnv();
-  globalForReview.__reviewGenerateRateLimiter = new InMemoryRateLimiter(
+  globalForReview.__reviewGenerateRateLimiter = createConfiguredRateLimiter(
+    "review-generate",
     env.REVIEW_GENERATE_RATE_LIMIT_MAX,
     env.REVIEW_RATE_LIMIT_WINDOW_MS,
   );
@@ -54,7 +57,8 @@ export function getGenerateRateLimiter() {
 export function getEventRateLimiter() {
   if (globalForReview.__reviewEventRateLimiter) return globalForReview.__reviewEventRateLimiter;
   const env = getEnv();
-  globalForReview.__reviewEventRateLimiter = new InMemoryRateLimiter(
+  globalForReview.__reviewEventRateLimiter = createConfiguredRateLimiter(
+    "review-event",
     env.REVIEW_EVENT_RATE_LIMIT_MAX,
     env.REVIEW_RATE_LIMIT_WINDOW_MS,
   );
