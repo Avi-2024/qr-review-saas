@@ -22,18 +22,16 @@ const client = await pool.connect();
 
 try {
   await client.query("BEGIN");
-  const org = await client.query(
-    `INSERT INTO organizations(name)
-     VALUES ($1)
-     ON CONFLICT DO NOTHING
-     RETURNING id`,
+
+  let organizationId;
+  const existingOrg = await client.query(
+    `SELECT id FROM organizations WHERE LOWER(name)=LOWER($1) ORDER BY created_at ASC LIMIT 1`,
     [organizationName],
   );
-
-  let organizationId = org.rows[0]?.id;
+  organizationId = existingOrg.rows[0]?.id;
   if (!organizationId) {
-    const existingOrg = await client.query(`SELECT id FROM organizations WHERE name=$1 ORDER BY created_at ASC LIMIT 1`, [organizationName]);
-    organizationId = existingOrg.rows[0]?.id;
+    const insertedOrg = await client.query(`INSERT INTO organizations(name) VALUES ($1) RETURNING id`, [organizationName]);
+    organizationId = insertedOrg.rows[0]?.id;
   }
   if (!organizationId) throw new Error("Could not resolve organization.");
 
