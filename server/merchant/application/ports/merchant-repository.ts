@@ -19,10 +19,13 @@ export interface MerchantRepository {
   getTrend(organizationId: string, days: number): Promise<TrendPoint[]>;
 
   listLocations(organizationId: string): Promise<MerchantLocation[]>;
+  getLocation(organizationId: string, locationId: string): Promise<MerchantLocation | null>;
+  isLocationPublicIdAvailable(publicId: string): Promise<boolean>;
   createLocation(organizationId: string, input: Omit<MerchantLocation, "id" | "createdAt">): Promise<MerchantLocation>;
   updateLocation(organizationId: string, locationId: string, input: Partial<Omit<MerchantLocation, "id" | "createdAt">>): Promise<MerchantLocation | null>;
 
   listQrCodes(organizationId: string): Promise<MerchantQrCode[]>;
+  getQrCode(organizationId: string, qrCodeId: string): Promise<MerchantQrCode | null>;
   createQrCode(organizationId: string, input: { locationId: string; publicToken: string; name: string; sourceType: string; reference?: string | null }): Promise<MerchantQrCode>;
   updateQrCodeStatus(organizationId: string, qrCodeId: string, isActive: boolean): Promise<MerchantQrCode | null>;
 }
