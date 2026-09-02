@@ -30,8 +30,22 @@ WHERE id = 'staff'
 
 UPDATE review_topics
 SET label = 'Value / Pricing', icon = '◎'
-WHERE id IN ('value', 'pricing')
-  AND label IN ('Pricing', 'Pricing / Value', 'Overall Value');
+WHERE id = 'value'
+  AND label IN ('Pricing / Value', 'Overall Value');
+
+-- The original retail demo had both `pricing` and `value`. When the canonical
+-- `value` topic exists, keep the old pricing row only for historical references
+-- and stop showing it as a duplicate active chip.
+UPDATE review_topics AS legacy
+SET is_active = FALSE
+WHERE legacy.id = 'pricing'
+  AND legacy.label = 'Pricing'
+  AND EXISTS (
+    SELECT 1
+    FROM review_topics AS canonical
+    WHERE canonical.location_id = legacy.location_id
+      AND canonical.id = 'value'
+  );
 
 UPDATE review_topics
 SET label = 'Ease / Convenience', icon = '✓'
