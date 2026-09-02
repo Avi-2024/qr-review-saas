@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { RateLimiter } from "@/server/infrastructure/rate-limit/rate-limiter";
 import { UpstashRateLimiter } from "@/server/infrastructure/rate-limit/upstash-rate-limiter";
 
+const KEY_HASH_SECRET = "test-rate-limit-hash-secret-long-enough";
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -10,12 +12,13 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 describe("UpstashRateLimiter", () => {
-  it("uses one atomic EVAL command and returns shared remaining capacity", async () => {
+  it("uses one atomic EVAL command, hashes identifiers and returns shared remaining capacity", async () => {
     const fetcher = vi.fn().mockResolvedValue(jsonResponse({ result: [2, 9_500] }));
     const limiter = new UpstashRateLimiter({
       restUrl: "https://example.upstash.io/",
       token: "test-token-with-enough-length",
       keyPrefix: "qr-review:generate",
+      keyHashSecret: KEY_HASH_SECRET,
       maxRequests: 5,
       windowMs: 10_000,
       fetcher: fetcher as typeof fetch,
@@ -30,7 +33,8 @@ describe("UpstashRateLimiter", () => {
     const command = JSON.parse(String(init.body));
     expect(command[0]).toBe("EVAL");
     expect(command[2]).toBe(1);
-    expect(command[3]).toBe("qr-review:generate:ip:127.0.0.1");
+    expect(command[3]).toMatch(/^qr-review:generate:[A-Za-z0-9_-]+$/);
+    expect(command[3]).not.toContain("127.0.0.1");
     expect(command[4]).toBe(10_000);
   });
 
@@ -40,6 +44,7 @@ describe("UpstashRateLimiter", () => {
       restUrl: "https://example.upstash.io",
       token: "test-token-with-enough-length",
       keyPrefix: "qr-review:login",
+      keyHashSecret: KEY_HASH_SECRET,
       maxRequests: 5,
       windowMs: 10_000,
       fetcher: fetcher as typeof fetch,
@@ -61,6 +66,7 @@ describe("UpstashRateLimiter", () => {
       restUrl: "https://example.upstash.io",
       token: "test-token-with-enough-length",
       keyPrefix: "qr-review:session",
+      keyHashSecret: KEY_HASH_SECRET,
       maxRequests: 5,
       windowMs: 10_000,
       fallback,
