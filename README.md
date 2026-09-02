@@ -2,13 +2,24 @@
 
 Full-stack Next.js SaaS for QR/NFC-powered customer feedback, Google review handoff and merchant reputation analytics.
 
+The product core is **sector agnostic**. The same QR, session, review-generation and analytics engine is designed for restaurants, cafes, hotels, clinics, dental practices, salons, gyms, retail, education, automotive, real estate, professional services, home services, entertainment venues and other customer-facing businesses without requiring a sector-specific code fork.
+
 ## Customer flow
 
 QR scan → rating → neutral contextual topics → optional note → backend review generation → edit/regenerate → copy → direct Google review composer.
 
+## Sector-agnostic model
+
+- Organizations and locations are generic business entities, not restaurant/store-specific models.
+- Every location gets universal neutral topics by default: Overall Quality, Staff / Support, Value / Pricing, Ease / Convenience, Environment / Cleanliness and Speed / Timeliness.
+- QR touchpoint types are free-form. A merchant can use values such as reception, table, room, checkout, vehicle, appointment-desk, classroom, service-area, delivery, booth, packaging or any future touchpoint without a code change.
+- Generated review language does not assume a physical store visit.
+- Customer branding is derived from the configured business/location rather than a hardcoded merchant identity.
+- Future sector presets are an optional onboarding convenience only; the core data model remains generic and configurable.
+
 ## Merchant platform
 
-The merchant workspace now includes:
+The merchant workspace includes:
 
 - database-backed merchant authentication
 - owner/admin/manager/viewer roles
@@ -30,12 +41,13 @@ The merchant workspace now includes:
 - opaque database-backed auth sessions
 - HttpOnly/Secure/SameSite cookies
 - QR SVG generation
+- Upstash/Redis distributed production rate limiting with bounded local fallback
 - Vitest unit + PostgreSQL integration tests
 
 ## Run customer demo only
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
@@ -57,13 +69,21 @@ AUTH_LOGIN_RATE_LIMIT_MAX=10
 MERCHANT_ADMIN_EMAIL=owner@example.com
 MERCHANT_ADMIN_PASSWORD=replace-with-a-strong-password
 MERCHANT_ADMIN_NAME=Owner Name
-MERCHANT_ORGANIZATION_NAME=Mangal Traders
+MERCHANT_ORGANIZATION_NAME=Your Business
+```
+
+For horizontally scaled production deployments also configure:
+
+```env
+RATE_LIMIT_BACKEND=upstash
+UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
+UPSTASH_REDIS_REST_TOKEN=replace-with-your-token
 ```
 
 Then:
 
 ```bash
-npm install
+npm ci
 npm run db:migrate
 npm run merchant:create-admin
 npm run dev
@@ -117,12 +137,13 @@ database/migrations/            ordered tracked migrations
 - Google review option is available regardless of rating.
 - Generated text must preserve customer sentiment and must not invent specific facts from topic selections.
 - `GOOGLE_REVIEW_OPENED` means the Google composer was opened; it is not labeled as a posted review.
-- New locations automatically receive neutral review topics.
+- New locations automatically receive sector-neutral review topics.
+- Sector-specific wording belongs in configurable merchant content/presets, not in core business logic.
 
 ## Remaining production scale work
 
-- Redis/Upstash distributed rate limiting
 - organization switching for users who belong to multiple organizations
 - password reset / email verification / MFA
 - structured logging and monitoring
 - AI provider adapter with cost/latency fallback
+- merchant-managed topic customization and optional sector presets
