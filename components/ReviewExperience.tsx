@@ -14,6 +14,17 @@ import {
 
 const ratingLabels = ["", "Very poor", "Could be better", "Okay", "Good", "Excellent"];
 
+function businessInitials(name?: string) {
+  if (!name?.trim()) return "QR";
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+  return initials || "QR";
+}
+
 type ReviewExperienceProps = {
   qrToken?: string;
 };
@@ -322,7 +333,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
         <div className="phoneCard">
           <header className="merchantHeader">
             <div className="merchantBrand">
-              <div className="brandMark" aria-hidden="true">MT</div>
+              <div className="brandMark" aria-hidden="true">{businessInitials(location?.name)}</div>
               <div>
                 <span className="eyebrow">QUICK REVIEW</span>
                 <h1>{location?.name || "Loading business…"}</h1>
@@ -419,7 +430,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                     value={note}
                     onChange={(event) => updateNote(event.target.value)}
                     maxLength={180}
-                    placeholder="e.g. staff was helpful but billing took a little time"
+                    placeholder="e.g. communication was clear but the process took a little longer"
                   />
                   <div className="noteMeta">
                     <span>No voice input · no account creation</span>
