@@ -11,6 +11,17 @@ import type {
 
 interface LoginRow extends MerchantIdentity { passwordHash: string }
 
+const LOCATION_SELECT = `
+  SELECT id, public_id AS "publicId", name, subtitle, google_place_id AS "googlePlaceId",
+         google_review_url AS "googleReviewUrl", is_active AS "isActive", created_at AS "createdAt"
+  FROM locations`;
+
+const QR_SELECT = `
+  SELECT q.id, q.location_id AS "locationId", l.name AS "locationName", q.public_token AS "publicToken",
+         q.name, q.source_type AS "sourceType", q.reference, q.is_active AS "isActive", q.created_at AS "createdAt"
+  FROM qr_codes q
+  JOIN locations l ON l.id = q.location_id`;
+
 export class PostgresMerchantRepository implements MerchantRepository {
   constructor(private readonly pool: Pool) {}
 
@@ -76,7 +87,11 @@ export class PostgresMerchantRepository implements MerchantRepository {
 
   async touchSession(tokenHash: string) {
     await this.pool.query(
-      `UPDATE merchant_sessions SET last_seen_at = NOW() WHERE token_hash = $1 AND revoked_at IS NULL`,
+      `UPDATE merchant_sessions
+       SET last_seen_at = NOW()
+       WHERE token_hash = $1
+         AND revoked_at IS NULL
+         AND last_seen_at < NOW() - INTERVAL '5 minutes'`,
       [tokenHash],
     );
   }
@@ -100,7 +115,12 @@ export class PostgresMerchantRepository implements MerchantRepository {
        )
        SELECT
          (SELECT COUNT(*)::int FROM locations WHERE organization_id = $1 AND is_active = TRUE) AS locations,
-         (SELECT COUNT(*)::int FROM qr_codes q JOIN locations l ON l.id = q.location_id WHERE l.organization_id = $1 AND q.is_active = TRUE) AS "qrCodes",
+         (SELECT COUNT(*)::int
+            FROM qr_codes q
+            JOIN locations l ON l.id = q.location_id
+           WHERE l.organization_id = $1
+             AND l.is_active = TRUE
+             AND q.is_active = TRUE) AS "qrCodes",
          metrics.scans,
          metrics."reviewsGenerated",
          metrics."googleOpens",
@@ -162,12 +182,26 @@ export class PostgresMerchantRepository implements MerchantRepository {
 
   async listLocations(organizationId: string): Promise<MerchantLocation[]> {
     const result = await this.pool.query<MerchantLocation>(
-      `SELECT id, public_id AS "publicId", name, subtitle, google_place_id AS "googlePlaceId",
-              google_review_url AS "googleReviewUrl", is_active AS "isActive", created_at AS "createdAt"
-       FROM locations WHERE organization_id = $1 ORDER BY created_at DESC`,
+      `${LOCATION_SELECT} WHERE organization_id = $1 ORDER BY created_at DESC`,
       [organizationId],
     );
     return result.rows;
+  }
+
+  async getLocation(organizationId: string, locationId: string): Promise<MerchantLocation | null> {
+    const result = await this.pool.query<MerchantLocation>(
+      `${LOCATION_SELECT} WHERE organization_id = $1 AND id = $2 LIMIT 1`,
+      [organizationId, locationId],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async isLocationPublicIdAvailable(publicId: string) {
+    const result = await this.pool.query<{ available: boolean }>(
+      `SELECT NOT EXISTS(SELECT 1 FROM locations WHERE public_id = $1) AS available`,
+      [publicId],
+    );
+    return Boolean(result.rows[0]?.available);
   }
 
   async createLocation(organizationId: string, input: Omit<MerchantLocation, "id" | "createdAt">): Promise<MerchantLocation> {
@@ -182,45 +216,72 @@ export class PostgresMerchantRepository implements MerchantRepository {
   }
 
   async updateLocation(organizationId: string, locationId: string, input: Partial<Omit<MerchantLocation, "id" | "createdAt">>): Promise<MerchantLocation | null> {
-    const current = await this.pool.query<MerchantLocation>(
-      `SELECT id, public_id AS "publicId", name, subtitle, google_place_id AS "googlePlaceId",
-              google_review_url AS "googleReviewUrl", is_active AS "isActive", created_at AS "createdAt"
-       FROM locations WHERE id=$1 AND organization_id=$2 LIMIT 1`,
-      [locationId, organizationId],
-    );
-    const existing = current.rows[0];
-    if (!existing) return null;
-    const next = { ...existing, ...input };
-    const result = await this.pool.query<MerchantLocation>(
-      `UPDATE locations SET public_id=$3,name=$4,subtitle=$5,google_place_id=$6,google_review_url=$7,is_active=$8,updated_at=NOW()
-       WHERE id=$1 AND organization_id=$2
-       RETURNING id, public_id AS "publicId", name, subtitle, google_place_id AS "googlePlaceId",
-                 google_review_url AS "googleReviewUrl", is_active AS "isActive", created_at AS "createdAt"`,
-      [locationId, organizationId, next.publicId, next.name, next.subtitle, next.googlePlaceId, next.googleReviewUrl, next.isActive],
-    );
-    return result.rows[0] ?? null;
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const current = await client.query<MerchantLocation>(
+        `${LOCATION_SELECT} WHERE id=$1 AND organization_id=$2 LIMIT 1 FOR UPDATE`,
+        [locationId, organizationId],
+      );
+      const existing = current.rows[0];
+      if (!existing) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+
+      const next = { ...existing, ...input };
+      const result = await client.query<MerchantLocation>(
+        `UPDATE locations SET public_id=$3,name=$4,subtitle=$5,google_place_id=$6,google_review_url=$7,is_active=$8,updated_at=NOW()
+         WHERE id=$1 AND organization_id=$2
+         RETURNING id, public_id AS "publicId", name, subtitle, google_place_id AS "googlePlaceId",
+                   google_review_url AS "googleReviewUrl", is_active AS "isActive", created_at AS "createdAt"`,
+        [locationId, organizationId, next.publicId, next.name, next.subtitle, next.googlePlaceId, next.googleReviewUrl, next.isActive],
+      );
+
+      if (existing.isActive && next.isActive === false) {
+        await client.query(
+          `UPDATE qr_codes SET is_active = FALSE, updated_at = NOW() WHERE location_id = $1 AND is_active = TRUE`,
+          [locationId],
+        );
+      }
+
+      await client.query("COMMIT");
+      return result.rows[0] ?? null;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async listQrCodes(organizationId: string): Promise<MerchantQrCode[]> {
     const result = await this.pool.query<MerchantQrCode>(
-      `SELECT q.id, q.location_id AS "locationId", l.name AS "locationName", q.public_token AS "publicToken",
-              q.name, q.source_type AS "sourceType", q.reference, q.is_active AS "isActive", q.created_at AS "createdAt"
-       FROM qr_codes q JOIN locations l ON l.id=q.location_id
-       WHERE l.organization_id=$1 ORDER BY q.created_at DESC`,
+      `${QR_SELECT} WHERE l.organization_id=$1 ORDER BY q.created_at DESC`,
       [organizationId],
     );
     return result.rows;
   }
 
+  async getQrCode(organizationId: string, qrCodeId: string): Promise<MerchantQrCode | null> {
+    const result = await this.pool.query<MerchantQrCode>(
+      `${QR_SELECT} WHERE l.organization_id=$1 AND q.id=$2 LIMIT 1`,
+      [organizationId, qrCodeId],
+    );
+    return result.rows[0] ?? null;
+  }
+
   async createQrCode(organizationId: string, input: { locationId: string; publicToken: string; name: string; sourceType: string; reference?: string | null }): Promise<MerchantQrCode> {
     const result = await this.pool.query<MerchantQrCode>(
       `INSERT INTO qr_codes (location_id, public_token, name, source_type, reference)
-       SELECT l.id,$3,$4,$5,$6 FROM locations l WHERE l.id=$1 AND l.organization_id=$2
+       SELECT l.id,$3,$4,$5,$6
+       FROM locations l
+       WHERE l.id=$1 AND l.organization_id=$2 AND l.is_active=TRUE
        RETURNING id, location_id AS "locationId", ''::text AS "locationName", public_token AS "publicToken",
                  name, source_type AS "sourceType", reference, is_active AS "isActive", created_at AS "createdAt"`,
       [input.locationId, organizationId, input.publicToken, input.name, input.sourceType, input.reference ?? null],
     );
-    if (!result.rows[0]) throw new Error("Location not found for organization.");
+    if (!result.rows[0]) return Promise.reject(new Error("Active location not found for organization."));
     const row = result.rows[0];
     const location = await this.pool.query<{ name: string }>(`SELECT name FROM locations WHERE id=$1`, [row.locationId]);
     return { ...row, locationName: location.rows[0]?.name ?? "" };
@@ -230,7 +291,10 @@ export class PostgresMerchantRepository implements MerchantRepository {
     const result = await this.pool.query<MerchantQrCode>(
       `UPDATE qr_codes q SET is_active=$3,updated_at=NOW()
        FROM locations l
-       WHERE q.id=$1 AND q.location_id=l.id AND l.organization_id=$2
+       WHERE q.id=$1
+         AND q.location_id=l.id
+         AND l.organization_id=$2
+         AND ($3 = FALSE OR l.is_active = TRUE)
        RETURNING q.id, q.location_id AS "locationId", l.name AS "locationName", q.public_token AS "publicToken",
                  q.name, q.source_type AS "sourceType", q.reference, q.is_active AS "isActive", q.created_at AS "createdAt"`,
       [qrCodeId, organizationId, isActive],
