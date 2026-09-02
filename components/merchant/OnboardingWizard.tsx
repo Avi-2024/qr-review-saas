@@ -152,7 +152,8 @@ export default function OnboardingWizard({ initialState, merchantName }: { initi
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ businessName, businessType }),
       }));
-      await refreshState();
+      const nextState = await refreshState();
+      setLocationName(nextState.organization.name);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save business details.");
     } finally {
