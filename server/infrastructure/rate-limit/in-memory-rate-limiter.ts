@@ -1,15 +1,11 @@
+import type { RateLimitDecision, RateLimiter } from "@/server/infrastructure/rate-limit/rate-limiter";
+
 interface Bucket {
   count: number;
   resetAt: number;
 }
 
-export interface RateLimitDecision {
-  allowed: boolean;
-  remaining: number;
-  retryAfterSeconds: number;
-}
-
-export class InMemoryRateLimiter {
+export class InMemoryRateLimiter implements RateLimiter {
   private readonly buckets = new Map<string, Bucket>();
   private checks = 0;
 
@@ -56,3 +52,5 @@ export class InMemoryRateLimiter {
     }
   }
 }
+
+export type { RateLimitDecision } from "@/server/infrastructure/rate-limit/rate-limiter";
