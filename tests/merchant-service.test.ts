@@ -11,15 +11,22 @@ function repository(overrides: Partial<MerchantRepository> = {}) {
     getIdentityBySessionTokenHash: vi.fn(),
     revokeSession: vi.fn(),
     touchSession: vi.fn(),
+    getOrganizationProfile: vi.fn(),
+    saveOnboardingBusiness: vi.fn(),
+    createOnboardingLocation: vi.fn(),
+    listLocationTopics: vi.fn().mockResolvedValue([]),
+    replaceOnboardingTopics: vi.fn(),
+    createOnboardingQrCode: vi.fn(),
+    completeOnboarding: vi.fn(),
     getDashboardSummary: vi.fn(),
     getFunnel: vi.fn(),
     getTrend: vi.fn(),
-    listLocations: vi.fn(),
+    listLocations: vi.fn().mockResolvedValue([]),
     getLocation: vi.fn(),
     isLocationPublicIdAvailable: vi.fn().mockResolvedValue(true),
     createLocation: vi.fn(),
     updateLocation: vi.fn(),
-    listQrCodes: vi.fn(),
+    listQrCodes: vi.fn().mockResolvedValue([]),
     getQrCode: vi.fn(),
     createQrCode: vi.fn(),
     updateQrCodeStatus: vi.fn(),
@@ -33,7 +40,17 @@ const owner: MerchantIdentity = {
   name: "Owner",
   organizationId: "org-1",
   organizationName: "Mangal Traders",
+  businessType: "retail",
+  onboardingStage: "complete",
+  onboardingCompletedAt: new Date(),
   role: "owner",
+};
+
+const incompleteOwner: MerchantIdentity = {
+  ...owner,
+  businessType: null,
+  onboardingStage: "business",
+  onboardingCompletedAt: null,
 };
 
 const viewer: MerchantIdentity = { ...owner, role: "viewer" };
@@ -94,6 +111,43 @@ describe("MerchantService", () => {
     expect(createSession).not.toHaveBeenCalled();
   });
 
+  it("advances the business onboarding step without locking the business type to an enum", async () => {
+    const saved = {
+      id: "org-1",
+      name: "Happy Paws",
+      businessType: "Pet grooming and daycare",
+      onboardingStage: "location" as const,
+      onboardingCompletedAt: null,
+    };
+    const saveOnboardingBusiness = vi.fn().mockResolvedValue(saved);
+    const service = new MerchantService(repository({ saveOnboardingBusiness }), 24);
+
+    const result = await service.saveOnboardingBusiness(incompleteOwner, {
+      businessName: "Happy Paws",
+      businessType: "Pet grooming and daycare",
+    });
+
+    expect(result).toEqual(saved);
+    expect(saveOnboardingBusiness).toHaveBeenCalledWith("org-1", {
+      name: "Happy Paws",
+      businessType: "Pet grooming and daycare",
+    });
+  });
+
+  it("rejects duplicate onboarding topic labels before writing", async () => {
+    const service = new MerchantService(repository(), 24);
+    const topicsIdentity: MerchantIdentity = { ...incompleteOwner, onboardingStage: "topics" };
+
+    await expect(service.saveOnboardingTopics(topicsIdentity, {
+      locationId: location().id,
+      topics: [
+        { label: "Staff" },
+        { label: "staff" },
+        { label: "Speed" },
+      ],
+    })).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+  });
+
   it("prevents viewer role from creating QR codes", async () => {
     const service = new MerchantService(repository(), 24);
     await expect(service.createQrCode(viewer, { locationId: location().id, name: "Counter" })).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -125,14 +179,9 @@ describe("MerchantService", () => {
   });
 
   it("allocates a bounded unique suffix when an automatic location slug collides", async () => {
-    const availability = vi.fn()
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(true);
+    const availability = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
     const createLocation = vi.fn().mockImplementation(async (_orgId, input) => ({ id: "loc-2", createdAt: new Date(), ...input }));
-    const service = new MerchantService(repository({
-      isLocationPublicIdAvailable: availability,
-      createLocation,
-    }), 24);
+    const service = new MerchantService(repository({ isLocationPublicIdAvailable: availability, createLocation }), 24);
 
     await service.createLocation(owner, { name: "Main Store", googlePlaceId: "ChIJ-abc123" });
 
