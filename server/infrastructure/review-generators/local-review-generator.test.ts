@@ -6,20 +6,35 @@ describe("LocalReviewGenerator", () => {
     const generator = new LocalReviewGenerator();
 
     const result = await generator.generate({
-      businessName: "Mangal Traders",
+      businessName: "Example Clinic",
       rating: 5,
       topics: [
-        { id: "staff", label: "Staff Interaction", icon: "", sortOrder: 10 },
-        { id: "pricing", label: "Pricing", icon: "", sortOrder: 20 },
+        { id: "staff", label: "Staff / Support", icon: "", sortOrder: 10 },
+        { id: "speed", label: "Speed / Timeliness", icon: "", sortOrder: 20 },
       ],
-      note: "prices were high but the overall visit was good",
+      note: "the team was helpful but I had to wait longer than expected",
       variation: 0,
     });
 
-    expect(result.text).toContain("staff interaction");
-    expect(result.text).toContain("pricing");
-    expect(result.text).toContain("Prices were high but the overall visit was good.");
+    expect(result.text).toContain("staff / support");
+    expect(result.text).toContain("speed / timeliness");
+    expect(result.text).toContain("The team was helpful but I had to wait longer than expected.");
     expect(result.text.toLowerCase()).not.toContain("helpful and polite");
     expect(result.text.toLowerCase()).not.toContain("reasonable");
+  });
+
+  it("does not assume the customer physically visited a store", async () => {
+    const generator = new LocalReviewGenerator();
+
+    const result = await generator.generate({
+      businessName: "Northstar Services",
+      rating: 4,
+      topics: [{ id: "quality", label: "Overall Quality", icon: "", sortOrder: 10 }],
+      variation: 1,
+    });
+
+    expect(result.text).toContain("experience with Northstar Services");
+    expect(result.text.toLowerCase()).not.toContain("visit to");
+    expect(result.text.toLowerCase()).not.toContain("store");
   });
 });

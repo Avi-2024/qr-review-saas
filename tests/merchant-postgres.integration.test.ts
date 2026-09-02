@@ -26,10 +26,10 @@ describeDb("PostgresMerchantRepository", () => {
     await pool.end();
   });
 
-  it("keeps location data tenant scoped and seeds review topics", async () => {
+  it("keeps location data tenant scoped and seeds universal review topics", async () => {
     const created = await repo.createLocation(orgOne, {
       publicId: `test-${suffix}`,
-      name: "Test Main Store",
+      name: "Example City Location",
       subtitle: "Quick feedback",
       googlePlaceId: `ChIJ-${suffix}`,
       googleReviewUrl: `https://search.google.com/local/writereview?placeid=ChIJ-${suffix}`,
@@ -38,7 +38,7 @@ describeDb("PostgresMerchantRepository", () => {
     locationId = created.id;
     await repo.createLocation(orgTwo, {
       publicId: `other-${suffix}`,
-      name: "Other Store",
+      name: "Other Location",
       subtitle: "Other",
       googlePlaceId: `Other-${suffix}`,
       googleReviewUrl: `https://search.google.com/local/writereview?placeid=Other-${suffix}`,
@@ -47,22 +47,33 @@ describeDb("PostgresMerchantRepository", () => {
 
     const locations = await repo.listLocations(orgOne);
     expect(locations).toHaveLength(1);
-    expect(locations[0].name).toBe("Test Main Store");
+    expect(locations[0].name).toBe("Example City Location");
 
-    const topics = await pool.query(`SELECT id FROM review_topics WHERE location_id=$1 ORDER BY sort_order`, [locationId]);
-    expect(topics.rows.length).toBeGreaterThanOrEqual(6);
+    const topics = await pool.query(
+      `SELECT id,label FROM review_topics WHERE location_id=$1 AND is_active=TRUE ORDER BY sort_order`,
+      [locationId],
+    );
+    expect(topics.rows.map((row) => row.label)).toEqual([
+      "Overall Quality",
+      "Staff / Support",
+      "Value / Pricing",
+      "Ease / Convenience",
+      "Environment / Cleanliness",
+      "Speed / Timeliness",
+    ]);
   });
 
-  it("creates QR assets only inside an active organization location", async () => {
+  it("creates free-form QR touchpoints only inside an active organization location", async () => {
     const qr = await repo.createQrCode(orgOne, {
       locationId,
       publicToken: `test-qr-${suffix}`,
-      name: "Billing Counter",
-      sourceType: "counter",
+      name: "Appointment Desk",
+      sourceType: "appointment-desk",
     });
     qrCodeId = qr.id;
     expect(qr.locationId).toBe(locationId);
-    expect(qr.locationName).toBe("Test Main Store");
+    expect(qr.locationName).toBe("Example City Location");
+    expect(qr.sourceType).toBe("appointment-desk");
 
     const qrCodes = await repo.listQrCodes(orgTwo);
     expect(qrCodes.some((item) => item.id === qr.id)).toBe(false);
@@ -87,8 +98,8 @@ describeDb("PostgresMerchantRepository", () => {
     await expect(repo.createQrCode(orgOne, {
       locationId,
       publicToken: `inactive-qr-${suffix}`,
-      name: "Inactive Counter",
-      sourceType: "counter",
+      name: "Inactive Touchpoint",
+      sourceType: "service-area",
     })).rejects.toThrow("Active location not found");
 
     await expect(pool.query(`UPDATE qr_codes SET is_active=TRUE WHERE id=$1`, [qrCodeId]))
@@ -97,7 +108,7 @@ describeDb("PostgresMerchantRepository", () => {
     await expect(pool.query(
       `INSERT INTO qr_codes(location_id, public_token, name, source_type, is_active)
        VALUES ($1,$2,$3,$4,TRUE)`,
-      [locationId, `raw-inactive-${suffix}`, "Raw Inactive", "counter"],
+      [locationId, `raw-inactive-${suffix}`, "Raw Inactive", "room"],
     )).rejects.toMatchObject({ code: "23514" });
   });
 

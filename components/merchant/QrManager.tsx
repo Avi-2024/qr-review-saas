@@ -45,7 +45,7 @@ export default function QrManager({ qrCodes, locations, role }: { qrCodes: Merch
   const activeLocations = useMemo(() => locations.filter((item) => item.isActive), [locations]);
   const [locationId, setLocationId] = useState(activeLocations[0]?.id ?? "");
   const [name, setName] = useState("");
-  const [sourceType, setSourceType] = useState("counter");
+  const [sourceType, setSourceType] = useState("general");
   const [reference, setReference] = useState("");
   const [loading, setLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -71,6 +71,7 @@ export default function QrManager({ qrCodes, locations, role }: { qrCodes: Merch
       });
       if (!response.ok) throw new Error(await readError(response, "Could not create QR code."));
       setName("");
+      setSourceType("general");
       setReference("");
       router.refresh();
     } catch (cause) {
@@ -116,12 +117,12 @@ export default function QrManager({ qrCodes, locations, role }: { qrCodes: Merch
     <>
       {canWrite ? (
         <form className="merchantCard merchantFormCard" onSubmit={createQr}>
-          <span className="merchantEyebrow">CREATE QR TOUCHPOINT</span><h2>Add a measurable customer entry point</h2><p>Create separate QR assets for billing counters, reception, tables, packaging or any offline touchpoint you want to measure independently.</p>
+          <span className="merchantEyebrow">CREATE QR TOUCHPOINT</span><h2>Add a measurable customer entry point</h2><p>Create a separate QR for any real-world customer touchpoint: reception, table, room, checkout, appointment desk, vehicle, delivery, classroom, service area, event booth, packaging, poster or anything else you want to measure independently.</p>
           <div className="merchantFormGrid">
             <div className="merchantField"><label>Location</label><select value={locationId} onChange={(e)=>setLocationId(e.target.value)} required><option value="">Select location</option>{activeLocations.map((location)=><option key={location.id} value={location.id}>{location.name}</option>)}</select></div>
-            <div className="merchantField"><label>QR name</label><input value={name} onChange={(e)=>setName(e.target.value)} placeholder="e.g. Billing Counter" required /></div>
-            <div className="merchantField"><label>Source type</label><select value={sourceType} onChange={(e)=>setSourceType(e.target.value)}><option value="counter">Counter</option><option value="reception">Reception</option><option value="table">Table</option><option value="packaging">Packaging</option><option value="poster">Poster</option><option value="generic">Generic</option></select></div>
-            <div className="merchantField"><label>Reference (optional)</label><input value={reference} onChange={(e)=>setReference(e.target.value)} placeholder="e.g. counter-01" /></div>
+            <div className="merchantField"><label>QR name</label><input value={name} onChange={(e)=>setName(e.target.value)} placeholder="e.g. Reception Desk / Table 12 / Room 204" required /></div>
+            <div className="merchantField"><label>Touchpoint type</label><input value={sourceType} onChange={(e)=>setSourceType(e.target.value)} placeholder="e.g. reception, room, checkout, vehicle" required /></div>
+            <div className="merchantField"><label>Reference (optional)</label><input value={reference} onChange={(e)=>setReference(e.target.value)} placeholder="e.g. branch-a-desk-01" /></div>
           </div>
           {!activeLocations.length ? <div className="merchantError">Activate or create a location before adding QR codes.</div> : null}
           {error ? <div className="merchantError" role="alert">{error}</div> : null}
