@@ -4,6 +4,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { MerchantLocation, MerchantRole } from "@/server/merchant/domain/merchant";
 
+async function readError(response: Response, fallback: string) {
+  try {
+    const body = await response.json();
+    return body.error?.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function LocationManager({ locations, role }: { locations: MerchantLocation[]; role: MerchantRole }) {
   const router = useRouter();
   const canWrite = role !== "viewer";
@@ -12,31 +21,51 @@ export default function LocationManager({ locations, role }: { locations: Mercha
   const [googlePlaceId, setGooglePlaceId] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   async function createLocation(event: React.FormEvent) {
     event.preventDefault();
-    setLoading(true); setError("");
+    if (loading) return;
+
+    setLoading(true);
+    setError("");
     try {
       const response = await fetch("/api/v1/merchant/locations", {
-        method: "POST", headers: { "content-type": "application/json" },
+        method: "POST",
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ name, subtitle: subtitle || undefined, googlePlaceId }),
       });
-      const body = await response.json();
-      if (!response.ok || !body.success) throw new Error(body.error?.message || "Could not create location.");
-      setName(""); setSubtitle(""); setGooglePlaceId(""); router.refresh();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not create location."); }
-    finally { setLoading(false); }
+      if (!response.ok) throw new Error(await readError(response, "Could not create location."));
+
+      setName("");
+      setSubtitle("");
+      setGooglePlaceId("");
+      router.refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not create location.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function toggle(location: MerchantLocation) {
+    if (updatingId) return;
+
+    setUpdatingId(location.id);
     setError("");
-    const response = await fetch(`/api/v1/merchant/locations/${location.id}`, {
-      method: "PATCH", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ isActive: !location.isActive }),
-    });
-    const body = await response.json();
-    if (!response.ok || !body.success) { setError(body.error?.message || "Could not update location."); return; }
-    router.refresh();
+    try {
+      const response = await fetch(`/api/v1/merchant/locations/${location.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isActive: !location.isActive }),
+      });
+      if (!response.ok) throw new Error(await readError(response, "Could not update location."));
+      router.refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not update location.");
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
   return (
@@ -49,8 +78,8 @@ export default function LocationManager({ locations, role }: { locations: Mercha
             <div className="merchantField"><label>Google Place ID</label><input value={googlePlaceId} onChange={(e)=>setGooglePlaceId(e.target.value)} placeholder="ChIJ…" required /></div>
             <div className="merchantField" style={{gridColumn:"1 / -1"}}><label>Customer subtitle (optional)</label><input value={subtitle} onChange={(e)=>setSubtitle(e.target.value)} placeholder="Fast feedback. No login required." /></div>
           </div>
-          {error ? <div className="merchantError">{error}</div> : null}
-          <div className="merchantFormActions"><button className="merchantBtn" disabled={loading}>{loading ? "Creating…" : "Add location"}</button></div>
+          {error ? <div className="merchantError" role="alert">{error}</div> : null}
+          <div className="merchantFormActions"><button className="merchantBtn" disabled={loading || Boolean(updatingId)}>{loading ? "Creating…" : "Add location"}</button></div>
         </form>
       ) : null}
 
@@ -63,7 +92,7 @@ export default function LocationManager({ locations, role }: { locations: Mercha
               <td><span className="merchantQrLink">{location.googlePlaceId}</span></td>
               <td><span className="merchantQrLink">{location.publicId}</span></td>
               <td><span className={`merchantStatus ${location.isActive ? "" : "off"}`}>{location.isActive ? "Active" : "Paused"}</span></td>
-              <td>{canWrite ? <div className="merchantActions"><button onClick={()=>void toggle(location)}>{location.isActive ? "Pause" : "Activate"}</button></div> : <small>Read only</small>}</td>
+              <td>{canWrite ? <div className="merchantActions"><button type="button" disabled={Boolean(updatingId)} onClick={()=>void toggle(location)}>{updatingId === location.id ? "Updating…" : location.isActive ? "Pause" : "Activate"}</button></div> : <small>Read only</small>}</td>
             </tr>)}
           </tbody></table>
         ) : <div className="merchantEmpty">No locations yet.</div>}
