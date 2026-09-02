@@ -7,7 +7,7 @@ The backend uses a layered architecture so HTTP, business rules, persistence, an
 - `app/api/` — thin Next.js Route Handlers. Parse HTTP input and return HTTP output only.
 - `server/application/` — use cases and ports. Business workflows live here.
 - `server/domain/` — domain types with no framework dependencies.
-- `server/infrastructure/` — PostgreSQL, memory repository, rate limiting and review generator implementations.
+- `server/infrastructure/` — PostgreSQL, memory repository, distributed/local rate limiting and review generator implementations.
 - `server/http/` — request helpers, Zod schemas and standard API responses.
 - `server/bootstrap/` — dependency composition.
 - `database/migrations/` — ordered, tracked PostgreSQL migrations.
@@ -75,26 +75,50 @@ The Google review option is available regardless of rating.
 ```env
 REVIEW_REPOSITORY=memory
 IP_HASH_SECRET=development-only-change-me
+RATE_LIMIT_BACKEND=memory
 ```
 
-No database is required.
+No database or Redis service is required.
 
 ### Production
 
-Production fails fast unless durable storage and IP hashing are configured:
+Production fails fast unless durable storage, IP hashing and shared rate limiting are configured:
 
 ```env
 NODE_ENV=production
 REVIEW_REPOSITORY=postgres
 DATABASE_URL=postgresql://...
 IP_HASH_SECRET=<at-least-32-random-characters>
+RATE_LIMIT_BACKEND=upstash
+RATE_LIMIT_KEY_PREFIX=qr-review
+UPSTASH_REDIS_REST_URL=https://your-database.upstash.io
+UPSTASH_REDIS_REST_TOKEN=<server-side-rest-token>
 ```
 
 Run:
 
 ```bash
+npm ci
 npm run db:migrate
+npm run build
 ```
+
+`package-lock.json` is committed and CI uses `npm ci`, so dependency resolution is reproducible across validation and deployments.
+
+## Distributed rate limiting
+
+Production rate limits are shared through the Upstash Redis REST API. Each request uses one atomic Redis `EVAL` operation that increments the bucket and applies its TTL in the same command.
+
+The Redis key does not contain the raw client IP or raw request identifier. The identifier is HMAC-SHA256 hashed locally using `IP_HASH_SECRET` before it is sent to Redis.
+
+If Upstash is temporarily unavailable, the limiter falls back to the existing bounded in-process limiter so the customer flow does not become fully unavailable. This fallback is per-instance and is intended only as outage protection, not as the normal production limiter.
+
+Current buckets remain separate for:
+
+- merchant sign-in attempts
+- customer review sessions
+- review generation
+- review/session analytics events
 
 ## Public API
 
@@ -110,20 +134,21 @@ npm run db:migrate
 
 - Zod validates all public request bodies.
 - Public generation/session/event endpoints have separate rate-limit buckets.
+- Production rate-limit counters are shared across app instances through Redis/Upstash.
+- Redis rate-limit identifiers are HMAC-hashed before leaving the application.
 - Stored IP identifiers use HMAC-SHA256 rather than an unsalted plain hash.
-- Memory rate limiter periodically removes expired keys.
-- Production requires PostgreSQL; memory persistence is intentionally demo-only.
-
-For horizontal production scaling, replace the in-memory limiter with a shared Redis/Upstash implementation behind the same rate-limit boundary.
+- Local fallback rate limiting periodically removes expired keys.
+- Production requires PostgreSQL and Upstash; memory persistence/rate limiting is intentionally local/demo-only.
 
 ## CI quality gate
 
 Pull requests and `main` pushes run:
 
 1. PostgreSQL 16 service startup
-2. all tracked migrations against a real database
-3. TypeScript typecheck
-4. regression tests
-5. Next.js production build
+2. locked dependency installation with `npm ci`
+3. all tracked migrations against a real database
+4. TypeScript typecheck
+5. regression tests, including distributed limiter behavior
+6. Next.js production build
 
 Merchant authentication and dashboards should be built on top of this hardened foundation rather than bypassing these contracts.

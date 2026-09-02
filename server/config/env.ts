@@ -13,6 +13,11 @@ const envSchema = z.object({
   REVIEW_GENERATE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(12),
   REVIEW_EVENT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(60),
   REVIEW_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(600_000),
+  RATE_LIMIT_BACKEND: z.enum(["memory", "upstash"]).default("memory"),
+  RATE_LIMIT_KEY_PREFIX: z.string().trim().min(2).max(80).default("qr-review"),
+  RATE_LIMIT_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(250).max(10_000).default(1_500),
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(16).optional(),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
@@ -28,6 +33,12 @@ function assertProductionConfiguration(env: AppEnv) {
   if (!env.DATABASE_URL) throw new Error("DATABASE_URL is required in production.");
   if (!env.IP_HASH_SECRET || env.IP_HASH_SECRET.length < 32) {
     throw new Error("IP_HASH_SECRET must be at least 32 characters in production.");
+  }
+  if (env.RATE_LIMIT_BACKEND !== "upstash") {
+    throw new Error("RATE_LIMIT_BACKEND=upstash is required in production for shared rate limiting.");
+  }
+  if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
+    throw new Error("UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are required in production.");
   }
 }
 

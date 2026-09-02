@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
-    const decision = getMerchantLoginRateLimiter().check(`merchant-login:${ip}`);
+    const decision = await getMerchantLoginRateLimiter().check(`merchant-login:${ip}`);
     if (!decision.allowed) throw new RateLimitError("Too many sign-in attempts. Please try again shortly.");
 
     const body = merchantLoginSchema.parse(await request.json());
