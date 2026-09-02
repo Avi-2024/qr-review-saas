@@ -32,24 +32,24 @@ export class LocalReviewGenerator implements ReviewGenerator {
 
     return {
       text: sentences.filter(Boolean).join(" "),
-      provider: "local-template-v2",
+      provider: "local-template-v3",
     };
   }
 
   private opening(businessName: string, rating: number, variation: number) {
     const alternates = {
-      1: [`Overall, I had a very poor experience at ${businessName}.`, `My overall experience at ${businessName} was disappointing.`],
-      2: [`Overall, my experience at ${businessName} was below expectations.`, `My visit to ${businessName} could have been better overall.`],
-      3: [`Overall, my experience at ${businessName} was average.`, `My experience at ${businessName} was mixed overall.`],
-      4: [`Overall, I had a good experience at ${businessName}.`, `My visit to ${businessName} was good overall.`],
-      5: [`Overall, I had a great experience at ${businessName}.`, `My experience at ${businessName} was excellent overall.`],
+      1: [`Overall, I had a very poor experience with ${businessName}.`, `My overall experience with ${businessName} was disappointing.`],
+      2: [`Overall, my experience with ${businessName} was below expectations.`, `My experience with ${businessName} could have been better overall.`],
+      3: [`Overall, my experience with ${businessName} was average.`, `My experience with ${businessName} was mixed overall.`],
+      4: [`Overall, I had a good experience with ${businessName}.`, `My experience with ${businessName} was good overall.`],
+      5: [`Overall, I had a great experience with ${businessName}.`, `My experience with ${businessName} was excellent overall.`],
     } as const;
 
     return alternates[rating as keyof typeof alternates][variation % 2];
   }
 
   private closing(rating: number, variation: number) {
-    if (rating >= 4) return variation % 2 ? "I would consider visiting again." : "Overall, I was satisfied with the experience.";
+    if (rating >= 4) return variation % 2 ? "I would consider choosing them again." : "Overall, I was satisfied with the experience.";
     if (rating === 3) return variation % 2 ? "There is still room for improvement." : "Overall, it was an average experience.";
     return variation % 2 ? "I hope the overall experience improves." : "There is clear room for improvement.";
   }
