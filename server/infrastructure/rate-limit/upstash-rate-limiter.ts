@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import type { RateLimitDecision, RateLimiter } from "@/server/infrastructure/rate-limit/rate-limiter";
 
 const ATOMIC_FIXED_WINDOW_SCRIPT = `
@@ -20,6 +21,7 @@ export interface UpstashRateLimiterOptions {
   restUrl: string;
   token: string;
   keyPrefix: string;
+  keyHashSecret: string;
   maxRequests: number;
   windowMs: number;
   requestTimeoutMs?: number;
@@ -50,7 +52,10 @@ export class UpstashRateLimiter implements RateLimiter {
   }
 
   private async checkDistributed(key: string): Promise<RateLimitDecision> {
-    const redisKey = `${this.options.keyPrefix}:${key}`;
+    const keyDigest = createHmac("sha256", this.options.keyHashSecret)
+      .update(key)
+      .digest("base64url");
+    const redisKey = `${this.options.keyPrefix}:${keyDigest}`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
 
