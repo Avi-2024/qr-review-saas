@@ -9,7 +9,7 @@ import type {
 
 export interface MerchantRepository {
   findUserForLogin(email: string): Promise<(MerchantIdentity & { passwordHash: string }) | null>;
-  createSession(input: { userId: string; tokenHash: string; userAgent?: string; ipHash?: string; expiresAt: Date }): Promise<void>;
+  createSession(input: { userId: string; organizationId: string; tokenHash: string; userAgent?: string; ipHash?: string; expiresAt: Date }): Promise<void>;
   getIdentityBySessionTokenHash(tokenHash: string): Promise<MerchantIdentity | null>;
   revokeSession(tokenHash: string): Promise<void>;
   touchSession(tokenHash: string): Promise<void>;
