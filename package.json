@@ -1,6 +1,6 @@
 {
   "name": "qr-review-saas",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,9 +8,11 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:migrate": "node scripts/migrate.mjs"
+    "db:migrate": "node scripts/migrate.mjs",
+    "merchant:create-admin": "node scripts/create-merchant-admin.mjs"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "next": "16.3.3",
     "pg": "^8.16.3",
     "react": "19.2.0",
