@@ -62,6 +62,30 @@ describe("ReviewService", () => {
     expect(retry.draft.text).toBe(first.draft.text);
   });
 
+  it("allows up to three topics and rejects a fourth", async () => {
+    const service = createService();
+    const session = await service.startSession({
+      qrToken: "mangal-counter-demo",
+      clientSessionId: randomUUID(),
+    });
+
+    await expect(service.generate({
+      sessionId: session.session.id,
+      requestId: randomUUID(),
+      rating: 4,
+      topicIds: ["quality", "staff", "value"],
+      variation: 0,
+    })).resolves.toMatchObject({ replayed: false });
+
+    await expect(service.generate({
+      sessionId: session.session.id,
+      requestId: randomUUID(),
+      rating: 4,
+      topicIds: ["quality", "staff", "value", "speed"],
+      variation: 0,
+    })).rejects.toMatchObject({ code: "VALIDATION_ERROR", statusCode: 400 });
+  });
+
   it("rejects generation after a session expires", async () => {
     const service = createService(-1);
     const session = await service.startSession({
