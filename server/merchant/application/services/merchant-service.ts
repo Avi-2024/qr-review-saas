@@ -1,6 +1,12 @@
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
-import { AuthenticationError, ForbiddenError, NotFoundError, ValidationError } from "@/server/core/errors";
+import {
+  AuthenticationError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "@/server/core/errors";
 import type { MerchantRepository } from "@/server/merchant/application/ports/merchant-repository";
 import type { MerchantIdentity, MerchantLocation, MerchantRole } from "@/server/merchant/domain/merchant";
 import { createSessionToken, hashSessionToken } from "@/server/auth/session-token";
@@ -70,9 +76,9 @@ export class MerchantService {
 
   async createLocation(identity: MerchantIdentity, input: { name: string; subtitle?: string; googlePlaceId: string; publicId?: string }) {
     this.assertCanWrite(identity);
-    const publicId = slugify(input.publicId || input.name);
-    if (publicId.length < 2) throw new ValidationError("A valid location identifier is required.");
+    const publicId = await this.resolveLocationPublicId(input.publicId, input.name);
     const googlePlaceId = input.googlePlaceId.trim();
+
     return this.repository.createLocation(identity.organizationId, {
       publicId,
       name: input.name.trim(),
@@ -94,6 +100,7 @@ export class MerchantService {
       patch.googleReviewUrl = `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`;
     }
     if (input.isActive !== undefined) patch.isActive = input.isActive;
+
     const updated = await this.repository.updateLocation(identity.organizationId, locationId, patch);
     if (!updated) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
     return updated;
@@ -105,6 +112,13 @@ export class MerchantService {
 
   async createQrCode(identity: MerchantIdentity, input: { locationId: string; name: string; sourceType?: string; reference?: string }) {
     this.assertCanWrite(identity);
+
+    const location = await this.repository.getLocation(identity.organizationId, input.locationId);
+    if (!location) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
+    if (!location.isActive) {
+      throw new ConflictError("Activate the location before creating a QR code.", "LOCATION_INACTIVE");
+    }
+
     const base = slugify(input.name) || "qr";
     const publicToken = `${base}-${randomSuffix(5)}`;
     return this.repository.createQrCode(identity.organizationId, {
@@ -118,9 +132,43 @@ export class MerchantService {
 
   async updateQrCodeStatus(identity: MerchantIdentity, qrCodeId: string, isActive: boolean) {
     this.assertCanWrite(identity);
+
+    const qrCode = await this.repository.getQrCode(identity.organizationId, qrCodeId);
+    if (!qrCode) throw new NotFoundError("QR code not found.", "QR_CODE_NOT_FOUND");
+
+    if (isActive) {
+      const location = await this.repository.getLocation(identity.organizationId, qrCode.locationId);
+      if (!location) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
+      if (!location.isActive) {
+        throw new ConflictError("Activate the location before activating this QR code.", "LOCATION_INACTIVE");
+      }
+    }
+
     const updated = await this.repository.updateQrCodeStatus(identity.organizationId, qrCodeId, isActive);
     if (!updated) throw new NotFoundError("QR code not found.", "QR_CODE_NOT_FOUND");
     return updated;
+  }
+
+  private async resolveLocationPublicId(requestedPublicId: string | undefined, name: string) {
+    const base = slugify(requestedPublicId || name);
+    if (base.length < 2) throw new ValidationError("A valid location identifier is required.");
+
+    if (requestedPublicId) {
+      if (!(await this.repository.isLocationPublicIdAvailable(base))) {
+        throw new ConflictError("That public location identifier is already in use.", "LOCATION_PUBLIC_ID_TAKEN");
+      }
+      return base;
+    }
+
+    if (await this.repository.isLocationPublicIdAvailable(base)) return base;
+
+    // Bounded attempts avoid an unbounded retry loop while making auto-generated IDs collision-safe.
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const candidate = `${base}-${randomSuffix(3)}`.slice(0, 80);
+      if (await this.repository.isLocationPublicIdAvailable(candidate)) return candidate;
+    }
+
+    throw new ConflictError("Could not allocate a unique public location identifier. Please try again.", "LOCATION_PUBLIC_ID_CONFLICT");
   }
 
   private assertCanWrite(identity: MerchantIdentity) {
