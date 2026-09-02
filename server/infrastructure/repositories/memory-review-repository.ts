@@ -19,14 +19,12 @@ const MANGAL_TRADERS: LocationConfig = {
   googlePlaceId: "ChIJIxP2kbaJgzkR6h4dYXKWCcI",
   googleReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJIxP2kbaJgzkR6h4dYXKWCcI",
   topics: [
-    { id: "quality", label: "Product Quality", icon: "📦", sortOrder: 10 },
-    { id: "staff", label: "Staff Interaction", icon: "🤝", sortOrder: 20 },
-    { id: "pricing", label: "Pricing", icon: "₹", sortOrder: 30 },
-    { id: "availability", label: "Product Availability", icon: "✓", sortOrder: 40 },
-    { id: "cleanliness", label: "Cleanliness", icon: "✨", sortOrder: 50 },
-    { id: "speed", label: "Service Speed", icon: "⚡", sortOrder: 60 },
-    { id: "variety", label: "Product Variety", icon: "🛍️", sortOrder: 70 },
-    { id: "value", label: "Overall Value", icon: "◎", sortOrder: 80 },
+    { id: "quality", label: "Overall Quality", icon: "★", sortOrder: 10 },
+    { id: "staff", label: "Staff / Support", icon: "🤝", sortOrder: 20 },
+    { id: "value", label: "Value / Pricing", icon: "◎", sortOrder: 30 },
+    { id: "availability", label: "Ease / Convenience", icon: "✓", sortOrder: 40 },
+    { id: "cleanliness", label: "Environment / Cleanliness", icon: "✨", sortOrder: 50 },
+    { id: "speed", label: "Speed / Timeliness", icon: "⚡", sortOrder: 60 },
   ],
 };
 
