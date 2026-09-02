@@ -22,6 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_organization_memberships_user
 CREATE TABLE IF NOT EXISTS merchant_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES merchant_users(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   token_hash TEXT NOT NULL UNIQUE,
   user_agent TEXT,
   ip_hash TEXT,
@@ -33,6 +34,8 @@ CREATE TABLE IF NOT EXISTS merchant_sessions (
 
 CREATE INDEX IF NOT EXISTS idx_merchant_sessions_user
   ON merchant_sessions(user_id, expires_at DESC);
+CREATE INDEX IF NOT EXISTS idx_merchant_sessions_org
+  ON merchant_sessions(organization_id, expires_at DESC);
 CREATE INDEX IF NOT EXISTS idx_merchant_sessions_token_active
   ON merchant_sessions(token_hash)
   WHERE revoked_at IS NULL;
