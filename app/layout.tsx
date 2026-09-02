@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./merchant.css";
 
 export const metadata: Metadata = {
-  title: "Mangal Traders · QR Review Experience",
-  description: "Partner demo for a zero-friction QR review workflow.",
+  title: "QR Review · Customer Feedback & Reputation",
+  description: "QR-powered customer review, feedback and reputation intelligence platform.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

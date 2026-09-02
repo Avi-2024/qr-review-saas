@@ -1,26 +1,38 @@
 # QR Review SaaS
 
-A clean full-stack Next.js prototype for QR/NFC-powered customer feedback and Google review handoff.
+Full-stack Next.js SaaS for QR/NFC-powered customer feedback, Google review handoff and merchant reputation analytics.
 
 ## Customer flow
 
-QR landing → rating → neutral contextual topics → optional note → backend review generation → edit/regenerate → copy → direct Google review composer.
+QR scan → rating → neutral contextual topics → optional note → backend review generation → edit/regenerate → copy → direct Google review composer.
+
+## Merchant platform
+
+The merchant workspace now includes:
+
+- database-backed merchant authentication
+- owner/admin/manager/viewer roles
+- organization-scoped sessions and queries
+- overview dashboard
+- location management
+- QR touchpoint creation and activation
+- scannable SVG QR preview/download
+- scan → review draft → Google-open analytics
 
 ## Stack
 
 - Next.js 16 App Router
 - React 19 + TypeScript
-- Versioned Next.js Route Handler API
+- PostgreSQL production persistence
 - Zod request validation
-- Repository/service architecture
-- In-memory repository for zero-setup partner demos
-- PostgreSQL adapter for production persistence
-- Server-side generation rate limiting
-- Analytics events for session, generation, copy and Google-open actions
+- service/repository architecture
+- bcrypt password hashing
+- opaque database-backed auth sessions
+- HttpOnly/Secure/SameSite cookies
+- QR SVG generation
+- Vitest unit + PostgreSQL integration tests
 
-## Run the partner demo
-
-No database or API key is required.
+## Run customer demo only
 
 ```bash
 npm install
@@ -28,68 +40,89 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+The default `.env.example` uses `REVIEW_REPOSITORY=memory`, so the customer review demo at `/` runs without PostgreSQL.
 
-The default `.env.example` uses `REVIEW_REPOSITORY=memory`, so the full frontend → backend flow runs without external infrastructure.
+## Run full merchant platform
 
-## Run with PostgreSQL
-
-Create `.env.local`:
+Create PostgreSQL and configure `.env.local`:
 
 ```env
 REVIEW_REPOSITORY=postgres
 DATABASE_URL=postgresql://user:password@localhost:5432/qr_review
-REVIEW_RATE_LIMIT_MAX=12
-REVIEW_RATE_LIMIT_WINDOW_MS=600000
+IP_HASH_SECRET=replace-with-a-long-random-secret
+AUTH_COOKIE_NAME=qr_merchant_session
+AUTH_SESSION_TTL_HOURS=168
+AUTH_LOGIN_RATE_LIMIT_MAX=10
+
+MERCHANT_ADMIN_EMAIL=owner@example.com
+MERCHANT_ADMIN_PASSWORD=replace-with-a-strong-password
+MERCHANT_ADMIN_NAME=Owner Name
+MERCHANT_ORGANIZATION_NAME=Mangal Traders
 ```
 
-Then run:
+Then:
 
 ```bash
+npm install
 npm run db:migrate
+npm run merchant:create-admin
 npm run dev
 ```
 
-The migration seeds Mangal Traders, its neutral review topics and its direct Google review URL.
+Open:
 
-## API
+- customer demo: `http://localhost:3000`
+- merchant login: `http://localhost:3000/login`
+- merchant dashboard: `http://localhost:3000/dashboard`
+
+No merchant password is hardcoded in the repository. The bootstrap script hashes the password with bcrypt and creates/updates the owner membership.
+
+## Public customer API
 
 - `GET /api/health`
-- `GET /api/v1/public/locations/:publicId`
+- `GET /api/v1/public/qr/:token`
 - `POST /api/v1/public/sessions`
+- `POST /api/v1/public/sessions/:sessionId/events`
 - `POST /api/v1/public/reviews/generate`
 - `POST /api/v1/public/reviews/:reviewId/events`
 
+## Merchant API
+
+- `POST /api/v1/merchant/auth/login`
+- `POST /api/v1/merchant/auth/logout`
+- `GET /api/v1/merchant/auth/me`
+- `GET /api/v1/merchant/dashboard`
+- `GET|POST /api/v1/merchant/locations`
+- `PATCH /api/v1/merchant/locations/:locationId`
+- `GET|POST /api/v1/merchant/qr-codes`
+- `PATCH /api/v1/merchant/qr-codes/:qrCodeId`
+- `GET /api/v1/merchant/qr-codes/:qrCodeId/svg`
+
 ## Architecture
 
-Backend code is deliberately separated by responsibility:
-
 ```text
-app/api/                     HTTP routes only
-server/domain/               domain types
-server/application/ports/    interfaces/contracts
-server/application/services/ business use cases
-server/infrastructure/       database, generators, rate limiting
-server/http/                 validation + HTTP helpers
-server/bootstrap/            dependency composition
+app/api/                         thin HTTP routes
+server/domain/                  customer review domain
+server/application/             customer review use cases
+server/merchant/domain/         merchant domain
+server/merchant/application/    merchant use cases + repository port
+server/merchant/infrastructure/ PostgreSQL merchant adapter
+server/auth/                    session/cookie/token helpers
+server/infrastructure/          shared DB/rate-limit adapters
+database/migrations/            ordered tracked migrations
 ```
 
-See [`docs/backend.md`](docs/backend.md) for details.
+## Important product rules
 
-## Review generation
+- Google review option is available regardless of rating.
+- Generated text must preserve customer sentiment and must not invent specific facts from topic selections.
+- `GOOGLE_REVIEW_OPENED` means the Google composer was opened; it is not labeled as a posted review.
+- New locations automatically receive neutral review topics.
 
-The partner demo uses a local server-side generator so it remains free and reliable. The generator is behind a `ReviewGenerator` interface, allowing an OpenAI/Gemini implementation to be added later without changing the API routes or application service.
+## Remaining production scale work
 
-## Google handoff
-
-The current demo targets Mangal Traders using its Google Place ID and direct `writereview` URL. Generated text is copied to the clipboard; the customer remains responsible for pasting/editing and posting the review on Google.
-
-## Production next steps
-
-- Redis-backed distributed rate limiting
-- Merchant authentication and RBAC
-- Multi-tenant organization/location management
-- Merchant dashboard and funnel analytics
-- AI provider adapter with cost/latency controls
-- Background event pipeline / queue
-- Structured logs and error monitoring
+- Redis/Upstash distributed rate limiting
+- organization switching for users who belong to multiple organizations
+- password reset / email verification / MFA
+- structured logging and monitoring
+- AI provider adapter with cost/latency fallback
