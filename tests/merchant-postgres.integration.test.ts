@@ -13,6 +13,7 @@ describeDb("PostgresMerchantRepository", () => {
   let orgOne = "";
   let orgTwo = "";
   let locationId = "";
+  let qrCodeId = "";
 
   beforeAll(async () => {
     orgOne = (await pool.query(`INSERT INTO organizations(name) VALUES ($1) RETURNING id`, [`Test Merchant ${suffix}`])).rows[0].id;
@@ -52,18 +53,60 @@ describeDb("PostgresMerchantRepository", () => {
     expect(topics.rows.length).toBeGreaterThanOrEqual(6);
   });
 
-  it("creates QR assets only inside the organization location", async () => {
+  it("creates QR assets only inside an active organization location", async () => {
     const qr = await repo.createQrCode(orgOne, {
       locationId,
       publicToken: `test-qr-${suffix}`,
       name: "Billing Counter",
       sourceType: "counter",
     });
+    qrCodeId = qr.id;
     expect(qr.locationId).toBe(locationId);
     expect(qr.locationName).toBe("Test Main Store");
 
     const qrCodes = await repo.listQrCodes(orgTwo);
     expect(qrCodes.some((item) => item.id === qr.id)).toBe(false);
+  });
+
+  it("pauses child QR codes when a location is paused and excludes them from active counts", async () => {
+    const updated = await repo.updateLocation(orgOne, locationId, { isActive: false });
+    expect(updated?.isActive).toBe(false);
+
+    const qr = await repo.getQrCode(orgOne, qrCodeId);
+    expect(qr?.isActive).toBe(false);
+
+    const summary = await repo.getDashboardSummary(orgOne, 30);
+    expect(summary.locations).toBe(0);
+    expect(summary.qrCodes).toBe(0);
+  });
+
+  it("rejects QR activation for an inactive location in repository and raw SQL paths", async () => {
+    const activation = await repo.updateQrCodeStatus(orgOne, qrCodeId, true);
+    expect(activation).toBeNull();
+
+    await expect(repo.createQrCode(orgOne, {
+      locationId,
+      publicToken: `inactive-qr-${suffix}`,
+      name: "Inactive Counter",
+      sourceType: "counter",
+    })).rejects.toThrow("Active location not found");
+
+    await expect(pool.query(`UPDATE qr_codes SET is_active=TRUE WHERE id=$1`, [qrCodeId]))
+      .rejects.toMatchObject({ code: "23514" });
+
+    await expect(pool.query(
+      `INSERT INTO qr_codes(location_id, public_token, name, source_type, is_active)
+       VALUES ($1,$2,$3,$4,TRUE)`,
+      [locationId, `raw-inactive-${suffix}`, "Raw Inactive", "counter"],
+    )).rejects.toMatchObject({ code: "23514" });
+  });
+
+  it("can reactivate the location and then activate its QR code", async () => {
+    const location = await repo.updateLocation(orgOne, locationId, { isActive: true });
+    expect(location?.isActive).toBe(true);
+
+    const qr = await repo.updateQrCodeStatus(orgOne, qrCodeId, true);
+    expect(qr?.isActive).toBe(true);
   });
 
   it("returns zero-safe analytics for a merchant with no review events", async () => {

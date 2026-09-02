@@ -26,16 +26,44 @@ interface ApiEnvelope<T> {
   error?: { message?: string; code?: string };
 }
 
+export class ReviewApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code?: string,
+  ) {
+    super(message);
+    this.name = "ReviewApiError";
+  }
+}
+
 async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+    headers: init?.body
+      ? { "content-type": "application/json", ...(init?.headers ?? {}) }
+      : init?.headers,
     cache: "no-store",
   });
-  const body = (await response.json()) as ApiEnvelope<T>;
-  if (!response.ok || !body.success || body.data === undefined) {
-    throw new Error(body.error?.message || "Request failed.");
+
+  let body: ApiEnvelope<T> | null = null;
+  try {
+    body = (await response.json()) as ApiEnvelope<T>;
+  } catch {
+    throw new ReviewApiError(
+      response.ok ? "The server returned an invalid response." : "Request failed.",
+      response.status,
+    );
   }
+
+  if (!response.ok || !body.success || body.data === undefined) {
+    throw new ReviewApiError(
+      body.error?.message || "Request failed.",
+      response.status,
+      body.error?.code,
+    );
+  }
+
   return body.data;
 }
 

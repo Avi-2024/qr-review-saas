@@ -1,18 +1,45 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { MerchantLocation, MerchantQrCode, MerchantRole } from "@/server/merchant/domain/merchant";
 
-export default function QrManager({
-  qrCodes,
-  locations,
-  role,
-}: {
-  qrCodes: MerchantQrCode[];
-  locations: MerchantLocation[];
-  role: MerchantRole;
-}) {
+async function readError(response: Response, fallback: string) {
+  try {
+    const body = await response.json();
+    return body.error?.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+async function copyText(value: string) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+  } catch {
+    // Try the DOM fallback.
+  }
+
+  let area: HTMLTextAreaElement | null = null;
+  try {
+    area = document.createElement("textarea");
+    area.value = value;
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    area?.remove();
+  }
+}
+
+export default function QrManager({ qrCodes, locations, role }: { qrCodes: MerchantQrCode[]; locations: MerchantLocation[]; role: MerchantRole }) {
   const router = useRouter();
   const canWrite = role !== "viewer";
   const activeLocations = useMemo(() => locations.filter((item) => item.isActive), [locations]);
@@ -21,37 +48,66 @@ export default function QrManager({
   const [sourceType, setSourceType] = useState("counter");
   const [reference, setReference] = useState("");
   const [loading, setLoading] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (locationId && activeLocations.some((item) => item.id === locationId)) return;
+    setLocationId(activeLocations[0]?.id ?? "");
+  }, [activeLocations, locationId]);
+
   async function createQr(event: React.FormEvent) {
     event.preventDefault();
-    setLoading(true); setError("");
+    if (loading || !locationId) return;
+
+    setLoading(true);
+    setError("");
     try {
       const response = await fetch("/api/v1/merchant/qr-codes", {
-        method: "POST", headers: { "content-type": "application/json" },
+        method: "POST",
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ locationId, name, sourceType, reference: reference || undefined }),
       });
-      const body = await response.json();
-      if (!response.ok || !body.success) throw new Error(body.error?.message || "Could not create QR code.");
-      setName(""); setReference(""); router.refresh();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not create QR code."); }
-    finally { setLoading(false); }
+      if (!response.ok) throw new Error(await readError(response, "Could not create QR code."));
+      setName("");
+      setReference("");
+      router.refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not create QR code.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function toggle(qr: MerchantQrCode) {
-    const response = await fetch(`/api/v1/merchant/qr-codes/${qr.id}`, {
-      method: "PATCH", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ isActive: !qr.isActive }),
-    });
-    const body = await response.json();
-    if (!response.ok || !body.success) { setError(body.error?.message || "Could not update QR code."); return; }
-    router.refresh();
+    if (updatingId) return;
+
+    setUpdatingId(qr.id);
+    setError("");
+    try {
+      const response = await fetch(`/api/v1/merchant/qr-codes/${qr.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isActive: !qr.isActive }),
+      });
+      if (!response.ok) throw new Error(await readError(response, "Could not update QR code."));
+      router.refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not update QR code.");
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
   async function copyLink(qr: MerchantQrCode) {
+    setError("");
     const link = `${window.location.origin}/r/${qr.publicToken}`;
-    await navigator.clipboard.writeText(link);
+    if (!(await copyText(link))) {
+      setError("The browser blocked automatic copying. Open the public route and copy its URL manually.");
+      return;
+    }
+
     setCopied(qr.id);
     window.setTimeout(() => setCopied((value) => value === qr.id ? null : value), 1400);
   }
@@ -67,8 +123,9 @@ export default function QrManager({
             <div className="merchantField"><label>Source type</label><select value={sourceType} onChange={(e)=>setSourceType(e.target.value)}><option value="counter">Counter</option><option value="reception">Reception</option><option value="table">Table</option><option value="packaging">Packaging</option><option value="poster">Poster</option><option value="generic">Generic</option></select></div>
             <div className="merchantField"><label>Reference (optional)</label><input value={reference} onChange={(e)=>setReference(e.target.value)} placeholder="e.g. counter-01" /></div>
           </div>
-          {error ? <div className="merchantError">{error}</div> : null}
-          <div className="merchantFormActions"><button className="merchantBtn" disabled={loading || !locationId}>{loading ? "Creating…" : "Create QR code"}</button></div>
+          {!activeLocations.length ? <div className="merchantError">Activate or create a location before adding QR codes.</div> : null}
+          {error ? <div className="merchantError" role="alert">{error}</div> : null}
+          <div className="merchantFormActions"><button className="merchantBtn" disabled={loading || Boolean(updatingId) || !locationId}>{loading ? "Creating…" : "Create QR code"}</button></div>
         </form>
       ) : null}
 
@@ -82,10 +139,10 @@ export default function QrManager({
               <td><span className="merchantQrLink">/r/{qr.publicToken}</span></td>
               <td><span className={`merchantStatus ${qr.isActive ? "" : "off"}`}>{qr.isActive ? "Active" : "Paused"}</span></td>
               <td><div className="merchantActions">
-                <button onClick={()=>void copyLink(qr)}>{copied === qr.id ? "Copied" : "Copy link"}</button>
-                <button onClick={()=>window.open(`/api/v1/merchant/qr-codes/${qr.id}/svg`,"_blank")}>View QR</button>
-                <button onClick={()=>window.open(`/api/v1/merchant/qr-codes/${qr.id}/svg?download=1`,"_blank")}>Download</button>
-                {canWrite ? <button onClick={()=>void toggle(qr)}>{qr.isActive ? "Pause" : "Activate"}</button> : null}
+                <button type="button" onClick={()=>void copyLink(qr)}>{copied === qr.id ? "Copied" : "Copy link"}</button>
+                <button type="button" onClick={()=>window.open(`/api/v1/merchant/qr-codes/${qr.id}/svg`,"_blank","noopener,noreferrer")}>View QR</button>
+                <button type="button" onClick={()=>window.open(`/api/v1/merchant/qr-codes/${qr.id}/svg?download=1`,"_blank","noopener,noreferrer")}>Download</button>
+                {canWrite ? <button type="button" disabled={Boolean(updatingId)} onClick={()=>void toggle(qr)}>{updatingId === qr.id ? "Updating…" : qr.isActive ? "Pause" : "Activate"}</button> : null}
               </div></td>
             </tr>)}
           </tbody></table>

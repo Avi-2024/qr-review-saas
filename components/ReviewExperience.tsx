@@ -7,11 +7,11 @@ import {
   recordReviewEvent,
   recordReviewEventOnExit,
   recordSessionEvent,
+  ReviewApiError,
   startReviewSession,
   type LocationDto,
 } from "@/lib/review-api";
 
-const FALLBACK_REVIEW_URL = "https://search.google.com/local/writereview?placeid=ChIJIxP2kbaJgzkR6h4dYXKWCcI";
 const ratingLabels = ["", "Very poor", "Could be better", "Okay", "Good", "Excellent"];
 
 type ReviewExperienceProps = {
@@ -33,8 +33,9 @@ async function copyText(value: string) {
     // Continue to the DOM fallback below.
   }
 
+  let area: HTMLTextAreaElement | null = null;
   try {
-    const area = document.createElement("textarea");
+    area = document.createElement("textarea");
     area.value = value;
     area.style.position = "fixed";
     area.style.opacity = "0";
@@ -42,17 +43,16 @@ async function copyText(value: string) {
     document.body.appendChild(area);
     area.focus();
     area.select();
-    const copied = document.execCommand("copy");
-    area.remove();
-    return copied;
+    return document.execCommand("copy");
   } catch {
     return false;
+  } finally {
+    area?.remove();
   }
 }
 
 export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: ReviewExperienceProps) {
   const [location, setLocation] = useState<LocationDto | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [rating, setRating] = useState<Rating | 0>(0);
   const [selected, setSelected] = useState<string[]>([]);
@@ -64,6 +64,9 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
 
+  const qrTokenRef = useRef(qrToken);
+  const sessionGenerationRef = useRef(0);
+  const sessionIdRef = useRef<string | null>(null);
   const clientSessionIdRef = useRef<string | null>(null);
   const sessionPromiseRef = useRef<Promise<string> | null>(null);
   const pendingGenerationRef = useRef<PendingGeneration | null>(null);
@@ -78,10 +81,30 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
   }, [rating, selectedCount]);
 
   useEffect(() => {
+    if (qrTokenRef.current !== qrToken) {
+      qrTokenRef.current = qrToken;
+      sessionGenerationRef.current += 1;
+      sessionIdRef.current = null;
+      clientSessionIdRef.current = null;
+      sessionPromiseRef.current = null;
+      pendingGenerationRef.current = null;
+      editedDraftsRef.current.clear();
+      setLocation(null);
+      setDraftId(null);
+      setRating(0);
+      setSelected([]);
+      setNote("");
+      setReview("");
+      setVariation(0);
+      setScreen("compose");
+      setCopied(false);
+      setError("");
+    }
+
     void ensureSession().catch((cause) => {
       setError(cause instanceof Error ? cause.message : "Could not start the review session.");
     });
-    // qrToken is the identity of this public scan page. A route change remounts the experience.
+    // ensureSession uses refs as its source of truth, which avoids stale React state and Strict Mode duplicate sessions.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qrToken]);
 
@@ -91,21 +114,41 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
   }
 
   async function ensureSession() {
-    if (sessionId) return sessionId;
+    if (sessionIdRef.current) return sessionIdRef.current;
     if (sessionPromiseRef.current) return sessionPromiseRef.current;
 
-    const promise = startReviewSession(qrToken, getClientSessionId())
+    const tokenAtStart = qrTokenRef.current;
+    const generationAtStart = sessionGenerationRef.current;
+    const clientSessionId = getClientSessionId();
+
+    const promise = startReviewSession(tokenAtStart, clientSessionId)
       .then((created) => {
-        setSessionId(created.sessionId);
-        setLocation(created.location);
+        if (
+          qrTokenRef.current === tokenAtStart &&
+          sessionGenerationRef.current === generationAtStart
+        ) {
+          sessionIdRef.current = created.sessionId;
+          setLocation(created.location);
+        }
         return created.sessionId;
       })
       .finally(() => {
-        sessionPromiseRef.current = null;
+        if (sessionPromiseRef.current === promise) {
+          sessionPromiseRef.current = null;
+        }
       });
 
     sessionPromiseRef.current = promise;
     return promise;
+  }
+
+  async function renewSession() {
+    sessionGenerationRef.current += 1;
+    sessionIdRef.current = null;
+    clientSessionIdRef.current = null;
+    sessionPromiseRef.current = null;
+    pendingGenerationRef.current = null;
+    return ensureSession();
   }
 
   function resetPendingGeneration() {
@@ -148,6 +191,26 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
     resetPendingGeneration();
   }
 
+  function getPendingGeneration(nextVariation: number) {
+    let pending = pendingGenerationRef.current;
+    if (!pending || pending.variation !== nextVariation) {
+      pending = { variation: nextVariation, requestId: crypto.randomUUID() };
+      pendingGenerationRef.current = pending;
+    }
+    return pending;
+  }
+
+  async function requestDraft(activeSessionId: string, nextVariation: number, requestId: string) {
+    return generateReviewDraft({
+      sessionId: activeSessionId,
+      requestId,
+      rating: rating as Rating,
+      topicIds: selected,
+      note: note.trim() || undefined,
+      variation: nextVariation,
+    });
+  }
+
   async function createDraft(nextVariation: number) {
     if (!rating || isGenerating) return;
 
@@ -155,23 +218,32 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
     setIsGenerating(true);
 
     try {
-      const activeSessionId = await ensureSession();
+      let activeSessionId = await ensureSession();
       void recordSessionEvent(activeSessionId, { type: "GENERATE_CLICKED" }).catch(() => undefined);
 
-      let pending = pendingGenerationRef.current;
-      if (!pending || pending.variation !== nextVariation) {
+      let pending = getPendingGeneration(nextVariation);
+      let generated;
+
+      try {
+        generated = await requestDraft(activeSessionId, nextVariation, pending.requestId);
+      } catch (cause) {
+        const sessionExpired = cause instanceof ReviewApiError &&
+          (cause.code === "SESSION_EXPIRED" || cause.code === "SESSION_NOT_FOUND");
+        if (!sessionExpired) throw cause;
+
+        // One bounded recovery attempt: create a fresh scan session, replay current funnel state, then generate once.
+        activeSessionId = await renewSession();
         pending = { variation: nextVariation, requestId: crypto.randomUUID() };
         pendingGenerationRef.current = pending;
-      }
 
-      const generated = await generateReviewDraft({
-        sessionId: activeSessionId,
-        requestId: pending.requestId,
-        rating,
-        topicIds: selected,
-        note: note.trim() || undefined,
-        variation: nextVariation,
-      });
+        void recordSessionEvent(activeSessionId, { type: "RATING_SELECTED", rating }).catch(() => undefined);
+        for (const topicId of selected) {
+          void recordSessionEvent(activeSessionId, { type: "TOPIC_SELECTED", topicId, selected: true }).catch(() => undefined);
+        }
+        void recordSessionEvent(activeSessionId, { type: "GENERATE_CLICKED" }).catch(() => undefined);
+
+        generated = await requestDraft(activeSessionId, nextVariation, pending.requestId);
+      }
 
       pendingGenerationRef.current = null;
       setReview(generated.text);
@@ -197,6 +269,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
   }
 
   async function handleCopy() {
+    setError("");
     const didCopy = await copyText(review);
     setCopied(didCopy);
 
@@ -209,6 +282,11 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
   }
 
   async function handleGoogle() {
+    if (!location?.googleReviewUrl) {
+      setError("The Google review link is not available for this QR code. Please rescan or contact the business.");
+      return;
+    }
+
     const didCopy = await copyText(review);
     setCopied(didCopy);
 
@@ -217,15 +295,13 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
       recordReviewEventOnExit(draftId, "GOOGLE_REVIEW_OPENED");
     }
 
-    window.location.assign(location?.googleReviewUrl || FALLBACK_REVIEW_URL);
+    window.location.assign(location.googleReviewUrl);
   }
 
   function reset() {
-    clientSessionIdRef.current = null;
-    sessionPromiseRef.current = null;
+    // Reset the UI within the same physical scan session so analytics do not count a fake second QR scan.
     pendingGenerationRef.current = null;
     editedDraftsRef.current.clear();
-    setSessionId(null);
     setDraftId(null);
     setRating(0);
     setSelected([]);
@@ -235,7 +311,6 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
     setCopied(false);
     setError("");
     setScreen("compose");
-    void ensureSession().catch(() => undefined);
   }
 
   return (
@@ -250,8 +325,8 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
               <div className="brandMark" aria-hidden="true">MT</div>
               <div>
                 <span className="eyebrow">QUICK REVIEW</span>
-                <h1>{location?.name || "Mangal Traders"}</h1>
-                <p>{location?.subtitle || "Fast feedback. No login required."}</p>
+                <h1>{location?.name || "Loading business…"}</h1>
+                <p>{location?.subtitle || "Preparing your review experience."}</p>
               </div>
             </div>
             <span className="secureBadge">Secure</span>
@@ -276,6 +351,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                   {[1, 2, 3, 4, 5].map((value) => (
                     <button
                       key={value}
+                      type="button"
                       className={`ratingButton ${rating >= value ? "active" : ""}`}
                       onClick={() => selectRating(value as Rating)}
                       aria-label={`${value} star${value > 1 ? "s" : ""}`}
@@ -307,6 +383,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                     return (
                       <button
                         key={topic.id}
+                        type="button"
                         className={`topicChip ${isActive ? "active" : ""}`}
                         onClick={() => toggleTopic(topic.id)}
                         aria-pressed={isActive}
@@ -328,6 +405,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                     <p>Your note is preserved so the draft never invents a specific experience.</p>
                   </div>
                   <button
+                    type="button"
                     className="textAction"
                     onClick={() => updateNote(polishText(note))}
                     disabled={!note.trim()}
@@ -353,8 +431,9 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
               {error ? <p className="microCopy" role="alert">{error}</p> : null}
 
               <button
+                type="button"
                 className="primaryAction"
-                disabled={!rating || isGenerating}
+                disabled={!rating || isGenerating || !location}
                 onClick={() => void createDraft(variation)}
               >
                 <span className="actionIcon">✦</span>
@@ -366,7 +445,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
             </div>
           ) : (
             <div className="contentPane reviewPane">
-              <button className="backLink" onClick={() => setScreen("compose")}>← Edit selections</button>
+              <button type="button" className="backLink" onClick={() => setScreen("compose")}>← Edit selections</button>
 
               <div className="successGlyph">✓</div>
               <span className="eyebrow">STEP 03</span>
@@ -380,16 +459,16 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                   aria-label="Generated review"
                 />
                 <div className="editorToolbar">
-                  <button disabled={isGenerating} onClick={() => void createDraft(variation + 1)}>
+                  <button type="button" disabled={isGenerating} onClick={() => void createDraft(variation + 1)}>
                     {isGenerating ? "Generating…" : "↻ Try another"}
                   </button>
-                  <button onClick={() => void handleCopy()}>{copied ? "✓ Copied" : "⧉ Copy"}</button>
+                  <button type="button" onClick={() => void handleCopy()}>{copied ? "✓ Copied" : "⧉ Copy"}</button>
                 </div>
               </div>
 
               {error ? <p className="microCopy" role="alert">{error}</p> : null}
 
-              <button className="primaryAction googleAction" onClick={() => void handleGoogle()} disabled={!review.trim()}>
+              <button type="button" className="primaryAction googleAction" onClick={() => void handleGoogle()} disabled={!review.trim() || !location?.googleReviewUrl}>
                 <span className="googleG">G</span>
                 <span>{copied ? "Copied — open Google review" : "Copy & open Google review"}</span>
                 <span className="actionArrow">↗</span>
@@ -403,7 +482,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                 </div>
               </div>
 
-              <button className="restartLink" onClick={reset}>Restart demo</button>
+              <button type="button" className="restartLink" onClick={reset}>Restart demo</button>
             </div>
           )}
         </div>
@@ -418,7 +497,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
         <div className="partnerHero">
           <span className="panelEyebrow">QR REVIEW SYSTEM</span>
           <h2>From a real-world scan to a Google review with trustworthy analytics.</h2>
-          <p>QR-aware sessions, retry-safe generation and neutral review drafting are built into the foundation before merchant dashboards are added.</p>
+          <p>QR-aware sessions, retry-safe generation, merchant management and neutral review drafting now share one production-oriented foundation.</p>
         </div>
 
         <div className="flowList">
@@ -447,7 +526,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
 
         <div className="panelFootnote">
           <span>Customer flow remains intentionally frictionless.</span>
-          <span>Next after hardening: merchant auth + management.</span>
+          <span>Merchant auth, QR management and analytics are active.</span>
         </div>
       </aside>
     </main>

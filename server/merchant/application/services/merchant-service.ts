@@ -1,6 +1,12 @@
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
-import { AuthenticationError, ForbiddenError, NotFoundError, ValidationError } from "@/server/core/errors";
+import {
+  AuthenticationError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "@/server/core/errors";
 import type { MerchantRepository } from "@/server/merchant/application/ports/merchant-repository";
 import type { MerchantIdentity, MerchantLocation, MerchantRole } from "@/server/merchant/domain/merchant";
 import { createSessionToken, hashSessionToken } from "@/server/auth/session-token";
@@ -13,6 +19,10 @@ function slugify(value: string) {
 
 function randomSuffix(bytes = 4) {
   return randomBytes(bytes).toString("base64url").toLowerCase();
+}
+
+function hasDatabaseCode(error: unknown, code: string) {
+  return typeof error === "object" && error !== null && "code" in error && (error as { code?: unknown }).code === code;
 }
 
 export class MerchantService {
@@ -70,17 +80,24 @@ export class MerchantService {
 
   async createLocation(identity: MerchantIdentity, input: { name: string; subtitle?: string; googlePlaceId: string; publicId?: string }) {
     this.assertCanWrite(identity);
-    const publicId = slugify(input.publicId || input.name);
-    if (publicId.length < 2) throw new ValidationError("A valid location identifier is required.");
+    const publicId = await this.resolveLocationPublicId(input.publicId, input.name);
     const googlePlaceId = input.googlePlaceId.trim();
-    return this.repository.createLocation(identity.organizationId, {
-      publicId,
-      name: input.name.trim(),
-      subtitle: input.subtitle?.trim() || "Fast feedback. No login required.",
-      googlePlaceId,
-      googleReviewUrl: `https://search.google.com/local/writereview?placeid=${encodeURIComponent(googlePlaceId)}`,
-      isActive: true,
-    });
+
+    try {
+      return await this.repository.createLocation(identity.organizationId, {
+        publicId,
+        name: input.name.trim(),
+        subtitle: input.subtitle?.trim() || "Fast feedback. No login required.",
+        googlePlaceId,
+        googleReviewUrl: `https://search.google.com/local/writereview?placeid=${encodeURIComponent(googlePlaceId)}`,
+        isActive: true,
+      });
+    } catch (error) {
+      if (hasDatabaseCode(error, "23505")) {
+        throw new ConflictError("That public location identifier was just taken. Please try again.", "LOCATION_PUBLIC_ID_TAKEN");
+      }
+      throw error;
+    }
   }
 
   async updateLocation(identity: MerchantIdentity, locationId: string, input: { name?: string; subtitle?: string; googlePlaceId?: string; isActive?: boolean }) {
@@ -94,6 +111,7 @@ export class MerchantService {
       patch.googleReviewUrl = `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`;
     }
     if (input.isActive !== undefined) patch.isActive = input.isActive;
+
     const updated = await this.repository.updateLocation(identity.organizationId, locationId, patch);
     if (!updated) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
     return updated;
@@ -105,22 +123,95 @@ export class MerchantService {
 
   async createQrCode(identity: MerchantIdentity, input: { locationId: string; name: string; sourceType?: string; reference?: string }) {
     this.assertCanWrite(identity);
+
+    const initialLocation = await this.repository.getLocation(identity.organizationId, input.locationId);
+    if (!initialLocation) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
+    if (!initialLocation.isActive) {
+      throw new ConflictError("Activate the location before creating a QR code.", "LOCATION_INACTIVE");
+    }
+
     const base = slugify(input.name) || "qr";
-    const publicToken = `${base}-${randomSuffix(5)}`;
-    return this.repository.createQrCode(identity.organizationId, {
-      locationId: input.locationId,
-      publicToken,
-      name: input.name.trim(),
-      sourceType: slugify(input.sourceType || "generic") || "generic",
-      reference: input.reference?.trim() || null,
-    });
+    const sourceType = slugify(input.sourceType || "generic") || "generic";
+
+    // Bounded attempts handle the extremely rare random-token uniqueness race without creating a retry loop.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const publicToken = `${base}-${randomSuffix(5)}`;
+      try {
+        return await this.repository.createQrCode(identity.organizationId, {
+          locationId: input.locationId,
+          publicToken,
+          name: input.name.trim(),
+          sourceType,
+          reference: input.reference?.trim() || null,
+        });
+      } catch (error) {
+        const currentLocation = await this.repository.getLocation(identity.organizationId, input.locationId);
+        if (!currentLocation) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
+        if (!currentLocation.isActive || hasDatabaseCode(error, "23514")) {
+          throw new ConflictError("Activate the location before creating a QR code.", "LOCATION_INACTIVE");
+        }
+        if (hasDatabaseCode(error, "23505")) continue;
+        throw error;
+      }
+    }
+
+    throw new ConflictError("Could not allocate a unique QR token. Please try again.", "QR_TOKEN_CONFLICT");
   }
 
   async updateQrCodeStatus(identity: MerchantIdentity, qrCodeId: string, isActive: boolean) {
     this.assertCanWrite(identity);
-    const updated = await this.repository.updateQrCodeStatus(identity.organizationId, qrCodeId, isActive);
-    if (!updated) throw new NotFoundError("QR code not found.", "QR_CODE_NOT_FOUND");
-    return updated;
+
+    const qrCode = await this.repository.getQrCode(identity.organizationId, qrCodeId);
+    if (!qrCode) throw new NotFoundError("QR code not found.", "QR_CODE_NOT_FOUND");
+
+    if (isActive) {
+      const location = await this.repository.getLocation(identity.organizationId, qrCode.locationId);
+      if (!location) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
+      if (!location.isActive) {
+        throw new ConflictError("Activate the location before activating this QR code.", "LOCATION_INACTIVE");
+      }
+    }
+
+    try {
+      const updated = await this.repository.updateQrCodeStatus(identity.organizationId, qrCodeId, isActive);
+      if (!updated) {
+        if (isActive) {
+          const location = await this.repository.getLocation(identity.organizationId, qrCode.locationId);
+          if (location && !location.isActive) {
+            throw new ConflictError("Activate the location before activating this QR code.", "LOCATION_INACTIVE");
+          }
+        }
+        throw new NotFoundError("QR code not found.", "QR_CODE_NOT_FOUND");
+      }
+      return updated;
+    } catch (error) {
+      if (hasDatabaseCode(error, "23514")) {
+        throw new ConflictError("Activate the location before activating this QR code.", "LOCATION_INACTIVE");
+      }
+      throw error;
+    }
+  }
+
+  private async resolveLocationPublicId(requestedPublicId: string | undefined, name: string) {
+    const base = slugify(requestedPublicId || name);
+    if (base.length < 2) throw new ValidationError("A valid location identifier is required.");
+
+    if (requestedPublicId) {
+      if (!(await this.repository.isLocationPublicIdAvailable(base))) {
+        throw new ConflictError("That public location identifier is already in use.", "LOCATION_PUBLIC_ID_TAKEN");
+      }
+      return base;
+    }
+
+    if (await this.repository.isLocationPublicIdAvailable(base)) return base;
+
+    // Bounded attempts avoid an unbounded retry loop while making auto-generated IDs collision-safe.
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const candidate = `${base}-${randomSuffix(3)}`.slice(0, 80);
+      if (await this.repository.isLocationPublicIdAvailable(candidate)) return candidate;
+    }
+
+    throw new ConflictError("Could not allocate a unique public location identifier. Please try again.", "LOCATION_PUBLIC_ID_CONFLICT");
   }
 
   private assertCanWrite(identity: MerchantIdentity) {
