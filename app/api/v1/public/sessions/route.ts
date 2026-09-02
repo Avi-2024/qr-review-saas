@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
-    const decision = getSessionRateLimiter().check(`session:${ip}`);
+    const decision = await getSessionRateLimiter().check(`session:${ip}`);
     if (!decision.allowed) throw new RateLimitError();
 
     const body = startSessionSchema.parse(await request.json());
