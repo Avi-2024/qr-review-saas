@@ -1,0 +1,354 @@
+.customerFlowV2 .customerHeader {
+  padding: 20px 22px 18px;
+}
+
+.customerFlowV2 .customerHeader h1 {
+  margin-top: 0;
+}
+
+.customerFlowV2 .customerHeader p {
+  max-width: 300px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.customerFlowV2 .composePane {
+  padding-bottom: 0;
+}
+
+.customerFlowV2 .customerQuestion {
+  padding-top: 4px;
+}
+
+.customerFlowV2 .customerQuestion h2 {
+  margin-top: 0;
+}
+
+.customerFlowV2 .topicSection {
+  transition: opacity .2s ease;
+}
+
+.customerFlowV2 .topicSection:not(.ready) {
+  opacity: .58;
+}
+
+.customerFlowV2 .topicChip:disabled {
+  cursor: default;
+  opacity: .45;
+  transform: none;
+}
+
+.customerFlowV2 .topicChip.active:disabled {
+  opacity: 1;
+}
+
+.customerFlowV2 .optionalNoteSection {
+  padding: 14px 0 6px;
+}
+
+.customerFlowV2 .noteDisclosure {
+  width: 100%;
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: #425048;
+  text-align: left;
+  cursor: pointer;
+}
+
+.customerFlowV2 .noteDisclosure > span {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #f1f4f1;
+  color: #496151;
+  font-weight: 850;
+}
+
+.customerFlowV2 .noteDisclosure strong {
+  font-size: 11px;
+}
+
+.customerFlowV2 .noteDisclosure small {
+  color: #8d9790;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.customerFlowV2 .noteReveal {
+  animation: customerReveal .18s ease-out both;
+}
+
+@keyframes customerReveal {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.customerFlowV2 .noteMeta {
+  align-items: center;
+}
+
+.customerFlowV2 .inlinePolishAction {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #3f654d;
+  font-size: 9px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.customerFlowV2 .inlinePolishAction:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+.customerFlowV2 .customerError {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #f0d6d1;
+  border-radius: 11px;
+  background: #fff7f5;
+  color: #8b4c42;
+  font-size: 10px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.customerFlowV2 .composeStickyAction {
+  position: sticky;
+  bottom: 0;
+  z-index: 8;
+  margin: 8px -24px 0;
+  padding: 12px 24px calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.96) 22%, #fff 58%);
+  backdrop-filter: blur(12px);
+}
+
+.customerFlowV2 .composeStickyAction .primaryAction {
+  margin-top: 0;
+}
+
+.customerFlowV2 .composeStickyAction > p {
+  margin: 7px 0 0;
+  color: #8d9790;
+  font-size: 8.5px;
+  text-align: center;
+}
+
+.customerFlowV2 .customerReviewPane {
+  text-align: left;
+}
+
+.customerFlowV2 .reviewReadyHeader {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.customerFlowV2 .reviewReadyHeader .successGlyph {
+  width: 48px;
+  height: 48px;
+  margin: 0;
+}
+
+.customerFlowV2 .reviewReadyHeader h2 {
+  margin: 0 0 4px;
+  font-size: 23px;
+}
+
+.customerFlowV2 .reviewReadyHeader .reviewLead {
+  margin: 0;
+  max-width: none;
+}
+
+.customerFlowV2 .reviewEditor {
+  margin-top: 16px;
+}
+
+.customerFlowV2 .reviewEditor textarea {
+  min-height: 150px;
+}
+
+.customerFlowV2 .handoffStatus {
+  margin-top: 10px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #edf5ef;
+  color: #356047;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.customerFlowV2 .googleAction {
+  margin-top: 14px;
+}
+
+.customerFlowV2 .pasteInstruction {
+  margin: 9px 0 0;
+  color: #77827b;
+  font-size: 9.5px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.customerFlowV2 .secondaryReviewActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.customerFlowV2 .secondaryReviewActions button {
+  min-height: 42px;
+  border: 1px solid #e0e6e0;
+  border-radius: 12px;
+  background: #fafbf9;
+  color: #536158;
+  font-size: 9.5px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.customerFlowV2 .secondaryReviewActions button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.customerFlowV2 .restartLink {
+  display: block;
+  margin: 14px auto 0;
+}
+
+@media (max-width: 1020px) {
+  .customerFlowV2 .experienceStage {
+    min-height: 100svh;
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .customerFlowV2 .phoneCard {
+    width: 100%;
+    min-height: 100svh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .customerFlowV2 .partnerPanel {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .customerFlowV2 .customerHeader {
+    padding: 16px 18px 14px;
+  }
+
+  .customerFlowV2 .brandMark {
+    width: 46px;
+    height: 46px;
+    flex-basis: 46px;
+    border-radius: 14px;
+  }
+
+  .customerFlowV2 .contentPane {
+    padding: 18px 18px 0;
+  }
+
+  .customerFlowV2 .customerQuestion {
+    padding-bottom: 17px;
+  }
+
+  .customerFlowV2 .customerQuestion h2,
+  .customerFlowV2 .reviewReadyHeader h2 {
+    font-size: 24px;
+  }
+
+  .customerFlowV2 .ratingGrid {
+    gap: 7px;
+    margin-top: 16px;
+  }
+
+  .customerFlowV2 .ratingButton {
+    min-width: 0;
+    height: 52px;
+    border-radius: 13px;
+  }
+
+  .customerFlowV2 .ratingButton span {
+    font-size: 24px;
+  }
+
+  .customerFlowV2 .ratingFeedback {
+    gap: 8px;
+    font-size: 9.5px;
+  }
+
+  .customerFlowV2 .sectionBlock {
+    padding: 17px 0;
+  }
+
+  .customerFlowV2 .sectionHeading h3 {
+    margin-top: 0;
+  }
+
+  .customerFlowV2 .chipGrid {
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .customerFlowV2 .topicChip {
+    min-height: 48px;
+    padding: 9px;
+  }
+
+  .customerFlowV2 .composeStickyAction {
+    margin-left: -18px;
+    margin-right: -18px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .customerFlowV2 .primaryAction {
+    min-height: 54px;
+    border-radius: 14px;
+    font-size: 12.5px;
+  }
+
+  .customerFlowV2 .customerReviewPane {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 380px) {
+  .customerFlowV2 .customerHeader p {
+    display: none;
+  }
+
+  .customerFlowV2 .chipGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .customerFlowV2 .ratingGrid {
+    gap: 5px;
+  }
+
+  .customerFlowV2 .ratingButton {
+    height: 48px;
+  }
+
+  .customerFlowV2 .secondaryReviewActions {
+    grid-template-columns: 1fr;
+  }
+}
