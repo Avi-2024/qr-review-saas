@@ -2,18 +2,13 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { AuthenticationError, ForbiddenError, NotFoundError, ValidationError } from "@/server/core/errors";
 import type { MerchantRepository } from "@/server/merchant/application/ports/merchant-repository";
-import type { MerchantIdentity, MerchantRole } from "@/server/merchant/domain/merchant";
+import type { MerchantIdentity, MerchantLocation, MerchantRole } from "@/server/merchant/domain/merchant";
 import { createSessionToken, hashSessionToken } from "@/server/auth/session-token";
 
 const WRITE_ROLES: MerchantRole[] = ["owner", "admin", "manager"];
 
 function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64);
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 64);
 }
 
 function randomSuffix(bytes = 4) {
@@ -29,7 +24,6 @@ export class MerchantService {
   async login(input: { email: string; password: string; userAgent?: string; ipHash?: string }) {
     const account = await this.repository.findUserForLogin(input.email.trim().toLowerCase());
     if (!account) throw new AuthenticationError("Invalid email or password.", "INVALID_CREDENTIALS");
-
     const valid = await bcrypt.compare(input.password, account.passwordHash);
     if (!valid) throw new AuthenticationError("Invalid email or password.", "INVALID_CREDENTIALS");
 
@@ -91,7 +85,7 @@ export class MerchantService {
 
   async updateLocation(identity: MerchantIdentity, locationId: string, input: { name?: string; subtitle?: string; googlePlaceId?: string; isActive?: boolean }) {
     this.assertCanWrite(identity);
-    const patch: Record<string, unknown> = {};
+    const patch: Partial<Omit<MerchantLocation, "id" | "createdAt">> = {};
     if (input.name !== undefined) patch.name = input.name.trim();
     if (input.subtitle !== undefined) patch.subtitle = input.subtitle.trim();
     if (input.googlePlaceId !== undefined) {
