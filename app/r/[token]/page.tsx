@@ -6,5 +6,5 @@ export default async function QrReviewPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  return <ReviewExperience qrToken={token} />;
+  return <ReviewExperience key={token} qrToken={token} />;
 }
