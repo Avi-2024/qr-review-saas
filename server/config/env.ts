@@ -5,6 +5,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1).optional(),
   REVIEW_REPOSITORY: z.enum(["memory", "postgres"]).optional(),
   IP_HASH_SECRET: z.string().min(16).optional(),
+  AUTH_COOKIE_NAME: z.string().min(3).max(80).default("qr_merchant_session"),
+  AUTH_SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(24 * 30).default(168),
   REVIEW_SESSION_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(60),
   REVIEW_SESSION_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
   REVIEW_GENERATE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(12),
