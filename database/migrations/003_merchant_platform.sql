@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS merchant_users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_merchant_users_email_lower
+  ON merchant_users(LOWER(email));
+
 CREATE TABLE IF NOT EXISTS organization_memberships (
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES merchant_users(id) ON DELETE CASCADE,
@@ -21,15 +24,19 @@ CREATE INDEX IF NOT EXISTS idx_organization_memberships_user
 
 CREATE TABLE IF NOT EXISTS merchant_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES merchant_users(id) ON DELETE CASCADE,
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  organization_id UUID NOT NULL,
   token_hash TEXT NOT NULL UNIQUE,
   user_agent TEXT,
   ip_hash TEXT,
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  revoked_at TIMESTAMPTZ
+  revoked_at TIMESTAMPTZ,
+  CONSTRAINT fk_merchant_session_membership
+    FOREIGN KEY (organization_id, user_id)
+    REFERENCES organization_memberships(organization_id, user_id)
+    ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_merchant_sessions_user
