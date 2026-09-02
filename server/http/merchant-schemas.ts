@@ -29,3 +29,20 @@ export const merchantQrCreateSchema = z.object({
 export const merchantQrStatusSchema = z.object({
   isActive: z.boolean(),
 });
+
+export const merchantOnboardingBusinessSchema = z.object({
+  businessName: z.string().trim().min(2).max(120),
+  businessType: z.string().trim().min(2).max(80),
+});
+
+export const merchantOnboardingLocationSchema = merchantLocationCreateSchema;
+
+export const merchantOnboardingTopicsSchema = z.object({
+  locationId: z.string().uuid(),
+  topics: z.array(z.object({
+    label: z.string().trim().min(2).max(60),
+    icon: z.string().trim().max(12).optional(),
+  })).min(3).max(8),
+});
+
+export const merchantOnboardingQrSchema = merchantQrCreateSchema;

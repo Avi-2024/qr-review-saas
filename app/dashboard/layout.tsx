@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import LogoutButton from "@/components/merchant/LogoutButton";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";
 
@@ -11,6 +12,7 @@ const nav = [
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const identity = await requireMerchantIdentity();
+  if (!identity.onboardingCompletedAt) redirect("/onboarding");
 
   return (
     <div className="merchantApp merchantShell">

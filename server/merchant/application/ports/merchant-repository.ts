@@ -3,7 +3,9 @@ import type {
   FunnelPoint,
   MerchantIdentity,
   MerchantLocation,
+  MerchantOrganizationProfile,
   MerchantQrCode,
+  MerchantTopicConfig,
   TrendPoint,
 } from "@/server/merchant/domain/merchant";
 
@@ -13,6 +15,14 @@ export interface MerchantRepository {
   getIdentityBySessionTokenHash(tokenHash: string): Promise<MerchantIdentity | null>;
   revokeSession(tokenHash: string): Promise<void>;
   touchSession(tokenHash: string): Promise<void>;
+
+  getOrganizationProfile(organizationId: string): Promise<MerchantOrganizationProfile | null>;
+  saveOnboardingBusiness(organizationId: string, input: { name: string; businessType: string }): Promise<MerchantOrganizationProfile | null>;
+  createOnboardingLocation(organizationId: string, input: Omit<MerchantLocation, "id" | "createdAt">): Promise<MerchantLocation | null>;
+  listLocationTopics(organizationId: string, locationId: string): Promise<MerchantTopicConfig[]>;
+  replaceOnboardingTopics(organizationId: string, locationId: string, topics: Array<{ label: string; icon: string }>): Promise<MerchantTopicConfig[] | null>;
+  createOnboardingQrCode(organizationId: string, input: { locationId: string; publicToken: string; name: string; sourceType: string; reference?: string | null }): Promise<MerchantQrCode | null>;
+  completeOnboarding(organizationId: string): Promise<MerchantOrganizationProfile | null>;
 
   getDashboardSummary(organizationId: string, days: number): Promise<DashboardSummary>;
   getFunnel(organizationId: string, days: number): Promise<FunnelPoint[]>;

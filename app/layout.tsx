@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./customer-flow.css";
 import "./merchant.css";
+import "./onboarding.css";
 
 export const metadata: Metadata = {
   title: "QR Review · Customer Feedback & Reputation",
