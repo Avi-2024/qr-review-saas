@@ -4,7 +4,7 @@ import { getOptionalMerchantIdentity } from "@/server/auth/merchant-session";
 
 export default async function LoginPage() {
   const identity = await getOptionalMerchantIdentity();
-  if (identity) redirect("/dashboard");
+  if (identity) redirect(identity.onboardingCompletedAt ? "/dashboard" : "/onboarding");
 
   return (
     <main className="merchantLogin">
