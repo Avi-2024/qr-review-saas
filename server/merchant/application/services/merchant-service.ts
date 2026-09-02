@@ -21,6 +21,10 @@ function randomSuffix(bytes = 4) {
   return randomBytes(bytes).toString("base64url").toLowerCase();
 }
 
+function hasDatabaseCode(error: unknown, code: string) {
+  return typeof error === "object" && error !== null && "code" in error && (error as { code?: unknown }).code === code;
+}
+
 export class MerchantService {
   constructor(
     private readonly repository: MerchantRepository,
@@ -79,14 +83,21 @@ export class MerchantService {
     const publicId = await this.resolveLocationPublicId(input.publicId, input.name);
     const googlePlaceId = input.googlePlaceId.trim();
 
-    return this.repository.createLocation(identity.organizationId, {
-      publicId,
-      name: input.name.trim(),
-      subtitle: input.subtitle?.trim() || "Fast feedback. No login required.",
-      googlePlaceId,
-      googleReviewUrl: `https://search.google.com/local/writereview?placeid=${encodeURIComponent(googlePlaceId)}`,
-      isActive: true,
-    });
+    try {
+      return await this.repository.createLocation(identity.organizationId, {
+        publicId,
+        name: input.name.trim(),
+        subtitle: input.subtitle?.trim() || "Fast feedback. No login required.",
+        googlePlaceId,
+        googleReviewUrl: `https://search.google.com/local/writereview?placeid=${encodeURIComponent(googlePlaceId)}`,
+        isActive: true,
+      });
+    } catch (error) {
+      if (hasDatabaseCode(error, "23505")) {
+        throw new ConflictError("That public location identifier was just taken. Please try again.", "LOCATION_PUBLIC_ID_TAKEN");
+      }
+      throw error;
+    }
   }
 
   async updateLocation(identity: MerchantIdentity, locationId: string, input: { name?: string; subtitle?: string; googlePlaceId?: string; isActive?: boolean }) {
@@ -113,21 +124,38 @@ export class MerchantService {
   async createQrCode(identity: MerchantIdentity, input: { locationId: string; name: string; sourceType?: string; reference?: string }) {
     this.assertCanWrite(identity);
 
-    const location = await this.repository.getLocation(identity.organizationId, input.locationId);
-    if (!location) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
-    if (!location.isActive) {
+    const initialLocation = await this.repository.getLocation(identity.organizationId, input.locationId);
+    if (!initialLocation) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
+    if (!initialLocation.isActive) {
       throw new ConflictError("Activate the location before creating a QR code.", "LOCATION_INACTIVE");
     }
 
     const base = slugify(input.name) || "qr";
-    const publicToken = `${base}-${randomSuffix(5)}`;
-    return this.repository.createQrCode(identity.organizationId, {
-      locationId: input.locationId,
-      publicToken,
-      name: input.name.trim(),
-      sourceType: slugify(input.sourceType || "generic") || "generic",
-      reference: input.reference?.trim() || null,
-    });
+    const sourceType = slugify(input.sourceType || "generic") || "generic";
+
+    // Bounded attempts handle the extremely rare random-token uniqueness race without creating a retry loop.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const publicToken = `${base}-${randomSuffix(5)}`;
+      try {
+        return await this.repository.createQrCode(identity.organizationId, {
+          locationId: input.locationId,
+          publicToken,
+          name: input.name.trim(),
+          sourceType,
+          reference: input.reference?.trim() || null,
+        });
+      } catch (error) {
+        const currentLocation = await this.repository.getLocation(identity.organizationId, input.locationId);
+        if (!currentLocation) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
+        if (!currentLocation.isActive || hasDatabaseCode(error, "23514")) {
+          throw new ConflictError("Activate the location before creating a QR code.", "LOCATION_INACTIVE");
+        }
+        if (hasDatabaseCode(error, "23505")) continue;
+        throw error;
+      }
+    }
+
+    throw new ConflictError("Could not allocate a unique QR token. Please try again.", "QR_TOKEN_CONFLICT");
   }
 
   async updateQrCodeStatus(identity: MerchantIdentity, qrCodeId: string, isActive: boolean) {
@@ -144,9 +172,24 @@ export class MerchantService {
       }
     }
 
-    const updated = await this.repository.updateQrCodeStatus(identity.organizationId, qrCodeId, isActive);
-    if (!updated) throw new NotFoundError("QR code not found.", "QR_CODE_NOT_FOUND");
-    return updated;
+    try {
+      const updated = await this.repository.updateQrCodeStatus(identity.organizationId, qrCodeId, isActive);
+      if (!updated) {
+        if (isActive) {
+          const location = await this.repository.getLocation(identity.organizationId, qrCode.locationId);
+          if (location && !location.isActive) {
+            throw new ConflictError("Activate the location before activating this QR code.", "LOCATION_INACTIVE");
+          }
+        }
+        throw new NotFoundError("QR code not found.", "QR_CODE_NOT_FOUND");
+      }
+      return updated;
+    } catch (error) {
+      if (hasDatabaseCode(error, "23514")) {
+        throw new ConflictError("Activate the location before activating this QR code.", "LOCATION_INACTIVE");
+      }
+      throw error;
+    }
   }
 
   private async resolveLocationPublicId(requestedPublicId: string | undefined, name: string) {
