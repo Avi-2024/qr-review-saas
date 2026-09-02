@@ -12,6 +12,7 @@ import {
   type LocationDto,
 } from "@/lib/review-api";
 
+const MAX_TOPICS = 3;
 const ratingLabels = ["", "Very poor", "Could be better", "Okay", "Good", "Excellent"];
 
 function businessInitials(name?: string) {
@@ -68,11 +69,14 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
   const [rating, setRating] = useState<Rating | 0>(0);
   const [selected, setSelected] = useState<string[]>([]);
   const [note, setNote] = useState("");
+  const [noteOpen, setNoteOpen] = useState(false);
   const [review, setReview] = useState("");
   const [variation, setVariation] = useState(0);
   const [screen, setScreen] = useState<"compose" | "review">("compose");
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isOpeningGoogle, setIsOpeningGoogle] = useState(false);
+  const [handoffMessage, setHandoffMessage] = useState("");
   const [error, setError] = useState("");
 
   const qrTokenRef = useRef(qrToken);
@@ -84,11 +88,11 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
   const editedDraftsRef = useRef(new Set<string>());
 
   const selectedCount = selected.length;
-  const progress = screen === "review" ? 100 : rating ? 58 : 18;
+  const isDemo = qrToken === "mangal-counter-demo";
   const contextLabel = useMemo(() => {
-    if (!rating) return "Start with a rating";
-    if (!selectedCount) return "Now add a few details";
-    return `${selectedCount} detail${selectedCount === 1 ? "" : "s"} selected`;
+    if (!rating) return "Tap a star to begin";
+    if (!selectedCount) return "Add a few details if you want";
+    return `${selectedCount} of ${MAX_TOPICS} details selected`;
   }, [rating, selectedCount]);
 
   useEffect(() => {
@@ -105,10 +109,13 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
       setRating(0);
       setSelected([]);
       setNote("");
+      setNoteOpen(false);
       setReview("");
       setVariation(0);
       setScreen("compose");
       setCopied(false);
+      setIsOpeningGoogle(false);
+      setHandoffMessage("");
       setError("");
     }
 
@@ -118,6 +125,15 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
     // ensureSession uses refs as its source of truth, which avoids stale React state and Strict Mode duplicate sessions.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qrToken]);
+
+  useEffect(() => {
+    const handlePageShow = () => {
+      setIsOpeningGoogle(false);
+      setHandoffMessage("");
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
 
   function getClientSessionId() {
     if (!clientSessionIdRef.current) clientSessionIdRef.current = crypto.randomUUID();
@@ -144,9 +160,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
         return created.sessionId;
       })
       .finally(() => {
-        if (sessionPromiseRef.current === promise) {
-          sessionPromiseRef.current = null;
-        }
+        if (sessionPromiseRef.current === promise) sessionPromiseRef.current = null;
       });
 
     sessionPromiseRef.current = promise;
@@ -188,7 +202,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
 
   function toggleTopic(id: string) {
     const isSelected = selected.includes(id);
-    if (!isSelected && selected.length >= 4) return;
+    if (!isSelected && selected.length >= MAX_TOPICS) return;
 
     setSelected((current) => isSelected
       ? current.filter((item) => item !== id)
@@ -242,7 +256,6 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
           (cause.code === "SESSION_EXPIRED" || cause.code === "SESSION_NOT_FOUND");
         if (!sessionExpired) throw cause;
 
-        // One bounded recovery attempt: create a fresh scan session, replay current funnel state, then generate once.
         activeSessionId = await renewSession();
         pending = { variation: nextVariation, requestId: crypto.randomUUID() };
         pendingGenerationRef.current = pending;
@@ -261,6 +274,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
       setDraftId(generated.draftId);
       setVariation(nextVariation);
       setCopied(false);
+      setHandoffMessage("");
       setScreen("review");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not generate the review. Please try again.");
@@ -272,6 +286,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
   function editGeneratedReview(value: string) {
     setReview(value);
     setCopied(false);
+    setHandoffMessage("");
 
     if (draftId && !editedDraftsRef.current.has(draftId)) {
       editedDraftsRef.current.add(draftId);
@@ -285,78 +300,77 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
     setCopied(didCopy);
 
     if (!didCopy) {
-      setError("Automatic copy was blocked by the browser. Select the review text and copy it manually.");
+      setError("Automatic copy was blocked. Select the review text and copy it manually.");
       return;
     }
 
+    setHandoffMessage("Review copied ✓");
     if (draftId) void recordReviewEvent(draftId, "REVIEW_COPIED").catch(() => undefined);
   }
 
   async function handleGoogle() {
-    if (!location?.googleReviewUrl) {
-      setError("The Google review link is not available for this QR code. Please rescan or contact the business.");
+    if (!location?.googleReviewUrl || isOpeningGoogle) {
+      if (!location?.googleReviewUrl) {
+        setError("The Google review link is not available for this QR code. Please contact the business.");
+      }
       return;
     }
 
+    setError("");
+    setIsOpeningGoogle(true);
     const didCopy = await copyText(review);
     setCopied(didCopy);
+    setHandoffMessage(didCopy ? "Review copied ✓ Opening Google…" : "Opening Google…");
 
     if (draftId) {
       if (didCopy) void recordReviewEvent(draftId, "REVIEW_COPIED").catch(() => undefined);
       recordReviewEventOnExit(draftId, "GOOGLE_REVIEW_OPENED");
     }
 
-    window.location.assign(location.googleReviewUrl);
+    window.setTimeout(() => {
+      window.location.assign(location.googleReviewUrl);
+    }, didCopy ? 450 : 120);
   }
 
   function reset() {
-    // Reset the UI within the same physical scan session so analytics do not count a fake second QR scan.
     pendingGenerationRef.current = null;
     editedDraftsRef.current.clear();
     setDraftId(null);
     setRating(0);
     setSelected([]);
     setNote("");
+    setNoteOpen(false);
     setReview("");
     setVariation(0);
     setCopied(false);
+    setIsOpeningGoogle(false);
+    setHandoffMessage("");
     setError("");
     setScreen("compose");
   }
 
   return (
-    <main className="productShell">
-      <section className="experienceStage" aria-label="Customer review demo">
+    <main className="productShell customerFlowV2">
+      <section className="experienceStage" aria-label="Customer review">
         <div className="ambient ambientOne" />
         <div className="ambient ambientTwo" />
 
         <div className="phoneCard">
-          <header className="merchantHeader">
+          <header className="merchantHeader customerHeader">
             <div className="merchantBrand">
               <div className="brandMark" aria-hidden="true">{businessInitials(location?.name)}</div>
               <div>
-                <span className="eyebrow">QUICK REVIEW</span>
-                <h1>{location?.name || "Loading business…"}</h1>
-                <p>{location?.subtitle || "Preparing your review experience."}</p>
+                <h1>{location?.name || "Loading…"}</h1>
+                <p>{location?.subtitle || "Share your experience in a few taps."}</p>
               </div>
             </div>
-            <span className="secureBadge">Secure</span>
           </header>
 
-          <div className="progressWrap" aria-label="Review progress">
-            <div className="progressMeta">
-              <span>{screen === "compose" ? "Your experience" : "Ready to post"}</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="progressTrack"><span style={{ width: `${progress}%` }} /></div>
-          </div>
-
           {screen === "compose" ? (
-            <div className="contentPane">
-              <section className="heroQuestion">
-                <span className="eyebrow">STEP 01</span>
+            <div className="contentPane composePane">
+              <section className="heroQuestion customerQuestion">
                 <h2>How was your experience?</h2>
-                <p>One tap is enough to get started.</p>
+                <p>Your rating sets the overall tone of your review.</p>
 
                 <div className="ratingGrid" role="radiogroup" aria-label="Select rating">
                   {[1, 2, 3, 4, 5].map((value) => (
@@ -378,19 +392,19 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                 </div>
               </section>
 
-              <section className="sectionBlock">
+              <section className={`sectionBlock topicSection ${rating ? "ready" : ""}`}>
                 <div className="sectionHeading">
                   <div>
-                    <span className="eyebrow">STEP 02</span>
                     <h3>What stood out?</h3>
-                    <p>Pick up to 4 neutral topics. Your rating and words control the sentiment.</p>
+                    <p>Choose up to {MAX_TOPICS}. Skip this if your rating says enough.</p>
                   </div>
-                  <span className="counter">{selectedCount}/4</span>
+                  <span className="counter">{selectedCount}/{MAX_TOPICS}</span>
                 </div>
 
                 <div className="chipGrid">
                   {(location?.topics ?? []).map((topic) => {
                     const isActive = selected.includes(topic.id);
+                    const isUnavailable = !isActive && selectedCount >= MAX_TOPICS;
                     return (
                       <button
                         key={topic.id}
@@ -398,6 +412,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                         className={`topicChip ${isActive ? "active" : ""}`}
                         onClick={() => toggleTopic(topic.id)}
                         aria-pressed={isActive}
+                        disabled={!rating || isUnavailable}
                       >
                         <span className="chipIcon">{topic.icon}</span>
                         <span>{topic.label}</span>
@@ -408,60 +423,71 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                 </div>
               </section>
 
-              <section className="sectionBlock noteSection">
-                <div className="sectionHeading compact">
-                  <div>
-                    <span className="eyebrow">OPTIONAL</span>
-                    <h3>Add your own words</h3>
-                    <p>Your note is preserved so the draft never invents a specific experience.</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="textAction"
-                    onClick={() => updateNote(polishText(note))}
-                    disabled={!note.trim()}
-                  >
-                    ✦ Enhance
-                  </button>
-                </div>
+              <section className="optionalNoteSection">
+                <button
+                  type="button"
+                  className="noteDisclosure"
+                  onClick={() => setNoteOpen((open) => !open)}
+                  aria-expanded={noteOpen}
+                >
+                  <span>{noteOpen ? "−" : "+"}</span>
+                  <strong>{noteOpen ? "Hide comment" : "Add a comment"}</strong>
+                  <small>Optional</small>
+                </button>
 
-                <div className="noteBox">
-                  <textarea
-                    value={note}
-                    onChange={(event) => updateNote(event.target.value)}
-                    maxLength={180}
-                    placeholder="e.g. communication was clear but the process took a little longer"
-                  />
-                  <div className="noteMeta">
-                    <span>No voice input · no account creation</span>
-                    <span>{note.length}/180</span>
+                {noteOpen ? (
+                  <div className="noteReveal">
+                    <div className="noteBox">
+                      <textarea
+                        value={note}
+                        onChange={(event) => updateNote(event.target.value)}
+                        maxLength={180}
+                        placeholder="Add any detail you want the review to preserve"
+                        autoFocus
+                      />
+                      <div className="noteMeta">
+                        <button
+                          type="button"
+                          className="inlinePolishAction"
+                          onClick={() => updateNote(polishText(note))}
+                          disabled={!note.trim()}
+                        >
+                          ✦ Polish wording
+                        </button>
+                        <span>{note.length}/180</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : null}
               </section>
 
-              {error ? <p className="microCopy" role="alert">{error}</p> : null}
+              {error ? <p className="customerError" role="alert">{error}</p> : null}
 
-              <button
-                type="button"
-                className="primaryAction"
-                disabled={!rating || isGenerating || !location}
-                onClick={() => void createDraft(variation)}
-              >
-                <span className="actionIcon">✦</span>
-                <span>{isGenerating ? "Generating…" : "Generate my review"}</span>
-                <span className="actionArrow">→</span>
-              </button>
-
-              <p className="microCopy">Retry-safe backend generation. No external AI key is required for this partner demo.</p>
+              <div className="composeStickyAction">
+                <button
+                  type="button"
+                  className="primaryAction"
+                  disabled={!rating || isGenerating || !location}
+                  onClick={() => void createDraft(variation)}
+                >
+                  <span className="actionIcon">✦</span>
+                  <span>{isGenerating ? "Writing your review…" : "Generate my review"}</span>
+                  <span className="actionArrow">→</span>
+                </button>
+                <p>Editable before you open Google</p>
+              </div>
             </div>
           ) : (
-            <div className="contentPane reviewPane">
-              <button type="button" className="backLink" onClick={() => setScreen("compose")}>← Edit selections</button>
+            <div className="contentPane reviewPane customerReviewPane">
+              <button type="button" className="backLink" onClick={() => setScreen("compose")}>← Edit rating & details</button>
 
-              <div className="successGlyph">✓</div>
-              <span className="eyebrow">STEP 03</span>
-              <h2>Your review is ready.</h2>
-              <p className="reviewLead">Keep it, edit it, or generate another version. You stay in control.</p>
+              <div className="reviewReadyHeader">
+                <div className="successGlyph">✓</div>
+                <div>
+                  <h2>Your review is ready</h2>
+                  <p className="reviewLead">Read it once, edit anything you want, then continue to Google.</p>
+                </div>
+              </div>
 
               <div className="reviewEditor">
                 <textarea
@@ -469,31 +495,34 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                   onChange={(event) => editGeneratedReview(event.target.value)}
                   aria-label="Generated review"
                 />
-                <div className="editorToolbar">
-                  <button type="button" disabled={isGenerating} onClick={() => void createDraft(variation + 1)}>
-                    {isGenerating ? "Generating…" : "↻ Try another"}
-                  </button>
-                  <button type="button" onClick={() => void handleCopy()}>{copied ? "✓ Copied" : "⧉ Copy"}</button>
-                </div>
               </div>
 
-              {error ? <p className="microCopy" role="alert">{error}</p> : null}
+              {handoffMessage ? <div className="handoffStatus" role="status">{handoffMessage}</div> : null}
+              {error ? <p className="customerError" role="alert">{error}</p> : null}
 
-              <button type="button" className="primaryAction googleAction" onClick={() => void handleGoogle()} disabled={!review.trim() || !location?.googleReviewUrl}>
+              <button
+                type="button"
+                className="primaryAction googleAction"
+                onClick={() => void handleGoogle()}
+                disabled={!review.trim() || !location?.googleReviewUrl || isOpeningGoogle}
+              >
                 <span className="googleG">G</span>
-                <span>{copied ? "Copied — open Google review" : "Copy & open Google review"}</span>
+                <span>{isOpeningGoogle ? "Opening Google…" : "Copy & open Google review"}</span>
                 <span className="actionArrow">↗</span>
               </button>
 
-              <div className="pasteTip">
-                <span className="tipIcon">⌘</span>
-                <div>
-                  <strong>One final action on Google</strong>
-                  <p>Your review is copied when the browser allows it. Paste it into Google’s review box, then tap Post.</p>
-                </div>
+              <p className="pasteInstruction">Paste the copied review into Google, then tap <strong>Post</strong>.</p>
+
+              <div className="secondaryReviewActions">
+                <button type="button" disabled={isGenerating || isOpeningGoogle} onClick={() => void createDraft(variation + 1)}>
+                  {isGenerating ? "Writing…" : "↻ Try another"}
+                </button>
+                <button type="button" disabled={isOpeningGoogle} onClick={() => void handleCopy()}>
+                  {copied ? "✓ Copied" : "⧉ Copy only"}
+                </button>
               </div>
 
-              <button type="button" className="restartLink" onClick={reset}>Restart demo</button>
+              {isDemo ? <button type="button" className="restartLink" onClick={reset}>Restart demo</button> : null}
             </div>
           )}
         </div>
@@ -502,21 +531,21 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
       <aside className="partnerPanel">
         <div className="panelTopline">
           <span className="statusDot" />
-          PARTNER DEMO · HARDENED FULL-STACK FLOW
+          CUSTOMER FLOW · OPTIMIZED
         </div>
 
         <div className="partnerHero">
           <span className="panelEyebrow">QR REVIEW SYSTEM</span>
-          <h2>From a real-world scan to a Google review with trustworthy analytics.</h2>
-          <p>QR-aware sessions, retry-safe generation, merchant management and neutral review drafting now share one production-oriented foundation.</p>
+          <h2>Fewer decisions between a scan and an authentic Google review.</h2>
+          <p>The customer path now prioritizes one rating, up to three optional details, one optional comment and one primary Google handoff.</p>
         </div>
 
         <div className="flowList">
           {[
-            ["01", "Scan", "A QR token starts one idempotent, expiring customer session."],
-            ["02", "Tap", "Rating and neutral topics create measurable funnel events."],
-            ["03", "Generate", "A request key prevents duplicate generation on retries."],
-            ["04", "Post", "Copy/open events survive the Google navigation handoff."],
+            ["01", "Rate", "One-tap 1–5 star sentiment input."],
+            ["02", "Detail", "Up to three neutral topics; completely optional."],
+            ["03", "Generate", "The comment stays collapsed unless the customer needs it."],
+            ["04", "Google", "One primary action copies the draft and opens the Google composer."],
           ].map(([number, title, text]) => (
             <div className="flowItem" key={number}>
               <span>{number}</span>
@@ -529,15 +558,15 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
         </div>
 
         <div className="metricGrid">
-          <div><strong>QR</strong><span>Token-aware</span></div>
-          <div><strong>TTL</strong><span>Expiring sessions</span></div>
-          <div><strong>1×</strong><span>Retry-safe draft</span></div>
-          <div><strong>PG</strong><span>Production persistence</span></div>
+          <div><strong>1</strong><span>Primary CTA</span></div>
+          <div><strong>3</strong><span>Max topics</span></div>
+          <div><strong>0</strong><span>Required text</span></div>
+          <div><strong>1×</strong><span>Google handoff</span></div>
         </div>
 
         <div className="panelFootnote">
-          <span>Customer flow remains intentionally frictionless.</span>
-          <span>Merchant auth, QR management and analytics are active.</span>
+          <span>Customer language is intentionally non-technical.</span>
+          <span>Analytics, idempotency and policy-safe routing remain unchanged.</span>
         </div>
       </aside>
     </main>

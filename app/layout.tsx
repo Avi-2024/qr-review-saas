@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./customer-flow.css";
 import "./merchant.css";
 
 export const metadata: Metadata = {

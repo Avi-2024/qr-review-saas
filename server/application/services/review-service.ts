@@ -60,8 +60,8 @@ export class ReviewService {
     if (!location) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
 
     const uniqueTopicIds = [...new Set(input.topicIds)];
-    if (uniqueTopicIds.length > 4) {
-      throw new ValidationError("A maximum of 4 review topics can be selected.");
+    if (uniqueTopicIds.length > 3) {
+      throw new ValidationError("A maximum of 3 review topics can be selected.");
     }
 
     const topicMap = new Map(location.topics.map((topic) => [topic.id, topic]));
