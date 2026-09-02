@@ -43,16 +43,16 @@ describe("ReviewService", () => {
       sessionId: session.session.id,
       requestId,
       rating: 5,
-      topicIds: ["staff", "pricing"],
-      note: "Prices were a little high but the visit was good overall",
+      topicIds: ["staff", "value"],
+      note: "The overall experience was good, although it felt a little expensive",
       variation: 0,
     });
     const retry = await service.generate({
       sessionId: session.session.id,
       requestId,
       rating: 5,
-      topicIds: ["staff", "pricing"],
-      note: "Prices were a little high but the visit was good overall",
+      topicIds: ["staff", "value"],
+      note: "The overall experience was good, although it felt a little expensive",
       variation: 0,
     });
 
