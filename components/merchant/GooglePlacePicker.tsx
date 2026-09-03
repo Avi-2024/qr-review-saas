@@ -118,9 +118,15 @@ export default function GooglePlacePicker({
         body: JSON.stringify({ placeId: prediction.placeId, sessionToken }),
       });
       const body = await readJson(response);
-      const place = body.data?.place as SelectedGooglePlace;
-      setSelectedPlace(place);
-      onChange(place.placeId);
+      const verifiedPlaceId = String(body.data?.place?.placeId || "");
+      if (!verifiedPlaceId) throw new Error("Could not verify that Google business.");
+
+      setSelectedPlace({
+        placeId: verifiedPlaceId,
+        displayName: prediction.mainText,
+        formattedAddress: prediction.secondaryText,
+      });
+      onChange(verifiedPlaceId);
       setPredictions([]);
       setQuery(prediction.fullText);
     } catch (cause) {
