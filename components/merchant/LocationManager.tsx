@@ -95,10 +95,10 @@ export default function LocationManager({
       <section className="merchantCard merchantTableCard">
         <div className="merchantTableHead"><h2>Locations</h2><span className="merchantPill">{locations.length} total</span></div>
         {locations.length ? (
-          <table className="merchantTable"><thead><tr><th>Location</th><th>Google Place</th><th>Public ID</th><th>Status</th><th>Action</th></tr></thead><tbody>
+          <table className="merchantTable"><thead><tr><th>Location</th><th>Google connection</th><th>Public ID</th><th>Status</th><th>Action</th></tr></thead><tbody>
             {locations.map((location) => <tr key={location.id}>
               <td><strong>{location.name}</strong><small>{location.subtitle || "—"}</small></td>
-              <td><span className="merchantQrLink">{location.googlePlaceId}</span></td>
+              <td><span className="merchantStatus">Connected</span><small>Google Maps review destination</small></td>
               <td><span className="merchantQrLink">{location.publicId}</span></td>
               <td><span className={`merchantStatus ${location.isActive ? "" : "off"}`}>{location.isActive ? "Active" : "Paused"}</span></td>
               <td>{canWrite ? <div className="merchantActions"><button type="button" disabled={Boolean(updatingId)} onClick={()=>void toggle(location)}>{updatingId === location.id ? "Updating…" : location.isActive ? "Pause" : "Activate"}</button></div> : <small>Read only</small>}</td>
