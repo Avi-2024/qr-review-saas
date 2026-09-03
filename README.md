@@ -15,7 +15,7 @@ QR scan → rating → neutral contextual topics → optional note → backend r
 - QR touchpoint types are free-form. A merchant can use values such as reception, table, room, checkout, vehicle, appointment-desk, classroom, service-area, delivery, booth, packaging or any future touchpoint without a code change.
 - Generated review language does not assume a physical store visit.
 - Customer branding is derived from the configured business/location rather than a hardcoded merchant identity.
-- Future sector presets are an optional onboarding convenience only; the core data model remains generic and configurable.
+- Sector presets are an onboarding convenience only; the core data model remains generic and configurable.
 
 ## Merchant platform
 
@@ -24,11 +24,49 @@ The merchant workspace includes:
 - database-backed merchant authentication
 - owner/admin/manager/viewer roles
 - organization-scoped sessions and queries
+- resumable five-step merchant onboarding
+- Google Maps business search for selecting the correct review destination
+- manual Google Place ID fallback when Places search is unavailable
 - overview dashboard
 - location management
 - QR touchpoint creation and activation
 - scannable SVG QR preview/download
 - scan → review draft → Google-open analytics
+
+## Google business search
+
+Merchant onboarding and Location Management use **Places API (New)** rather than asking merchants to find a `ChIJ...` identifier manually.
+
+Flow:
+
+```text
+Business name + city
+→ Autocomplete (New)
+→ merchant selects exact branch
+→ Place Details (New) verifies the selection
+→ selected Place ID is stored
+→ direct Google review composer URL is generated
+```
+
+Implementation rules:
+
+- the Google API key remains server-side only
+- autocomplete calls use a UUID session token
+- the same token is passed to Place Details when the merchant selects a place
+- autocomplete responses are `no-store`
+- returned Google names/addresses are displayed only for selection verification; QR Review persists the Place ID, not copied Google Places content
+- search is merchant-authenticated and rate limited
+- a manual Place ID fallback remains available for resilience
+
+Enable **Places API (New)** in Google Cloud and configure:
+
+```env
+GOOGLE_PLACES_API_KEY=replace-with-your-google-maps-platform-api-key
+GOOGLE_PLACES_REQUEST_TIMEOUT_MS=4000
+GOOGLE_PLACES_RATE_LIMIT_MAX=80
+```
+
+Restrict the API key to the required Google Maps Platform API in Google Cloud. Do not expose this key through `NEXT_PUBLIC_*` variables.
 
 ## Stack
 
@@ -40,6 +78,7 @@ The merchant workspace includes:
 - bcrypt password hashing
 - opaque database-backed auth sessions
 - HttpOnly/Secure/SameSite cookies
+- Google Places API (New) server-side adapter
 - QR SVG generation
 - Upstash/Redis distributed production rate limiting with bounded local fallback
 - Vitest unit + PostgreSQL integration tests
@@ -65,6 +104,10 @@ IP_HASH_SECRET=replace-with-a-long-random-secret
 AUTH_COOKIE_NAME=qr_merchant_session
 AUTH_SESSION_TTL_HOURS=168
 AUTH_LOGIN_RATE_LIMIT_MAX=10
+
+GOOGLE_PLACES_API_KEY=replace-with-your-google-maps-platform-api-key
+GOOGLE_PLACES_REQUEST_TIMEOUT_MS=4000
+GOOGLE_PLACES_RATE_LIMIT_MAX=80
 
 MERCHANT_ADMIN_EMAIL=owner@example.com
 MERCHANT_ADMIN_PASSWORD=replace-with-a-strong-password
@@ -93,6 +136,7 @@ Open:
 
 - customer demo: `http://localhost:3000`
 - merchant login: `http://localhost:3000/login`
+- merchant onboarding: `http://localhost:3000/onboarding`
 - merchant dashboard: `http://localhost:3000/dashboard`
 
 No merchant password is hardcoded in the repository. The bootstrap script hashes the password with bcrypt and creates/updates the owner membership.
@@ -112,6 +156,14 @@ No merchant password is hardcoded in the repository. The bootstrap script hashes
 - `POST /api/v1/merchant/auth/logout`
 - `GET /api/v1/merchant/auth/me`
 - `GET /api/v1/merchant/dashboard`
+- `GET /api/v1/merchant/onboarding`
+- `PATCH /api/v1/merchant/onboarding/business`
+- `POST /api/v1/merchant/onboarding/location`
+- `PUT /api/v1/merchant/onboarding/topics`
+- `POST /api/v1/merchant/onboarding/qr`
+- `POST /api/v1/merchant/onboarding/complete`
+- `POST /api/v1/merchant/google-places/autocomplete`
+- `POST /api/v1/merchant/google-places/details`
 - `GET|POST /api/v1/merchant/locations`
 - `PATCH /api/v1/merchant/locations/:locationId`
 - `GET|POST /api/v1/merchant/qr-codes`
@@ -127,6 +179,7 @@ server/application/             customer review use cases
 server/merchant/domain/         merchant domain
 server/merchant/application/    merchant use cases + repository port
 server/merchant/infrastructure/ PostgreSQL merchant adapter
+server/integrations/            external provider adapters such as Google Places
 server/auth/                    session/cookie/token helpers
 server/infrastructure/          shared DB/rate-limit adapters
 database/migrations/            ordered tracked migrations
@@ -139,6 +192,7 @@ database/migrations/            ordered tracked migrations
 - `GOOGLE_REVIEW_OPENED` means the Google composer was opened; it is not labeled as a posted review.
 - New locations automatically receive sector-neutral review topics.
 - Sector-specific wording belongs in configurable merchant content/presets, not in core business logic.
+- Google Places content is not used as a long-lived business-content database; the Place ID is the persistent review-destination identifier.
 
 ## Remaining production scale work
 
@@ -146,4 +200,5 @@ database/migrations/            ordered tracked migrations
 - password reset / email verification / MFA
 - structured logging and monitoring
 - AI provider adapter with cost/latency fallback
-- merchant-managed topic customization and optional sector presets
+- billing/subscriptions
+- team member invitation and role management

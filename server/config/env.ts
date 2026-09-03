@@ -18,6 +18,9 @@ const envSchema = z.object({
   RATE_LIMIT_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(250).max(10_000).default(1_500),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(16).optional(),
+  GOOGLE_PLACES_API_KEY: z.string().trim().min(20).optional(),
+  GOOGLE_PLACES_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(500).max(15_000).default(4_000),
+  GOOGLE_PLACES_RATE_LIMIT_MAX: z.coerce.number().int().min(10).max(500).default(80),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

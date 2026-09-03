@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import GooglePlacePicker from "@/components/merchant/GooglePlacePicker";
 import { BUSINESS_PRESETS, getBusinessPreset } from "@/lib/business-presets";
 
 type Stage = "business" | "location" | "topics" | "qr" | "ready" | "complete";
@@ -97,7 +98,15 @@ async function copyText(value: string) {
   }
 }
 
-export default function OnboardingWizard({ initialState, merchantName }: { initialState: OnboardingState; merchantName: string }) {
+export default function OnboardingWizard({
+  initialState,
+  merchantName,
+  placesSearchEnabled,
+}: {
+  initialState: OnboardingState;
+  merchantName: string;
+  placesSearchEnabled: boolean;
+}) {
   const router = useRouter();
   const [state, setState] = useState(initialState);
   const [loading, setLoading] = useState<string | null>(null);
@@ -154,6 +163,7 @@ export default function OnboardingWizard({ initialState, merchantName }: { initi
       }));
       const nextState = await refreshState();
       setLocationName(nextState.organization.name);
+      setGooglePlaceId("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save business details.");
     } finally {
@@ -164,6 +174,11 @@ export default function OnboardingWizard({ initialState, merchantName }: { initi
   async function saveLocation(event: React.FormEvent) {
     event.preventDefault();
     if (loading) return;
+    if (!googlePlaceId.trim()) {
+      setError("Select your Google business or enter a Google Place ID before continuing.");
+      return;
+    }
+
     setLoading("location");
     setError("");
     try {
@@ -304,14 +319,16 @@ export default function OnboardingWizard({ initialState, merchantName }: { initi
 
           {stage === "location" ? (
             <form onSubmit={saveLocation} className="onboardingStepPane">
-              <div className="onboardingHeading"><span className="merchantEyebrow">STEP 2 OF 5</span><h2>Add your first location</h2><p>Start with the place where customers will scan your first QR. More locations can be added later.</p></div>
-              <div className="onboardingTwoCols">
-                <div className="merchantField"><label>Location name</label><input value={locationName} onChange={(event)=>setLocationName(event.target.value)} placeholder="e.g. Main Branch" required /></div>
-                <div className="merchantField"><label>Google Place ID</label><input value={googlePlaceId} onChange={(event)=>setGooglePlaceId(event.target.value)} placeholder="ChIJ..." required /><small>Used to open the correct Google review composer.</small></div>
+              <div className="onboardingHeading"><span className="merchantEyebrow">STEP 2 OF 5</span><h2>Connect your first Google location</h2><p>Find the exact business or branch customers should review. We store only its Google Place ID.</p></div>
+              <div className="merchantField">
+                <label>Location label</label>
+                <input value={locationName} onChange={(event)=>setLocationName(event.target.value)} placeholder="e.g. Main Branch" required />
+                <small>This is your internal label in QR Review and can differ from the Google listing name.</small>
               </div>
-              <div className="onboardingInfo"><strong>Why we need this</strong><span>The customer’s final button opens Google’s official review composer for this exact location. We never auto-post a review.</span></div>
+              <GooglePlacePicker enabled={placesSearchEnabled} value={googlePlaceId} onChange={setGooglePlaceId} disabled={Boolean(loading)} />
+              <div className="onboardingInfo"><strong>Why this matters</strong><span>The final customer button opens Google’s official review composer for the selected location. QR Review never auto-posts a review.</span></div>
               {error ? <div className="merchantError" role="alert">{error}</div> : null}
-              <div className="onboardingActions"><button className="merchantBtn" disabled={Boolean(loading)}>{loading === "location" ? "Creating location…" : "Save location →"}</button></div>
+              <div className="onboardingActions"><button className="merchantBtn" disabled={Boolean(loading) || !googlePlaceId.trim()}>{loading === "location" ? "Creating location…" : "Save location →"}</button></div>
             </form>
           ) : null}
 

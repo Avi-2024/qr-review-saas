@@ -60,6 +60,33 @@
 .onboardingInfo { display: grid; grid-template-columns: 130px 1fr; gap: 14px; padding: 13px 14px; border-radius: 12px; background: #f5f7f4; border: 1px solid #e6ebe5; color: #69756d; font-size: 9.5px; line-height: 1.55; }
 .onboardingInfo strong { color: #435248; }
 
+.onboardingGoogleSearch { margin: 4px 0 18px; }
+.onboardingGoogleSearchField { margin-bottom: 8px !important; }
+.onboardingGoogleInputWrap { position: relative; }
+.onboardingGoogleInputWrap input { padding-right: 88px !important; }
+.onboardingGoogleInputWrap > span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #849087; font-size: 8.5px; font-weight: 800; }
+.onboardingGoogleResults { overflow: hidden; margin-top: 8px; border: 1px solid #dfe6df; border-radius: 14px; background: #fff; box-shadow: 0 18px 42px rgba(35,55,42,.12); }
+.onboardingGoogleResults > button { width: 100%; display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; min-height: 62px; padding: 10px 12px; border: 0; border-bottom: 1px solid #edf0ed; background: #fff; color: #354139; text-align: left; cursor: pointer; }
+.onboardingGoogleResults > button:hover, .onboardingGoogleResults > button:focus-visible { background: #f6f9f6; outline: 0; }
+.onboardingGoogleResults > button:disabled { cursor: wait; opacity: .65; }
+.onboardingGooglePin { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: #eef4ef; color: #3f644c; font-size: 15px; }
+.onboardingGoogleResultCopy { min-width: 0; }
+.onboardingGoogleResultCopy strong, .onboardingGoogleResultCopy small { display: block; }
+.onboardingGoogleResultCopy strong { overflow: hidden; color: #2f3c33; font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.onboardingGoogleResultCopy small { overflow: hidden; margin-top: 4px; color: #879188; font-size: 8.5px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.onboardingGoogleSelect { color: #3d654b; font-size: 8.5px; font-weight: 850; }
+.onboardingGoogleAttribution { padding: 8px 12px; background: #fafbfa; color: #737d76; font-size: 8px; font-weight: 700; text-align: right; }
+.onboardingPlacesMessage { margin: 8px 0 0; padding: 10px 12px; border: 1px solid #e4e8e4; border-radius: 10px; background: #f8faf8; color: #7a867e; font-size: 9px; line-height: 1.5; }
+.onboardingSelectedPlace { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 14px; border: 1px solid #bfd2c4; border-radius: 14px; background: #f1f7f2; }
+.onboardingSelectedPlaceIcon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; background: #dfeee3; color: #2f6942; font-size: 15px; font-weight: 900; }
+.onboardingSelectedPlace > div:nth-child(2) { min-width: 0; }
+.onboardingSelectedPlace strong { display: block; margin-top: 4px; color: #2f3f34; font-size: 12px; }
+.onboardingSelectedPlace p { margin: 3px 0 0; color: #718078; font-size: 9px; line-height: 1.45; }
+.onboardingSelectedPlace small { display: block; margin-top: 6px; color: #76907e; font-size: 8px; font-weight: 750; }
+.onboardingSelectedPlace > button { min-height: 34px; padding: 0 10px; border: 1px solid #c9d8cc; border-radius: 9px; background: #fff; color: #486152; font-size: 8.5px; font-weight: 800; cursor: pointer; }
+.onboardingManualLink { margin: 10px 0 0; padding: 6px 0; border: 0; background: transparent; color: #4f6f5a; font-size: 8.5px; font-weight: 800; cursor: pointer; }
+.onboardingManualPlace { margin-bottom: 18px; }
+
 .onboardingTopicEditor { display: grid; gap: 8px; }
 .onboardingTopicRow { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 9px; padding: 8px; border: 1px solid #e0e6e0; border-radius: 12px; background: #fbfcfa; }
 .onboardingTopicRow > span { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: #eef3ef; color: #496052; font-size: 12px; }
@@ -117,6 +144,10 @@
   .onboardingPresetGrid { grid-template-columns: 1fr; }
   .onboardingTwoCols { grid-template-columns: 1fr; gap: 0; }
   .onboardingInfo { grid-template-columns: 1fr; gap: 4px; }
+  .onboardingGoogleResults > button { grid-template-columns: 32px 1fr; }
+  .onboardingGoogleSelect { display: none; }
+  .onboardingSelectedPlace { grid-template-columns: 38px 1fr; }
+  .onboardingSelectedPlace > button { grid-column: 2; justify-self: start; }
   .onboardingTopicRow { grid-template-columns: 30px 1fr auto; }
   .onboardingActions { position: sticky; bottom: 0; z-index: 4; margin: 24px -18px -26px; padding: 12px 18px calc(14px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.96); backdrop-filter: blur(12px); }
   .onboardingActions .merchantBtn { width: 100%; min-width: 0; min-height: 52px; }
