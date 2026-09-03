@@ -46,3 +46,13 @@ export const merchantOnboardingTopicsSchema = z.object({
 });
 
 export const merchantOnboardingQrSchema = merchantQrCreateSchema;
+
+export const merchantGooglePlacesAutocompleteSchema = z.object({
+  input: z.string().trim().min(2).max(140),
+  sessionToken: z.string().uuid(),
+});
+
+export const merchantGooglePlacesDetailsSchema = z.object({
+  placeId: z.string().trim().min(5).max(255),
+  sessionToken: z.string().uuid(),
+});
