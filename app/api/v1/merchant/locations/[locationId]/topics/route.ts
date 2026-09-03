@@ -1,7 +1,7 @@
 import { requireMerchantApiIdentity } from "@/server/auth/merchant-session";
 import { getMerchantTopicService } from "@/server/bootstrap/merchant-topic-container";
 import { handleRouteError, ok } from "@/server/http/response";
-import { merchantTopicSaveSchema } from "@/server/http/merchant-schemas";
+import { merchantLocationIdSchema, merchantTopicSaveSchema } from "@/server/http/merchant-schemas";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +12,8 @@ export async function GET(
 ) {
   try {
     const { identity } = await requireMerchantApiIdentity();
-    const { locationId } = await context.params;
+    const params = await context.params;
+    const locationId = merchantLocationIdSchema.parse(params.locationId);
     const topics = await getMerchantTopicService().list(identity, locationId);
     return ok({ topics }, { headers: { "cache-control": "no-store" } });
   } catch (error) {
@@ -26,7 +27,8 @@ export async function PUT(
 ) {
   try {
     const { identity } = await requireMerchantApiIdentity();
-    const { locationId } = await context.params;
+    const params = await context.params;
+    const locationId = merchantLocationIdSchema.parse(params.locationId);
     const body = merchantTopicSaveSchema.parse(await request.json());
     const topics = await getMerchantTopicService().save(identity, locationId, body.topics);
     return ok({ topics });
