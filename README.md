@@ -33,7 +33,33 @@ The merchant workspace includes:
 - sector-aware suggested topic presets without sector-locking the data model
 - QR touchpoint creation and activation
 - scannable SVG QR preview/download
-- scan → review draft → Google-open analytics
+- organization funnel analytics
+- per-QR placement analytics for scans, generated drafts, Google opens and measured conversion
+
+## QR performance analytics
+
+The Analytics workspace ranks every physical QR touchpoint while preserving historical performance for paused QR assets.
+
+Metrics are session-cohort based so they stay consistent with the main review funnel:
+
+```text
+QR scanned
+→ review generated
+→ Google review composer opened
+```
+
+Per QR the dashboard shows:
+
+- scans
+- generated review drafts
+- Google review composer opens
+- scan → generated rate
+- scan → Google rate
+- generated → Google rate
+- active/paused status
+- location and free-form touchpoint type/reference
+
+Merchants can filter the QR breakdown by location and by 7/30/90-day windows. Zero-activity QR assets remain visible, and best-conversion ranking requires a minimum scan sample so a one-scan QR does not become a misleading winner. `GOOGLE_REVIEW_OPENED` is never presented as a posted Google review.
 
 ## Review topic management
 
@@ -157,6 +183,7 @@ Open:
 - merchant onboarding: `http://localhost:3000/onboarding`
 - merchant dashboard: `http://localhost:3000/dashboard`
 - review topics: `http://localhost:3000/dashboard/topics`
+- analytics + QR performance: `http://localhost:3000/dashboard/analytics`
 
 No merchant password is hardcoded in the repository. The bootstrap script hashes the password with bcrypt and creates/updates the owner membership.
 
@@ -196,6 +223,7 @@ No merchant password is hardcoded in the repository. The bootstrap script hashes
 app/api/                         thin HTTP routes
 server/domain/                  customer review domain
 server/application/             customer review use cases
+server/analytics/               isolated QR performance analytics domain/service/repository
 server/merchant/domain/         merchant domain
 server/merchant/application/    merchant use cases + repository port
 server/merchant/topics/         isolated topic management service + repository
@@ -213,6 +241,7 @@ database/migrations/            ordered tracked migrations
 - `GOOGLE_REVIEW_OPENED` means the Google composer was opened; it is not labeled as a posted review.
 - New locations automatically receive sector-neutral review topics.
 - Archived topics are retained for historical integrity instead of being hard-deleted.
+- Paused QR assets keep their historical analytics and remain visible in QR performance reports.
 - Sector-specific wording belongs in configurable merchant content/presets, not in core business logic.
 - Google Places content is not used as a long-lived business-content database; the Place ID is the persistent review-destination identifier.
 
