@@ -44,26 +44,20 @@ describe("GooglePlacesClient", () => {
     });
   });
 
-  it("finishes the autocomplete session with Place Details using the same token", async () => {
+  it("finishes the autocomplete session with ID-only Place Details using the same token", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       id: "ChIJ-test-place",
-      displayName: { text: "Royal Cafe" },
-      formattedAddress: "Vijay Nagar, Indore, Madhya Pradesh, India",
     }), { status: 200, headers: { "content-type": "application/json" } }));
 
     const client = new GooglePlacesClient(API_KEY, 4_000, fetchMock as typeof fetch);
     const place = await client.details("ChIJ-test-place", SESSION_TOKEN);
 
-    expect(place).toEqual({
-      placeId: "ChIJ-test-place",
-      displayName: "Royal Cafe",
-      formattedAddress: "Vijay Nagar, Indore, Madhya Pradesh, India",
-    });
+    expect(place).toEqual({ placeId: "ChIJ-test-place" });
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain("https://places.googleapis.com/v1/places/ChIJ-test-place");
     expect(url).toContain(`sessionToken=${SESSION_TOKEN}`);
-    expect(init.headers["X-Goog-FieldMask"]).toBe("id,displayName,formattedAddress");
+    expect(init.headers["X-Goog-FieldMask"]).toBe("id");
   });
 
   it("does not call Google for an autocomplete query shorter than two characters", async () => {
