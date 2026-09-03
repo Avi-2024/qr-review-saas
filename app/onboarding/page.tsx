@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import OnboardingWizard from "@/components/merchant/OnboardingWizard";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";
+import { isGooglePlacesConfigured } from "@/server/bootstrap/google-places-container";
 import { getMerchantService } from "@/server/bootstrap/merchant-container";
 
 export default async function OnboardingPage() {
@@ -24,5 +25,11 @@ export default async function OnboardingPage() {
     })),
   };
 
-  return <OnboardingWizard initialState={initialState} merchantName={identity.name} />;
+  return (
+    <OnboardingWizard
+      initialState={initialState}
+      merchantName={identity.name}
+      placesSearchEnabled={isGooglePlacesConfigured()}
+    />
+  );
 }
