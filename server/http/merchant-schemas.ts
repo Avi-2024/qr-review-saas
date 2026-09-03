@@ -57,6 +57,8 @@ export const merchantGooglePlacesDetailsSchema = z.object({
   sessionToken: z.string().uuid(),
 });
 
+export const merchantLocationIdSchema = z.string().uuid();
+
 export const merchantTopicSaveSchema = z.object({
   topics: z.array(z.object({
     id: z.string().trim().min(1).max(100).optional(),
