@@ -29,9 +29,27 @@ The merchant workspace includes:
 - manual Google Place ID fallback when Places search is unavailable
 - overview dashboard
 - location management
+- per-location review topic management with add/edit/reorder/archive/restore
+- sector-aware suggested topic presets without sector-locking the data model
 - QR touchpoint creation and activation
 - scannable SVG QR preview/download
 - scan → review draft → Google-open analytics
+
+## Review topic management
+
+After onboarding, merchants can manage the neutral topic prompts shown in the customer QR experience at `/dashboard/topics`.
+
+Rules:
+
+- topics are configured per location
+- 3–8 topics can be active at one time
+- customers can select up to 3 active topics
+- labels and icons are editable
+- active topic order controls customer-display order
+- removed topics are archived rather than deleted, preserving historical review references
+- archived topics can be restored with the same stable topic ID
+- suggested sector presets can be re-applied at any time
+- viewer-role merchants have read-only access
 
 ## Google business search
 
@@ -138,6 +156,7 @@ Open:
 - merchant login: `http://localhost:3000/login`
 - merchant onboarding: `http://localhost:3000/onboarding`
 - merchant dashboard: `http://localhost:3000/dashboard`
+- review topics: `http://localhost:3000/dashboard/topics`
 
 No merchant password is hardcoded in the repository. The bootstrap script hashes the password with bcrypt and creates/updates the owner membership.
 
@@ -166,6 +185,7 @@ No merchant password is hardcoded in the repository. The bootstrap script hashes
 - `POST /api/v1/merchant/google-places/details`
 - `GET|POST /api/v1/merchant/locations`
 - `PATCH /api/v1/merchant/locations/:locationId`
+- `GET|PUT /api/v1/merchant/locations/:locationId/topics`
 - `GET|POST /api/v1/merchant/qr-codes`
 - `PATCH /api/v1/merchant/qr-codes/:qrCodeId`
 - `GET /api/v1/merchant/qr-codes/:qrCodeId/svg`
@@ -178,6 +198,7 @@ server/domain/                  customer review domain
 server/application/             customer review use cases
 server/merchant/domain/         merchant domain
 server/merchant/application/    merchant use cases + repository port
+server/merchant/topics/         isolated topic management service + repository
 server/merchant/infrastructure/ PostgreSQL merchant adapter
 server/integrations/            external provider adapters such as Google Places
 server/auth/                    session/cookie/token helpers
@@ -191,6 +212,7 @@ database/migrations/            ordered tracked migrations
 - Generated text must preserve customer sentiment and must not invent specific facts from topic selections.
 - `GOOGLE_REVIEW_OPENED` means the Google composer was opened; it is not labeled as a posted review.
 - New locations automatically receive sector-neutral review topics.
+- Archived topics are retained for historical integrity instead of being hard-deleted.
 - Sector-specific wording belongs in configurable merchant content/presets, not in core business logic.
 - Google Places content is not used as a long-lived business-content database; the Place ID is the persistent review-destination identifier.
 

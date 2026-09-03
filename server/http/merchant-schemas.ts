@@ -56,3 +56,13 @@ export const merchantGooglePlacesDetailsSchema = z.object({
   placeId: z.string().trim().min(5).max(255),
   sessionToken: z.string().uuid(),
 });
+
+export const merchantLocationIdSchema = z.string().uuid();
+
+export const merchantTopicSaveSchema = z.object({
+  topics: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    label: z.string().trim().min(2).max(60),
+    icon: z.string().trim().max(12).optional(),
+  })).min(3).max(8),
+});

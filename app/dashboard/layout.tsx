@@ -6,6 +6,7 @@ import { requireMerchantIdentity } from "@/server/auth/merchant-session";
 const nav = [
   ["/dashboard", "◫", "Overview"],
   ["/dashboard/locations", "⌂", "Locations"],
+  ["/dashboard/topics", "≡", "Topics"],
   ["/dashboard/qr-codes", "⌁", "QR Codes"],
   ["/dashboard/analytics", "↗", "Analytics"],
 ] as const;

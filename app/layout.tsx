@@ -3,6 +3,7 @@ import "./globals.css";
 import "./customer-flow.css";
 import "./merchant.css";
 import "./onboarding.css";
+import "./topics.css";
 
 export const metadata: Metadata = {
   title: "QR Review · Customer Feedback & Reputation",
