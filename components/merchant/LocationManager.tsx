@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import GooglePlacePicker from "@/components/merchant/GooglePlacePicker";
 import type { MerchantLocation, MerchantRole } from "@/server/merchant/domain/merchant";
 
 async function readError(response: Response, fallback: string) {
@@ -13,7 +14,15 @@ async function readError(response: Response, fallback: string) {
   }
 }
 
-export default function LocationManager({ locations, role }: { locations: MerchantLocation[]; role: MerchantRole }) {
+export default function LocationManager({
+  locations,
+  role,
+  placesSearchEnabled,
+}: {
+  locations: MerchantLocation[];
+  role: MerchantRole;
+  placesSearchEnabled: boolean;
+}) {
   const router = useRouter();
   const canWrite = role !== "viewer";
   const [name, setName] = useState("");
@@ -25,7 +34,7 @@ export default function LocationManager({ locations, role }: { locations: Mercha
 
   async function createLocation(event: React.FormEvent) {
     event.preventDefault();
-    if (loading) return;
+    if (loading || !googlePlaceId.trim()) return;
 
     setLoading(true);
     setError("");
@@ -72,14 +81,14 @@ export default function LocationManager({ locations, role }: { locations: Mercha
     <>
       {canWrite ? (
         <form className="merchantCard merchantFormCard" onSubmit={createLocation}>
-          <span className="merchantEyebrow">ADD LOCATION</span><h2>Connect a Google Business location</h2><p>Works for any customer-facing business. Store the Google Place ID once so every QR scan can open the direct Google review composer without a live Places lookup.</p>
+          <span className="merchantEyebrow">ADD LOCATION</span><h2>Connect a Google Business location</h2><p>Search for the exact Google Maps listing instead of finding a technical Place ID manually. QR Review stores only the selected Place ID for direct Google review handoff.</p>
           <div className="merchantFormGrid">
-            <div className="merchantField"><label>Location name</label><input value={name} onChange={(e)=>setName(e.target.value)} placeholder="e.g. Main Branch / Downtown Location" required /></div>
-            <div className="merchantField"><label>Google Place ID</label><input value={googlePlaceId} onChange={(e)=>setGooglePlaceId(e.target.value)} placeholder="ChIJ…" required /></div>
-            <div className="merchantField" style={{gridColumn:"1 / -1"}}><label>Customer subtitle (optional)</label><input value={subtitle} onChange={(e)=>setSubtitle(e.target.value)} placeholder="e.g. Share your experience in under a minute." /></div>
+            <div className="merchantField"><label>Location label</label><input value={name} onChange={(e)=>setName(e.target.value)} placeholder="e.g. Main Branch / Downtown Location" required /></div>
+            <div className="merchantField"><label>Customer subtitle (optional)</label><input value={subtitle} onChange={(e)=>setSubtitle(e.target.value)} placeholder="e.g. Share your experience in under a minute." /></div>
           </div>
+          <GooglePlacePicker enabled={placesSearchEnabled} value={googlePlaceId} onChange={setGooglePlaceId} disabled={loading || Boolean(updatingId)} />
           {error ? <div className="merchantError" role="alert">{error}</div> : null}
-          <div className="merchantFormActions"><button className="merchantBtn" disabled={loading || Boolean(updatingId)}>{loading ? "Creating…" : "Add location"}</button></div>
+          <div className="merchantFormActions"><button className="merchantBtn" disabled={loading || Boolean(updatingId) || !googlePlaceId.trim()}>{loading ? "Creating…" : "Add location"}</button></div>
         </form>
       ) : null}
 
