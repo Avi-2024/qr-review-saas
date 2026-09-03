@@ -9,8 +9,6 @@ export interface GooglePlacePrediction {
 
 export interface GooglePlaceDetails {
   placeId: string;
-  displayName: string;
-  formattedAddress: string;
 }
 
 type FetchLike = typeof fetch;
@@ -30,8 +28,6 @@ type AutocompleteResponse = {
 
 type PlaceDetailsResponse = {
   id?: string;
-  displayName?: { text?: string };
-  formattedAddress?: string;
 };
 
 const AUTOCOMPLETE_URL = "https://places.googleapis.com/v1/places:autocomplete";
@@ -92,7 +88,7 @@ export class GooglePlacesClient {
       method: "GET",
       headers: {
         "X-Goog-Api-Key": this.apiKey,
-        "X-Goog-FieldMask": "id,displayName,formattedAddress",
+        "X-Goog-FieldMask": "id",
       },
     });
 
@@ -101,11 +97,7 @@ export class GooglePlacesClient {
       throw new AppError("The selected Google business could not be verified.", 502, "GOOGLE_PLACE_INVALID_RESPONSE");
     }
 
-    return {
-      placeId: body.id,
-      displayName: body.displayName?.text?.trim() || "Selected Google business",
-      formattedAddress: body.formattedAddress?.trim() || "",
-    };
+    return { placeId: body.id };
   }
 
   private async request(url: string, init: RequestInit) {
