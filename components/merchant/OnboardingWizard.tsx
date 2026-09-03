@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import GooglePlacePicker from "@/components/merchant/GooglePlacePicker";
 import { BUSINESS_PRESETS, getBusinessPreset } from "@/lib/business-presets";
 
 type Stage = "business" | "location" | "topics" | "qr" | "ready" | "complete";
@@ -46,19 +47,6 @@ type OnboardingState = {
 
 type TopicDraft = { label: string; icon: string };
 
-type GooglePlacePrediction = {
-  placeId: string;
-  mainText: string;
-  secondaryText: string;
-  fullText: string;
-};
-
-type SelectedGooglePlace = {
-  placeId: string;
-  displayName: string;
-  formattedAddress: string;
-};
-
 const STEPS = [
   ["business", "Business"],
   ["location", "Location"],
@@ -75,15 +63,6 @@ const STAGE_INDEX: Record<Stage, number> = {
   ready: 4,
   complete: 5,
 };
-
-function newPlacesSessionToken() {
-  if (typeof globalThis.crypto?.randomUUID === "function") return globalThis.crypto.randomUUID();
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
-    const random = Math.floor(Math.random() * 16);
-    const value = character === "x" ? random : (random & 0x3) | 0x8;
-    return value.toString(16);
-  });
-}
 
 async function readJson(response: Response) {
   const body = await response.json().catch(() => null);
@@ -140,13 +119,6 @@ export default function OnboardingWizard({
   const [businessName, setBusinessName] = useState(state.organization.name);
   const [locationName, setLocationName] = useState(state.organization.name);
   const [googlePlaceId, setGooglePlaceId] = useState("");
-  const [manualPlaceMode, setManualPlaceMode] = useState(!placesSearchEnabled);
-  const [placeQuery, setPlaceQuery] = useState("");
-  const [placePredictions, setPlacePredictions] = useState<GooglePlacePrediction[]>([]);
-  const [selectedPlace, setSelectedPlace] = useState<SelectedGooglePlace | null>(null);
-  const [placesSessionToken, setPlacesSessionToken] = useState("");
-  const [placesStatus, setPlacesStatus] = useState<"idle" | "searching" | "selecting">("idle");
-  const [placesMessage, setPlacesMessage] = useState("");
   const [topicDrafts, setTopicDrafts] = useState<TopicDraft[]>(() => getBusinessPreset(state.organization.businessType).topics.map((topic) => ({ ...topic })));
   const [qrName, setQrName] = useState("");
   const [qrReference, setQrReference] = useState("");
@@ -165,54 +137,6 @@ export default function OnboardingWizard({
   useEffect(() => {
     if (stage === "location" && !locationName.trim()) setLocationName(state.organization.name);
   }, [stage, state.organization.name, locationName]);
-
-  useEffect(() => {
-    if (stage !== "location" || manualPlaceMode || !placesSearchEnabled || placesSessionToken) return;
-    setPlacesSessionToken(newPlacesSessionToken());
-  }, [manualPlaceMode, placesSearchEnabled, placesSessionToken, stage]);
-
-  useEffect(() => {
-    if (stage !== "location" || manualPlaceMode || !placesSearchEnabled || selectedPlace) {
-      setPlacePredictions([]);
-      return;
-    }
-
-    const query = placeQuery.trim();
-    if (query.length < 2 || !placesSessionToken) {
-      setPlacePredictions([]);
-      setPlacesMessage("");
-      return;
-    }
-
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      setPlacesStatus("searching");
-      setPlacesMessage("");
-      try {
-        const response = await fetch("/api/v1/merchant/google-places/autocomplete", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ input: query, sessionToken: placesSessionToken }),
-          signal: controller.signal,
-        });
-        const body = await readJson(response);
-        const predictions = (body.data?.predictions ?? []) as GooglePlacePrediction[];
-        setPlacePredictions(predictions);
-        if (!predictions.length) setPlacesMessage("No matching Google businesses found. Try adding the city or area name.");
-      } catch (cause) {
-        if (controller.signal.aborted) return;
-        setPlacePredictions([]);
-        setPlacesMessage(cause instanceof Error ? cause.message : "Could not search Google businesses.");
-      } finally {
-        if (!controller.signal.aborted) setPlacesStatus("idle");
-      }
-    }, 350);
-
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [manualPlaceMode, placeQuery, placesSearchEnabled, placesSessionToken, selectedPlace, stage]);
 
   useEffect(() => {
     if (stage === "qr" && !qrName && activePreset.qrSuggestions[0]) setQrName(activePreset.qrSuggestions[0]);
@@ -239,10 +163,7 @@ export default function OnboardingWizard({
       }));
       const nextState = await refreshState();
       setLocationName(nextState.organization.name);
-      setPlaceQuery("");
       setGooglePlaceId("");
-      setSelectedPlace(null);
-      if (placesSearchEnabled) setPlacesSessionToken(newPlacesSessionToken());
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save business details.");
     } finally {
@@ -250,62 +171,11 @@ export default function OnboardingWizard({
     }
   }
 
-  async function selectGooglePlace(prediction: GooglePlacePrediction) {
-    if (placesStatus === "selecting" || !placesSessionToken) return;
-    setPlacesStatus("selecting");
-    setPlacesMessage("");
-    try {
-      const response = await fetch("/api/v1/merchant/google-places/details", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ placeId: prediction.placeId, sessionToken: placesSessionToken }),
-      });
-      const body = await readJson(response);
-      const place = body.data?.place as SelectedGooglePlace;
-      setSelectedPlace(place);
-      setGooglePlaceId(place.placeId);
-      setPlacePredictions([]);
-      setPlaceQuery(prediction.fullText);
-    } catch (cause) {
-      setPlacesMessage(cause instanceof Error ? cause.message : "Could not verify that Google business.");
-    } finally {
-      setPlacesStatus("idle");
-    }
-  }
-
-  function changeSelectedPlace() {
-    setSelectedPlace(null);
-    setGooglePlaceId("");
-    setPlaceQuery("");
-    setPlacePredictions([]);
-    setPlacesMessage("");
-    setPlacesSessionToken(newPlacesSessionToken());
-  }
-
-  function enableManualPlaceMode() {
-    setManualPlaceMode(true);
-    setSelectedPlace(null);
-    setGooglePlaceId("");
-    setPlaceQuery("");
-    setPlacePredictions([]);
-    setPlacesMessage("");
-  }
-
-  function enableGoogleSearch() {
-    setManualPlaceMode(false);
-    setGooglePlaceId("");
-    setSelectedPlace(null);
-    setPlaceQuery("");
-    setPlacePredictions([]);
-    setPlacesMessage("");
-    setPlacesSessionToken(newPlacesSessionToken());
-  }
-
   async function saveLocation(event: React.FormEvent) {
     event.preventDefault();
     if (loading) return;
     if (!googlePlaceId.trim()) {
-      setError(manualPlaceMode ? "Enter a Google Place ID before continuing." : "Select the correct Google business before continuing.");
+      setError("Select your Google business or enter a Google Place ID before continuing.");
       return;
     }
 
@@ -450,84 +320,12 @@ export default function OnboardingWizard({
           {stage === "location" ? (
             <form onSubmit={saveLocation} className="onboardingStepPane">
               <div className="onboardingHeading"><span className="merchantEyebrow">STEP 2 OF 5</span><h2>Connect your first Google location</h2><p>Find the exact business or branch customers should review. We store only its Google Place ID.</p></div>
-
               <div className="merchantField">
                 <label>Location label</label>
                 <input value={locationName} onChange={(event)=>setLocationName(event.target.value)} placeholder="e.g. Main Branch" required />
                 <small>This is your internal label in QR Review and can differ from the Google listing name.</small>
               </div>
-
-              {!manualPlaceMode && placesSearchEnabled ? (
-                <div className="onboardingGoogleSearch">
-                  {!selectedPlace ? (
-                    <>
-                      <div className="merchantField onboardingGoogleSearchField">
-                        <label>Find your business on Google Maps</label>
-                        <div className="onboardingGoogleInputWrap">
-                          <input
-                            value={placeQuery}
-                            onChange={(event)=>{ setPlaceQuery(event.target.value); setPlacesMessage(""); }}
-                            placeholder="Business name + city or area"
-                            autoComplete="off"
-                            aria-autocomplete="list"
-                            aria-expanded={placePredictions.length > 0}
-                          />
-                          {placesStatus === "searching" ? <span>Searching…</span> : null}
-                        </div>
-                        <small>Choose the exact branch where this QR will be used.</small>
-                      </div>
-
-                      {placePredictions.length ? (
-                        <div className="onboardingGoogleResults" role="listbox" aria-label="Google Maps business suggestions">
-                          {placePredictions.map((prediction) => (
-                            <button
-                              type="button"
-                              key={prediction.placeId}
-                              onClick={()=>void selectGooglePlace(prediction)}
-                              disabled={placesStatus === "selecting"}
-                              role="option"
-                            >
-                              <span className="onboardingGooglePin">⌖</span>
-                              <span className="onboardingGoogleResultCopy">
-                                <strong>{prediction.mainText}</strong>
-                                <small>{prediction.secondaryText || prediction.fullText}</small>
-                              </span>
-                              <span className="onboardingGoogleSelect">Select</span>
-                            </button>
-                          ))}
-                          <div className="onboardingGoogleAttribution">Google Maps</div>
-                        </div>
-                      ) : null}
-
-                      {placesMessage ? <div className="onboardingPlacesMessage" role="status">{placesMessage}</div> : null}
-                    </>
-                  ) : (
-                    <div className="onboardingSelectedPlace">
-                      <div className="onboardingSelectedPlaceIcon">✓</div>
-                      <div>
-                        <span className="merchantEyebrow">GOOGLE LOCATION SELECTED</span>
-                        <strong>{selectedPlace.displayName}</strong>
-                        {selectedPlace.formattedAddress ? <p>{selectedPlace.formattedAddress}</p> : null}
-                        <small>Google Maps · Place ID verified</small>
-                      </div>
-                      <button type="button" onClick={changeSelectedPlace}>Change</button>
-                    </div>
-                  )}
-
-                  <button type="button" className="onboardingManualLink" onClick={enableManualPlaceMode}>Can’t find your business? Enter Place ID manually</button>
-                </div>
-              ) : (
-                <div className="onboardingManualPlace">
-                  {!placesSearchEnabled ? <div className="onboardingPlacesMessage">Google business search is not configured in this environment. Manual Place ID still works.</div> : null}
-                  <div className="merchantField">
-                    <label>Google Place ID</label>
-                    <input value={googlePlaceId} onChange={(event)=>setGooglePlaceId(event.target.value)} placeholder="ChIJ..." required />
-                    <small>Used only to open Google’s official review composer for this location.</small>
-                  </div>
-                  {placesSearchEnabled ? <button type="button" className="onboardingManualLink" onClick={enableGoogleSearch}>← Search Google Maps instead</button> : null}
-                </div>
-              )}
-
+              <GooglePlacePicker enabled={placesSearchEnabled} value={googlePlaceId} onChange={setGooglePlaceId} disabled={Boolean(loading)} />
               <div className="onboardingInfo"><strong>Why this matters</strong><span>The final customer button opens Google’s official review composer for the selected location. QR Review never auto-posts a review.</span></div>
               {error ? <div className="merchantError" role="alert">{error}</div> : null}
               <div className="onboardingActions"><button className="merchantBtn" disabled={Boolean(loading) || !googlePlaceId.trim()}>{loading === "location" ? "Creating location…" : "Save location →"}</button></div>
