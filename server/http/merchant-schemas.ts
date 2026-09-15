@@ -5,6 +5,13 @@ export const merchantLoginSchema = z.object({
   password: z.string().min(8).max(200),
 });
 
+export const merchantSignupSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  businessName: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().max(254),
+  password: z.string().min(12).max(200),
+});
+
 export const merchantLocationCreateSchema = z.object({
   name: z.string().trim().min(2).max(120),
   subtitle: z.string().trim().max(180).optional(),
