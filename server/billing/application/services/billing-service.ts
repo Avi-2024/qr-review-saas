@@ -68,6 +68,14 @@ export class BillingService {
     return snapshot;
   }
 
+  async assertCanCollectReviewsForQrToken(qrToken: string) {
+    const organizationId = await this.repository.getOrganizationIdForQrToken(qrToken);
+    if (!organizationId) {
+      throw new NotFoundError("QR code not found or inactive.", "QR_NOT_FOUND");
+    }
+    return this.assertCanCollectReviews(organizationId);
+  }
+
   async assertLocationCapacity(organizationId: string) {
     const snapshot = await this.assertCanWrite(organizationId);
     if (snapshot.usage.locations >= snapshot.plan.maxLocations) {
