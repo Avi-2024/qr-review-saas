@@ -1,0 +1,13 @@
+.trialBadge { display: grid; gap: 2px; margin-bottom: 12px; padding: 11px 12px; border: 1px solid #dbe5dd; border-radius: 12px; background: #f3f7f4; color: #2e503b; text-decoration: none; }
+.trialBadge strong { font-size: 11px; }
+.trialBadge span { color: #748078; font-size: 9px; }
+.trialBadge.expired { border-color: #efc9bd; background: #fff6f2; color: #8f402c; }
+.banner { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 16px 24px 0; padding: 12px 14px; border: 1px solid #ead79f; border-radius: 13px; background: #fffaf0; }
+.banner > div { display: grid; gap: 3px; }
+.banner strong { font-size: 11px; color: #684f15; }
+.banner span { color: #8a7850; font-size: 9.5px; line-height: 1.45; }
+.banner a { flex: 0 0 auto; padding: 8px 10px; border-radius: 9px; background: #234535; color: #fff; font-size: 9px; font-weight: 850; text-decoration: none; }
+.banner.expired { border-color: #e7bfb4; background: #fff7f4; }
+.banner.expired strong { color: #873d2a; }
+.banner.expired span { color: #876a62; }
+@media (max-width: 680px) { .banner { align-items: flex-start; flex-direction: column; margin: 10px 12px 0; } }
