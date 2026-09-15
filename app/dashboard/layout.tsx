@@ -10,7 +10,7 @@ const nav = [
   ["/dashboard/topics", "≡", "Topics"],
   ["/dashboard/qr-codes", "⌁", "QR Codes"],
   ["/dashboard/analytics", "↗", "Analytics"],
-  ["/dashboard/billing", "₹", "Billing"],
+  ["/billing", "₹", "Billing"],
 ] as const;
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -31,7 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           ))}
         </nav>
         <div className="merchantSidebarFoot">
-          <Link href="/dashboard/billing" className={`merchantTrialBadge ${billing.needsUpgrade ? "expired" : ""}`}>
+          <Link href="/billing" className={`merchantTrialBadge ${billing.needsUpgrade ? "expired" : ""}`}>
             <strong>{billing.status === "trialing" ? `${billing.daysRemaining}d trial left` : billing.plan.name}</strong>
             <span>{billing.needsUpgrade ? "Upgrade required" : "Plan & billing"}</span>
           </Link>
@@ -43,13 +43,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {billing.status === "trialing" && billing.daysRemaining <= 2 ? (
           <div className="merchantBillingBanner">
             <div><strong>Your free trial ends soon.</strong><span>{billing.daysRemaining} day{billing.daysRemaining === 1 ? "" : "s"} remaining. Your data stays safe if the trial expires.</span></div>
-            <Link href="/dashboard/billing">View plans</Link>
+            <Link href="/billing">View plans</Link>
           </div>
         ) : null}
         {billing.needsUpgrade ? (
           <div className="merchantBillingBanner expired">
             <div><strong>Your workspace is read-only.</strong><span>Activate a subscription to create or change locations, topics and QR codes and to accept new review sessions.</span></div>
-            <Link href="/dashboard/billing">Choose a plan</Link>
+            <Link href="/billing">Choose a plan</Link>
           </div>
         ) : null}
         {children}
