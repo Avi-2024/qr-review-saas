@@ -145,8 +145,12 @@ export default function OnboardingWizard({
   async function refreshState() {
     const response = await fetch("/api/v1/merchant/onboarding", { cache: "no-store" });
     const body = await readJson(response);
-    setState(body.onboarding);
-    return body.onboarding as OnboardingState;
+    const nextState = body.data?.onboarding as OnboardingState | undefined;
+    if (!nextState?.organization) {
+      throw new Error("Invalid onboarding state received from server.");
+    }
+    setState(nextState);
+    return nextState;
   }
 
   async function saveBusiness(event: React.FormEvent) {
