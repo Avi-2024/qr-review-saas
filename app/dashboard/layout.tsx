@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import LogoutButton from "@/components/merchant/LogoutButton";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";
 import { getBillingService } from "@/server/bootstrap/billing-container";
+import styles from "./subscription.module.css";
 
 const nav = [
   ["/dashboard", "◫", "Overview"],
@@ -31,7 +32,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           ))}
         </nav>
         <div className="merchantSidebarFoot">
-          <Link href="/billing" className={`merchantTrialBadge ${billing.needsUpgrade ? "expired" : ""}`}>
+          <Link href="/billing" className={`${styles.trialBadge} ${billing.needsUpgrade ? styles.expired : ""}`}>
             <strong>{billing.status === "trialing" ? `${billing.daysRemaining}d trial left` : billing.plan.name}</strong>
             <span>{billing.needsUpgrade ? "Upgrade required" : "Plan & billing"}</span>
           </Link>
@@ -41,13 +42,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </aside>
       <section className="merchantMain">
         {billing.status === "trialing" && billing.daysRemaining <= 2 ? (
-          <div className="merchantBillingBanner">
+          <div className={styles.banner}>
             <div><strong>Your free trial ends soon.</strong><span>{billing.daysRemaining} day{billing.daysRemaining === 1 ? "" : "s"} remaining. Your data stays safe if the trial expires.</span></div>
             <Link href="/billing">View plans</Link>
           </div>
         ) : null}
         {billing.needsUpgrade ? (
-          <div className="merchantBillingBanner expired">
+          <div className={`${styles.banner} ${styles.expired}`}>
             <div><strong>Your workspace is read-only.</strong><span>Activate a subscription to create or change locations, topics and QR codes and to accept new review sessions.</span></div>
             <Link href="/billing">Choose a plan</Link>
           </div>
