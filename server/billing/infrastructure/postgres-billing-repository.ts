@@ -84,6 +84,20 @@ export class PostgresBillingRepository implements BillingRepository {
     };
   }
 
+  async getOrganizationIdForQrToken(qrToken: string) {
+    const result = await this.pool.query(
+      `SELECT l.organization_id
+         FROM qr_codes q
+         JOIN locations l ON l.id = q.location_id
+        WHERE q.public_token = $1
+          AND q.is_active = TRUE
+          AND l.is_active = TRUE
+        LIMIT 1`,
+      [qrToken],
+    );
+    return result.rows[0]?.organization_id ? String(result.rows[0].organization_id) : null;
+  }
+
   async updateSubscriptionStatus(organizationId: string, status: SubscriptionStatus) {
     const result = await this.pool.query(
       `UPDATE organization_subscriptions
