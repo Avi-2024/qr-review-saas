@@ -15,9 +15,11 @@ export async function POST(request: Request) {
     if (!decision.allowed) throw new RateLimitError();
 
     const body = startSessionSchema.parse(await request.json());
-    await getBillingService().assertCanCollectReviewsForQrToken(body.qrToken);
-
     const env = getEnv();
+    if (env.REVIEW_REPOSITORY === "postgres") {
+      await getBillingService().assertCanCollectReviewsForQrToken(body.qrToken);
+    }
+
     const result = await getReviewService().startSession({
       qrToken: body.qrToken,
       clientSessionId: body.clientSessionId,
