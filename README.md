@@ -22,6 +22,8 @@ QR scan → rating → neutral contextual topics → optional note → backend r
 The merchant workspace includes:
 
 - database-backed merchant authentication
+- self-service merchant signup
+- automatic 7-day free trial provisioning
 - owner/admin/manager/viewer roles
 - organization-scoped sessions and queries
 - resumable five-step merchant onboarding
@@ -35,6 +37,34 @@ The merchant workspace includes:
 - scannable SVG QR preview/download
 - organization funnel analytics
 - per-QR placement analytics for scans, generated drafts, Google opens and measured conversion
+- subscription status, plan limits and read-only expiry behavior
+
+## Trial and subscription foundation
+
+Every newly created organization receives a **7-day Starter trial** automatically. The trial does not require a payment card.
+
+Current seeded plans:
+
+| Plan | Monthly | Yearly | Locations | QR codes |
+| --- | ---: | ---: | ---: | ---: |
+| Starter | ₹499 | ₹4,990 | 1 | 5 |
+| Growth | ₹999 | ₹9,990 | 3 | 25 |
+| Business | ₹1,999 | ₹19,990 | 10 | 100 |
+
+Subscription states are `trialing`, `active`, `past_due`, `cancelled`, `expired` and `suspended`.
+
+Entitlement rules:
+
+- a valid trial has full access
+- an active subscription has full access
+- `past_due` receives a three-day grace window when a current period end exists
+- expired/cancelled/suspended workspaces keep historical data but become read-only
+- new public review sessions are paused when the owning organization has no usable entitlement
+- existing data, analytics and historical QR performance are not deleted on trial expiry
+- plan limits are enforced server-side for location and QR creation
+- the in-memory customer demo remains usable without PostgreSQL or billing tables
+
+The billing core is intentionally provider-agnostic. Payment checkout, provider subscription creation and verified webhooks are the next adapter layer, so Razorpay, Cashfree or another provider can be connected without rewriting entitlement logic.
 
 ## QR performance analytics
 
@@ -79,7 +109,7 @@ Rules:
 
 ## Google business search
 
-Merchant onboarding and Location Management use **Places API (New)** rather than asking merchants to find a `ChIJ...` identifier manually.
+Merchant onboarding and Location Management can use **Places API (New)** to find the correct Google review destination.
 
 Flow:
 
@@ -101,6 +131,7 @@ Implementation rules:
 - returned Google names/addresses are displayed only for selection verification; QR Review persists the Place ID, not copied Google Places content
 - search is merchant-authenticated and rate limited
 - a manual Place ID fallback remains available for resilience
+- Places search is an onboarding convenience, not a requirement of the review/session core
 
 Enable **Places API (New)** in Google Cloud and configure:
 
@@ -122,6 +153,7 @@ Restrict the API key to the required Google Maps Platform API in Google Cloud. D
 - bcrypt password hashing
 - opaque database-backed auth sessions
 - HttpOnly/Secure/SameSite cookies
+- provider-agnostic subscription entitlement service
 - Google Places API (New) server-side adapter
 - QR SVG generation
 - Upstash/Redis distributed production rate limiting with bounded local fallback
@@ -135,7 +167,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The default `.env.example` uses `REVIEW_REPOSITORY=memory`, so the customer review demo at `/` runs without PostgreSQL.
+The default `.env.example` uses `REVIEW_REPOSITORY=memory`, so the customer review demo at `/` runs without PostgreSQL. Subscription enforcement is applied to PostgreSQL SaaS mode and does not break the memory demo.
 
 ## Run full merchant platform
 
@@ -179,13 +211,15 @@ npm run dev
 Open:
 
 - customer demo: `http://localhost:3000`
+- merchant signup: `http://localhost:3000/signup`
 - merchant login: `http://localhost:3000/login`
 - merchant onboarding: `http://localhost:3000/onboarding`
 - merchant dashboard: `http://localhost:3000/dashboard`
 - review topics: `http://localhost:3000/dashboard/topics`
 - analytics + QR performance: `http://localhost:3000/dashboard/analytics`
+- plan & billing: `http://localhost:3000/billing`
 
-No merchant password is hardcoded in the repository. The bootstrap script hashes the password with bcrypt and creates/updates the owner membership.
+No merchant password is hardcoded in the repository. The bootstrap script hashes the password with bcrypt and creates/updates the owner membership. The public signup flow also hashes passwords with bcrypt and creates an owner-scoped session transactionally.
 
 ## Public customer API
 
@@ -198,9 +232,11 @@ No merchant password is hardcoded in the repository. The bootstrap script hashes
 
 ## Merchant API
 
+- `POST /api/v1/merchant/auth/signup`
 - `POST /api/v1/merchant/auth/login`
 - `POST /api/v1/merchant/auth/logout`
 - `GET /api/v1/merchant/auth/me`
+- `GET /api/v1/merchant/billing`
 - `GET /api/v1/merchant/dashboard`
 - `GET /api/v1/merchant/onboarding`
 - `PATCH /api/v1/merchant/onboarding/business`
@@ -224,8 +260,10 @@ app/api/                         thin HTTP routes
 server/domain/                  customer review domain
 server/application/             customer review use cases
 server/analytics/               isolated QR performance analytics domain/service/repository
+server/billing/                 subscription domain, entitlements and PostgreSQL adapter
 server/merchant/domain/         merchant domain
 server/merchant/application/    merchant use cases + repository port
+server/merchant/signup/         self-service owner workspace provisioning
 server/merchant/topics/         isolated topic management service + repository
 server/merchant/infrastructure/ PostgreSQL merchant adapter
 server/integrations/            external provider adapters such as Google Places
@@ -242,14 +280,18 @@ database/migrations/            ordered tracked migrations
 - New locations automatically receive sector-neutral review topics.
 - Archived topics are retained for historical integrity instead of being hard-deleted.
 - Paused QR assets keep their historical analytics and remain visible in QR performance reports.
+- Trial/subscription expiry never deletes merchant review history.
+- Subscription and plan enforcement is server-side; UI state is not treated as a security boundary.
 - Sector-specific wording belongs in configurable merchant content/presets, not in core business logic.
 - Google Places content is not used as a long-lived business-content database; the Place ID is the persistent review-destination identifier.
 
 ## Remaining production scale work
 
+- payment-provider checkout and webhook adapter for activating paid subscriptions
+- subscription cancellation/renewal/refund administration
+- super-admin merchant/subscription management
 - organization switching for users who belong to multiple organizations
 - password reset / email verification / MFA
 - structured logging and monitoring
 - AI provider adapter with cost/latency fallback
-- billing/subscriptions
 - team member invitation and role management
