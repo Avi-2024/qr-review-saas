@@ -1,0 +1,44 @@
+.shell { min-height: 100vh; background: #f5f7f5; color: #17201a; }
+.topbar { min-height: 74px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px clamp(20px, 5vw, 64px); border-bottom: 1px solid #e2e8e2; background: rgba(255,255,255,.92); }
+.brand { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+.brandMark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: #234535; color: #fff; font-size: 12px; font-weight: 900; }
+.brand strong { display: block; font-size: 14px; }
+.brand span:last-child { display: block; color: #738078; font-size: 10px; margin-top: 2px; }
+.topActions { display: flex; align-items: center; gap: 10px; }
+.backLink { color: #315943; font-size: 12px; font-weight: 800; text-decoration: none; }
+.content { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 42px 0 70px; }
+.heading { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 22px; }
+.heading h1 { margin: 6px 0 5px; font-size: clamp(30px, 4vw, 44px); letter-spacing: -.045em; }
+.heading p { margin: 0; max-width: 650px; color: #6f7b73; line-height: 1.6; font-size: 13px; }
+.eyebrow { color: #657269; font-size: 9px; font-weight: 900; letter-spacing: .16em; }
+.statusCard { display: grid; grid-template-columns: 1fr auto; gap: 28px; padding: 26px; border: 1px solid #dde5de; border-radius: 20px; background: #fff; box-shadow: 0 14px 38px rgba(35,69,53,.06); }
+.statusCard.expired { border-color: #e9c7bd; background: #fffaf8; }
+.statusCard h2 { margin: 7px 0 7px; font-size: 25px; letter-spacing: -.035em; }
+.statusCard p { margin: 0; max-width: 700px; color: #6f7b73; line-height: 1.6; font-size: 12px; }
+.statusMeta { min-width: 210px; display: grid; grid-template-columns: 1fr auto; gap: 8px 18px; align-content: center; padding: 14px 16px; border-radius: 15px; background: #f4f7f4; }
+.statusMeta span { color: #7a867e; font-size: 10px; }
+.statusMeta strong { text-align: right; font-size: 11px; }
+.usageGrid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; margin-top: 14px; }
+.usageCard { padding: 20px; border: 1px solid #e0e6e0; border-radius: 18px; background: #fff; }
+.usageCard h3 { margin: 7px 0 3px; font-size: 24px; letter-spacing: -.035em; }
+.usageCard p { margin: 0; color: #78837c; font-size: 11px; }
+.planSection { margin-top: 38px; }
+.sectionHeading { display: flex; align-items: end; justify-content: space-between; gap: 28px; margin-bottom: 16px; }
+.sectionHeading h2 { margin: 6px 0 0; font-size: 24px; letter-spacing: -.035em; }
+.sectionHeading > p { max-width: 480px; margin: 0; color: #78837c; font-size: 11px; line-height: 1.55; text-align: right; }
+.planGrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.planCard { display: flex; flex-direction: column; min-height: 390px; padding: 22px; border: 1px solid #dfe6df; border-radius: 20px; background: #fff; }
+.planCard.selected { border-color: #7fa08a; box-shadow: inset 0 0 0 1px #7fa08a, 0 18px 42px rgba(35,69,53,.08); }
+.planCard h3 { margin: 7px 0 8px; font-size: 22px; }
+.price { display: flex; align-items: baseline; gap: 6px; }
+.price strong { font-size: 30px; letter-spacing: -.05em; }
+.price span { color: #7d887f; font-size: 10px; }
+.planCard p { color: #7a867e; font-size: 10px; }
+.features { flex: 1; margin: 18px 0 22px; padding: 0; list-style: none; display: grid; gap: 10px; }
+.features li { position: relative; padding-left: 19px; color: #536058; font-size: 11px; }
+.features li::before { content: "✓"; position: absolute; left: 0; color: #315943; font-weight: 900; }
+.planButton { width: 100%; min-height: 44px; border: 0; border-radius: 12px; background: #234535; color: #fff; font-weight: 850; cursor: pointer; }
+.planButton:disabled { cursor: not-allowed; opacity: .48; }
+.note { margin-top: 16px; padding: 14px 16px; border: 1px solid #e0e6e0; border-radius: 14px; background: #fff; color: #657269; font-size: 11px; line-height: 1.55; }
+@media (max-width: 840px) { .planGrid { grid-template-columns: 1fr; } .statusCard { grid-template-columns: 1fr; } .statusMeta { min-width: 0; } .sectionHeading { align-items: flex-start; flex-direction: column; } .sectionHeading > p { text-align: left; } }
+@media (max-width: 560px) { .content { width: min(100% - 24px, 1180px); padding-top: 26px; } .topbar { padding: 12px; } .usageGrid { grid-template-columns: 1fr; } .heading { align-items: flex-start; flex-direction: column; } }

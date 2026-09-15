@@ -1,4 +1,5 @@
 import { requireMerchantApiIdentity } from "@/server/auth/merchant-session";
+import { getBillingService } from "@/server/bootstrap/billing-container";
 import { getMerchantService } from "@/server/bootstrap/merchant-container";
 import { handleRouteError, created, ok } from "@/server/http/response";
 import { merchantLocationCreateSchema } from "@/server/http/merchant-schemas";
@@ -18,6 +19,7 @@ export async function POST(request: Request) {
   try {
     const { identity } = await requireMerchantApiIdentity();
     const body = merchantLocationCreateSchema.parse(await request.json());
+    await getBillingService().assertLocationCapacity(identity.organizationId);
     return created({ location: await getMerchantService().createLocation(identity, body) });
   } catch (error) {
     return handleRouteError(error);

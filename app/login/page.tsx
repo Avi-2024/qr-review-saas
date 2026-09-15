@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import LoginForm from "@/components/merchant/LoginForm";
 import { getOptionalMerchantIdentity } from "@/server/auth/merchant-session";
@@ -27,6 +28,7 @@ export default async function LoginPage() {
           <h2>Merchant sign in</h2>
           <p>Use your merchant owner or team account to access the reputation workspace.</p>
           <LoginForm />
+          <p className="merchantAuthSwitch">New to QR Review? <Link href="/signup">Start a 7-day free trial</Link></p>
         </div>
       </section>
     </main>

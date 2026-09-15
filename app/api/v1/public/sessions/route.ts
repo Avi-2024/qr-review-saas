@@ -1,3 +1,4 @@
+import { getBillingService } from "@/server/bootstrap/billing-container";
 import { getReviewService, getSessionRateLimiter } from "@/server/bootstrap/review-container";
 import { getEnv } from "@/server/config/env";
 import { RateLimitError } from "@/server/core/errors";
@@ -15,6 +16,10 @@ export async function POST(request: Request) {
 
     const body = startSessionSchema.parse(await request.json());
     const env = getEnv();
+    if (env.REVIEW_REPOSITORY === "postgres") {
+      await getBillingService().assertCanCollectReviewsForQrToken(body.qrToken);
+    }
+
     const result = await getReviewService().startSession({
       qrToken: body.qrToken,
       clientSessionId: body.clientSessionId,
