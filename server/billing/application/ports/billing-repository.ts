@@ -10,6 +10,7 @@ export interface BillingRepository {
   getPlan(code: string): Promise<BillingPlan | null>;
   listPlans(): Promise<BillingPlan[]>;
   getUsage(organizationId: string): Promise<BillingUsage>;
+  getOrganizationIdForQrToken(qrToken: string): Promise<string | null>;
   updateSubscriptionStatus(
     organizationId: string,
     status: SubscriptionStatus,
