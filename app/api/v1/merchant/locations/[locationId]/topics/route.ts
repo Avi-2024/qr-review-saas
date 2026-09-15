@@ -1,4 +1,5 @@
 import { requireMerchantApiIdentity } from "@/server/auth/merchant-session";
+import { getBillingService } from "@/server/bootstrap/billing-container";
 import { getMerchantTopicService } from "@/server/bootstrap/merchant-topic-container";
 import { handleRouteError, ok } from "@/server/http/response";
 import { merchantLocationIdSchema, merchantTopicSaveSchema } from "@/server/http/merchant-schemas";
@@ -30,6 +31,7 @@ export async function PUT(
     const params = await context.params;
     const locationId = merchantLocationIdSchema.parse(params.locationId);
     const body = merchantTopicSaveSchema.parse(await request.json());
+    await getBillingService().assertCanWrite(identity.organizationId);
     const topics = await getMerchantTopicService().save(identity, locationId, body.topics);
     return ok({ topics });
   } catch (error) {
