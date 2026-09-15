@@ -1,12 +1,16 @@
 import { redirect } from "next/navigation";
 import OnboardingWizard from "@/components/merchant/OnboardingWizard";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";
+import { getBillingService } from "@/server/bootstrap/billing-container";
 import { isGooglePlacesConfigured } from "@/server/bootstrap/google-places-container";
 import { getMerchantService } from "@/server/bootstrap/merchant-container";
 
 export default async function OnboardingPage() {
   const identity = await requireMerchantIdentity();
   if (identity.onboardingCompletedAt) redirect("/dashboard");
+
+  const billing = await getBillingService().getSnapshot(identity.organizationId);
+  if (billing.needsUpgrade) redirect("/billing");
 
   const state = await getMerchantService().onboardingState(identity);
   const initialState = {
