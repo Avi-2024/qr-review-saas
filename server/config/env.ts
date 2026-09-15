@@ -21,11 +21,43 @@ const envSchema = z.object({
   GOOGLE_PLACES_API_KEY: z.string().trim().min(20).optional(),
   GOOGLE_PLACES_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(500).max(15_000).default(4_000),
   GOOGLE_PLACES_RATE_LIMIT_MAX: z.coerce.number().int().min(10).max(500).default(80),
+  BILLING_PROVIDER: z.enum(["none", "razorpay"]).default("none"),
+  RAZORPAY_KEY_ID: z.string().trim().min(5).optional(),
+  RAZORPAY_KEY_SECRET: z.string().trim().min(8).optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().trim().min(8).optional(),
+  RAZORPAY_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(500).max(15_000).default(5_000),
+  RAZORPAY_PLAN_STARTER_MONTHLY: z.string().trim().min(5).optional(),
+  RAZORPAY_PLAN_STARTER_YEARLY: z.string().trim().min(5).optional(),
+  RAZORPAY_PLAN_GROWTH_MONTHLY: z.string().trim().min(5).optional(),
+  RAZORPAY_PLAN_GROWTH_YEARLY: z.string().trim().min(5).optional(),
+  RAZORPAY_PLAN_BUSINESS_MONTHLY: z.string().trim().min(5).optional(),
+  RAZORPAY_PLAN_BUSINESS_YEARLY: z.string().trim().min(5).optional(),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
 
 let cached: AppEnv | null = null;
+
+function assertRazorpayConfiguration(env: AppEnv) {
+  if (env.BILLING_PROVIDER !== "razorpay") return;
+
+  const required = [
+    "RAZORPAY_KEY_ID",
+    "RAZORPAY_KEY_SECRET",
+    "RAZORPAY_WEBHOOK_SECRET",
+    "RAZORPAY_PLAN_STARTER_MONTHLY",
+    "RAZORPAY_PLAN_STARTER_YEARLY",
+    "RAZORPAY_PLAN_GROWTH_MONTHLY",
+    "RAZORPAY_PLAN_GROWTH_YEARLY",
+    "RAZORPAY_PLAN_BUSINESS_MONTHLY",
+    "RAZORPAY_PLAN_BUSINESS_YEARLY",
+  ] as const;
+
+  const missing = required.filter((key) => !env[key]);
+  if (missing.length) {
+    throw new Error(`BILLING_PROVIDER=razorpay requires: ${missing.join(", ")}.`);
+  }
+}
 
 function assertProductionConfiguration(env: AppEnv) {
   if (env.NODE_ENV !== "production") return;
@@ -48,6 +80,7 @@ function assertProductionConfiguration(env: AppEnv) {
 export function getEnv(): AppEnv {
   if (cached) return cached;
   const env = envSchema.parse(process.env);
+  assertRazorpayConfiguration(env);
   assertProductionConfiguration(env);
   cached = env;
   return env;
