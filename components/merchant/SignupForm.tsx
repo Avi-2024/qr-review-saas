@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import styles from "./SignupForm.module.css";
 
 export default function SignupForm() {
   const router = useRouter();
@@ -58,8 +59,8 @@ export default function SignupForm() {
       </div>
       {error ? <div className="merchantError" role="alert">{error}</div> : null}
       <button className="merchantBtn" disabled={loading}>{loading ? "Creating trial…" : "Start 7-day free trial"}</button>
-      <p className="merchantAuthSwitch">Already have an account? <Link href="/login">Sign in</Link></p>
-      <p className="merchantAuthFinePrint">No card required for the trial. Your data stays available if the trial ends; write access pauses until you choose a plan.</p>
+      <p className={styles.switch}>Already have an account? <Link href="/login">Sign in</Link></p>
+      <p className={styles.finePrint}>No card required for the trial. Your data stays available if the trial ends; write access pauses until you choose a plan.</p>
     </form>
   );
 }
