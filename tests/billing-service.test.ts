@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BillingService } from "@/server/billing/application/services/billing-service";
 import type { BillingRepository } from "@/server/billing/application/ports/billing-repository";
 import type {
@@ -27,6 +27,7 @@ function subscription(overrides: Partial<OrganizationSubscription> = {}): Organi
     id: "00000000-0000-4000-8000-000000000002",
     organizationId: ORG_ID,
     planCode: "starter",
+    billingInterval: "monthly",
     status: "trialing",
     trialStartedAt: new Date(NOW.getTime() - DAY),
     trialEndsAt: new Date(NOW.getTime() + 6 * DAY),
@@ -34,8 +35,11 @@ function subscription(overrides: Partial<OrganizationSubscription> = {}): Organi
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
     provider: null,
+    providerPlanId: null,
+    providerStatus: null,
     providerCustomerId: null,
     providerSubscriptionId: null,
+    lastProviderEventAt: null,
     ...overrides,
   };
 }
@@ -76,6 +80,13 @@ class FakeBillingRepository implements BillingRepository {
 }
 
 describe("BillingService", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(() => vi.useRealTimers());
+
   it("allows full access during a valid seven-day trial", async () => {
     const service = new BillingService(new FakeBillingRepository());
     const snapshot = await service.getSnapshot(ORG_ID, NOW);
@@ -108,6 +119,26 @@ describe("BillingService", () => {
     const service = new BillingService(repo);
 
     await expect(service.assertCanWrite(ORG_ID)).resolves.toMatchObject({ status: "active" });
+  });
+
+  it("exposes provider metadata without treating provider status as an entitlement", async () => {
+    const service = new BillingService(new FakeBillingRepository(subscription({
+      billingInterval: "yearly",
+      provider: "razorpay",
+      providerSubscriptionId: "sub_test",
+      providerStatus: "created",
+      status: "expired",
+    })));
+    const snapshot = await service.getSnapshot(ORG_ID, NOW);
+
+    expect(snapshot).toMatchObject({
+      billingInterval: "yearly",
+      provider: "razorpay",
+      providerSubscriptionId: "sub_test",
+      providerStatus: "created",
+      canWrite: false,
+      canCollectReviews: false,
+    });
   });
 
   it("allows a past-due subscription only inside the three-day grace window", async () => {
