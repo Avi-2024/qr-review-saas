@@ -8,6 +8,10 @@ The product core is **sector agnostic**. The same QR, session, review-generation
 
 QR scan → rating → neutral contextual topics → optional note → backend review generation → edit/regenerate → copy → direct Google review composer.
 
+Start with `/` for the customer demo, or `/r/:token` for a merchant QR touchpoint. Customers choose 1–5 stars, optionally select up to three topics and add a comment, then generate an editable draft. They can regenerate or copy the draft before opening Google. Posting happens on Google after the customer pastes and confirms their review; this app measures composer opens, not completed posts. Drafts currently use a local server-side generator, not an external AI API.
+
+See [backend architecture](docs/backend.md) for session, idempotency and deployment contracts.
+
 ## Sector-agnostic model
 
 - Organizations and locations are generic business entities, not restaurant/store-specific models.
@@ -64,7 +68,9 @@ Entitlement rules:
 - plan limits are enforced server-side for location and QR creation
 - the in-memory customer demo remains usable without PostgreSQL or billing tables
 
-The billing core is intentionally provider-agnostic. Payment checkout, provider subscription creation and verified webhooks are the next adapter layer, so Razorpay, Cashfree or another provider can be connected without rewriting entitlement logic.
+The billing core is provider-agnostic. Razorpay groundwork is included: subscription API client, checkout/webhook signature verification helpers, plan configuration and provider metadata migration. Billing remains disabled by default (`BILLING_PROVIDER=none`). No checkout UI, payment routes or webhook handler is wired yet, so this code does not activate paid subscriptions. These application workflows remain the next adapter layer.
+
+Migration `010_razorpay_subscription_billing.sql` adds monthly/yearly billing intervals, provider synchronization metadata, invoice references and a provider-event uniqueness index. Run all migrations before deploying the merged application.
 
 ## QR performance analytics
 
@@ -225,6 +231,7 @@ No merchant password is hardcoded in the repository. The bootstrap script hashes
 
 - `GET /api/health`
 - `GET /api/v1/public/qr/:token`
+- `GET /api/v1/public/locations/:publicId` (compatibility endpoint)
 - `POST /api/v1/public/sessions`
 - `POST /api/v1/public/sessions/:sessionId/events`
 - `POST /api/v1/public/reviews/generate`

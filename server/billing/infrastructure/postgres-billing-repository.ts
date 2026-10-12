@@ -2,6 +2,7 @@ import type { Pool } from "pg";
 import type { BillingRepository } from "@/server/billing/application/ports/billing-repository";
 import type {
   BillingPlan,
+  BillingInterval,
   BillingUsage,
   OrganizationSubscription,
   SubscriptionStatus,
@@ -24,6 +25,7 @@ function mapSubscription(row: Record<string, unknown>): OrganizationSubscription
     id: String(row.id),
     organizationId: String(row.organization_id),
     planCode: String(row.plan_code),
+    billingInterval: String(row.billing_interval) as BillingInterval,
     status: String(row.status) as SubscriptionStatus,
     trialStartedAt: new Date(String(row.trial_started_at)),
     trialEndsAt: new Date(String(row.trial_ends_at)),
@@ -31,8 +33,11 @@ function mapSubscription(row: Record<string, unknown>): OrganizationSubscription
     currentPeriodEnd: row.current_period_end ? new Date(String(row.current_period_end)) : null,
     cancelAtPeriodEnd: Boolean(row.cancel_at_period_end),
     provider: row.provider ? String(row.provider) : null,
+    providerPlanId: row.provider_plan_id ? String(row.provider_plan_id) : null,
+    providerStatus: row.provider_status ? String(row.provider_status) : null,
     providerCustomerId: row.provider_customer_id ? String(row.provider_customer_id) : null,
     providerSubscriptionId: row.provider_subscription_id ? String(row.provider_subscription_id) : null,
+    lastProviderEventAt: row.last_provider_event_at ? new Date(String(row.last_provider_event_at)) : null,
   };
 }
 

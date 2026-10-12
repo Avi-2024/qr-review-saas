@@ -151,4 +151,14 @@ Pull requests and `main` pushes run:
 5. regression tests, including distributed limiter behavior
 6. Next.js production build
 
+Vitest discovers both `server/**/*.test.ts` and `tests/**/*.test.ts`. PostgreSQL suites require `DATABASE_URL` and skip when it is absent; CI supplies a real PostgreSQL service and runs them after migrations. A local memory-only test run is not a substitute for database validation.
+
+## Billing provider groundwork
+
+`server/billing/providers/razorpay/` contains a timeout-bounded subscriptions client, plan configuration and constant-time HMAC signature verification helpers. `BILLING_PROVIDER=none` is the default. Selecting `razorpay` requires both key credentials, the webhook secret and all six monthly/yearly plan IDs; no key belongs in client-visible environment variables.
+
+Migration `010_razorpay_subscription_billing.sql` extends subscriptions and payments and adds a unique provider-event index. The PostgreSQL repository maps these fields into the domain, and billing snapshots expose the interval and provider status. Entitlements continue to use the application subscription status; an upstream `created` subscription does not grant paid access.
+
+Checkout, verification and webhook HTTP routes are not implemented yet. The helpers are not an active payment integration, and no external payment request occurs in the customer flow.
+
 Merchant authentication and dashboards should be built on top of this hardened foundation rather than bypassing these contracts.

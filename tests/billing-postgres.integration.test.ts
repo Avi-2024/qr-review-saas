@@ -31,7 +31,11 @@ describeDb("billing PostgreSQL foundation", () => {
     expect(subscription).toMatchObject({
       organizationId,
       planCode: "starter",
+      billingInterval: "monthly",
       status: "trialing",
+      providerPlanId: null,
+      providerStatus: null,
+      lastProviderEventAt: null,
     });
 
     const durationMs = subscription!.trialEndsAt.getTime() - subscription!.trialStartedAt.getTime();
@@ -60,5 +64,23 @@ describeDb("billing PostgreSQL foundation", () => {
     } finally {
       await pool.query(`DELETE FROM organizations WHERE id=$1`, [other.rows[0].id]);
     }
+  });
+
+  it("preserves provider synchronization metadata across status updates", async () => {
+    const lastEventAt = new Date("2026-10-13T00:00:00.000Z");
+    await pool.query(
+      `UPDATE organization_subscriptions
+          SET billing_interval='yearly', provider='razorpay',
+              provider_plan_id='plan_test', provider_status='created',
+              provider_subscription_id=$2, last_provider_event_at=$3
+        WHERE organization_id=$1`,
+      [organizationId, `sub_${suffix}`, lastEventAt],
+    );
+    const updated = await repo.updateSubscriptionStatus(organizationId, "expired");
+    expect(updated).toMatchObject({
+      billingInterval: "yearly", provider: "razorpay", providerPlanId: "plan_test",
+      providerStatus: "created", providerSubscriptionId: `sub_${suffix}`,
+      lastProviderEventAt: lastEventAt, status: "expired",
+    });
   });
 });
