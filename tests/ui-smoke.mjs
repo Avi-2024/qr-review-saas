@@ -118,6 +118,10 @@ try {
     const customerPath = await page.locator('.onboardingQrMeta code').innerText();
     await page.getByRole('button', { name: 'Finish & open dashboard' }).click();
     await page.getByRole('heading', { name: 'Reputation overview' }).waitFor();
+    const googleFunnel = page.locator('.merchantFunnelRow').filter({ hasText: 'Google opens' });
+    assert.equal(await googleFunnel.locator('strong').innerText(), '0');
+    assert.equal(await googleFunnel.locator('i').evaluate(el => el.getBoundingClientRect().width), 0, 'Zero events must have an empty funnel bar');
+    assert.equal(await page.locator('.merchantTrendBar.google').evaluateAll(els => els.every(el => el.getBoundingClientRect().height === 0)), true, 'Zero activity days must not display nonzero bars');
     await page.goto(base + customerPath);
     await page.getByRole('heading', { name: 'Studio Test Location', exact: true }).waitFor();
     await page.setViewportSize({ width: 320, height: 700 });

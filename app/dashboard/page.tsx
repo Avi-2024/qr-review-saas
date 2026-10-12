@@ -1,11 +1,7 @@
 import Link from "next/link";
+import { activityPercentage, funnelLabel } from "@/lib/merchant-display";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";
 import { getMerchantService } from "@/server/bootstrap/merchant-container";
-
-function percentage(value: number, max: number) {
-  if (!max) return 2;
-  return Math.max(2, Math.round((value / max) * 100));
-}
 
 export default async function DashboardPage() {
   const identity = await requireMerchantIdentity();
@@ -33,9 +29,9 @@ export default async function DashboardPage() {
           <div className="merchantTrend" aria-label="30 day activity chart">
             {data.trend.map((point) => (
               <div className="merchantTrendDay" key={point.date} title={`${point.date}: ${point.scans} scans, ${point.generated} generated, ${point.googleOpens} Google opens`}>
-                <span className="merchantTrendBar" style={{ height: `${percentage(point.scans, maxTrend)}%` }} />
-                <span className="merchantTrendBar generated" style={{ height: `${percentage(point.generated, maxTrend)}%` }} />
-                <span className="merchantTrendBar google" style={{ height: `${percentage(point.googleOpens, maxTrend)}%` }} />
+                <span className="merchantTrendBar" style={{ height: `${activityPercentage(point.scans, maxTrend)}%` }} />
+                <span className="merchantTrendBar generated" style={{ height: `${activityPercentage(point.generated, maxTrend)}%` }} />
+                <span className="merchantTrendBar google" style={{ height: `${activityPercentage(point.googleOpens, maxTrend)}%` }} />
               </div>
             ))}
           </div>
@@ -47,8 +43,8 @@ export default async function DashboardPage() {
           <div className="merchantFunnel">
             {data.funnel.map((item) => (
               <div className="merchantFunnelRow" key={item.event}>
-                <span>{item.event.replaceAll("_", " ")}</span>
-                <div className="merchantFunnelTrack"><i style={{ width: `${percentage(item.value, maxFunnel)}%` }} /></div>
+                <span>{funnelLabel(item.event)}</span>
+                <div className="merchantFunnelTrack"><i style={{ width: `${activityPercentage(item.value, maxFunnel)}%` }} /></div>
                 <strong>{item.value}</strong>
               </div>
             ))}
