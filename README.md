@@ -12,6 +12,10 @@ Start with `/` for the customer demo, or `/r/:token` for a merchant QR touchpoin
 
 See [backend architecture](docs/backend.md) for session, idempotency and deployment contracts.
 
+## Interface
+
+The customer and merchant screens share an ivory/forest palette, editorial typography, accessible focus states and responsive controls. See the [UI guide and customer previews](docs/ui.md) for the design and validation scope.
+
 ## Sector-agnostic model
 
 - Organizations and locations are generic business entities, not restaurant/store-specific models.

@@ -5,6 +5,7 @@ import "./merchant.css";
 import "./onboarding.css";
 import "./topics.css";
 import "./qr-analytics.css";
+import "./workspace-theme.css";
 
 export const metadata: Metadata = {
   title: "QR Review · Customer Feedback & Reputation",

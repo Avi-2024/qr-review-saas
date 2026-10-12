@@ -79,7 +79,7 @@ export default async function BillingPage() {
         <section className={styles.planSection}>
           <div className={styles.sectionHeading}>
             <div><span className={styles.eyebrow}>PLANS</span><h2>Choose the capacity that fits your business</h2></div>
-            <p>Checkout is intentionally separated from the subscription core so Razorpay, Cashfree or another provider can be added without rewriting entitlement logic.</p>
+            <p>Every plan includes your review workflow and analytics. Choose more capacity as your business grows.</p>
           </div>
           <div className={styles.planGrid}>
             {plans.map((plan) => (
@@ -98,12 +98,12 @@ export default async function BillingPage() {
                   <li>Custom review topics</li>
                 </ul>
                 <button className={styles.planButton} type="button" disabled>
-                  {plan.code === subscription.plan.code ? "Current plan" : "Checkout coming next"}
+                  {plan.code === subscription.plan.code ? "Current plan" : "Online upgrades coming soon"}
                 </button>
               </article>
             ))}
           </div>
-          <div className={styles.note}>Payment collection is not enabled in this foundation yet. The next billing step is a provider adapter, verified webhook processing and checkout activation.</div>
+          <div className={styles.note}>Online payments and plan changes are not available yet. Your current access and plan limits are shown above.</div>
         </section>
       </div>
     </main>

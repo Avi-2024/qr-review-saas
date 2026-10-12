@@ -1,18 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import LogoutButton from "@/components/merchant/LogoutButton";
+import MerchantNav from "@/components/merchant/MerchantNav";
+import UiIcon from "@/components/UiIcon";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";
 import { getBillingService } from "@/server/bootstrap/billing-container";
 import styles from "./subscription.module.css";
-
-const nav = [
-  ["/dashboard", "◫", "Overview"],
-  ["/dashboard/locations", "⌂", "Locations"],
-  ["/dashboard/topics", "≡", "Topics"],
-  ["/dashboard/qr-codes", "⌁", "QR Codes"],
-  ["/dashboard/analytics", "↗", "Analytics"],
-  ["/billing", "₹", "Billing"],
-] as const;
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const identity = await requireMerchantIdentity();
@@ -23,14 +16,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="merchantApp merchantShell">
       <aside className="merchantSidebar">
         <div className="merchantSidebarHead">
-          <span className="merchantLogoMark">QR</span>
+          <span className="merchantLogoMark"><UiIcon name="qr" /></span>
           <div><strong>QR Review</strong><span>{identity.organizationName}</span></div>
         </div>
-        <nav className="merchantNav">
-          {nav.map(([href, icon, label]) => (
-            <Link key={href} href={href}><span className="merchantNavIcon">{icon}</span>{label}</Link>
-          ))}
-        </nav>
+        <div className="merchantNavLabel">WORKSPACE</div>
+        <MerchantNav />
         <div className="merchantSidebarFoot">
           <Link href="/billing" className={`${styles.trialBadge} ${billing.needsUpgrade ? styles.expired : ""}`}>
             <strong>{billing.status === "trialing" ? `${billing.daysRemaining}d trial left` : billing.plan.name}</strong>
@@ -55,9 +45,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         ) : null}
         {children}
       </section>
-      <nav className="merchantMobileNav">
-        {nav.map(([href, _icon, label]) => <Link key={href} href={href}>{label}</Link>)}
-      </nav>
+      <MerchantNav mobile />
     </div>
   );
 }

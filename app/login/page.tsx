@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import LoginForm from "@/components/merchant/LoginForm";
+import UiIcon from "@/components/UiIcon";
 import { getOptionalMerchantIdentity } from "@/server/auth/merchant-session";
 
 export default async function LoginPage() {
@@ -10,23 +11,24 @@ export default async function LoginPage() {
   return (
     <main className="merchantLogin">
       <section className="merchantLoginVisual">
-        <div className="merchantLogo"><span className="merchantLogoMark">QR</span> REVIEW INTELLIGENCE</div>
+        <Link className="merchantLogo" href="/"><span className="merchantLogoMark"><UiIcon name="qr" /></span> QR Review</Link>
         <div>
-          <span className="merchantEyebrow">MERCHANT OPERATING SYSTEM</span>
-          <h1>Turn every customer moment into measurable reputation growth.</h1>
-          <p>Manage locations, QR touchpoints and the full review funnel from one focused workspace — without compromising authentic customer sentiment.</p>
+          <span className="merchantEyebrow">YOUR REPUTATION, IN FOCUS</span>
+          <h1>Small moments.<br /><em>Lasting connections.</em></h1>
+          <p>A thoughtful workspace for your locations, customer feedback, and the QR touchpoints that bring it all together.</p>
         </div>
         <div className="merchantLoginPoints">
           <div className="merchantLoginPoint"><strong>One view</strong><span>Locations, QR assets and review activity together.</span></div>
           <div className="merchantLoginPoint"><strong>Real funnel</strong><span>Track scans through Google review handoff.</span></div>
-          <div className="merchantLoginPoint"><strong>Tenant safe</strong><span>Every merchant query is organization scoped.</span></div>
+          <div className="merchantLoginPoint"><strong>Your workspace</strong><span>A focused view for you and your team.</span></div>
         </div>
       </section>
       <section className="merchantLoginPanel">
         <div className="merchantLoginCard">
+          <Link href="/" className="authBrand"><UiIcon name="qr" /> QR Review</Link>
           <span className="merchantEyebrow">WELCOME BACK</span>
-          <h2>Merchant sign in</h2>
-          <p>Use your merchant owner or team account to access the reputation workspace.</p>
+          <h2>Welcome back.</h2>
+          <p>Sign in to your business workspace.</p>
           <LoginForm />
           <p className="merchantAuthSwitch">New to QR Review? <Link href="/signup">Start a 7-day free trial</Link></p>
         </div>
