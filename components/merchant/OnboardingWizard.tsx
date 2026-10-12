@@ -307,7 +307,7 @@ export default function OnboardingWizard({
           {stage === "business" ? (
             <form onSubmit={saveBusiness} className="onboardingStepPane">
               <div className="onboardingHeading"><span className="merchantEyebrow">STEP 1 OF 5</span><h2>Tell us about your business</h2><p>This only helps us suggest useful review topics. The platform stays flexible for any sector.</p></div>
-              <div className="merchantField"><label>Business name</label><input value={businessName} onChange={(event)=>setBusinessName(event.target.value)} placeholder="Your business name" required /></div>
+              <div className="merchantField"><label htmlFor="onboarding-business">Business name</label><input id="onboarding-business" value={businessName} onChange={(event)=>setBusinessName(event.target.value)} placeholder="Your business name" required /></div>
               <div className="onboardingPresetGrid">
                 {BUSINESS_PRESETS.map((preset) => (
                   <button key={preset.id} type="button" className={presetId === preset.id ? "selected" : ""} onClick={() => { setPresetId(preset.id); if (preset.id !== "other") setCustomType(""); }}>
@@ -315,7 +315,7 @@ export default function OnboardingWizard({
                   </button>
                 ))}
               </div>
-              {presetId === "other" ? <div className="merchantField"><label>Your business type</label><input value={customType} onChange={(event)=>setCustomType(event.target.value)} placeholder="e.g. Pet grooming, event venue, repair service" /></div> : null}
+              {presetId === "other" ? <div className="merchantField"><label htmlFor="onboarding-type">Your business type</label><input id="onboarding-type" value={customType} onChange={(event)=>setCustomType(event.target.value)} placeholder="e.g. Pet grooming, event venue, repair service" /></div> : null}
               {error ? <div className="merchantError" role="alert">{error}</div> : null}
               <div className="onboardingActions"><button className="merchantBtn" disabled={Boolean(loading)}>{loading === "business" ? "Saving…" : "Continue to location →"}</button></div>
             </form>
@@ -325,8 +325,8 @@ export default function OnboardingWizard({
             <form onSubmit={saveLocation} className="onboardingStepPane">
               <div className="onboardingHeading"><span className="merchantEyebrow">STEP 2 OF 5</span><h2>Connect your first Google location</h2><p>Find the exact business or branch customers should review. We store only its Google Place ID.</p></div>
               <div className="merchantField">
-                <label>Location label</label>
-                <input value={locationName} onChange={(event)=>setLocationName(event.target.value)} placeholder="e.g. Main Branch" required />
+                <label htmlFor="onboarding-location">Location label</label>
+                <input id="onboarding-location" value={locationName} onChange={(event)=>setLocationName(event.target.value)} placeholder="e.g. Main Branch" required />
                 <small>This is your internal label in QR Review and can differ from the Google listing name.</small>
               </div>
               <GooglePlacePicker enabled={placesSearchEnabled} value={googlePlaceId} onChange={setGooglePlaceId} disabled={Boolean(loading)} />
@@ -343,7 +343,7 @@ export default function OnboardingWizard({
                 {topicDrafts.map((topic, index) => (
                   <div className="onboardingTopicRow" key={index}>
                     <span>{topic.icon || "•"}</span>
-                    <input value={topic.label} onChange={(event)=>updateTopic(index,event.target.value)} maxLength={60} required />
+                    <input aria-label={`Review topic ${index + 1}`} value={topic.label} onChange={(event)=>updateTopic(index,event.target.value)} maxLength={60} required />
                     <button type="button" onClick={()=>removeTopic(index)} disabled={topicDrafts.length <= 3}>Remove</button>
                   </div>
                 ))}
@@ -362,8 +362,8 @@ export default function OnboardingWizard({
                 {activePreset.qrSuggestions.map((suggestion) => <button type="button" key={suggestion} className={qrName === suggestion ? "selected" : ""} onClick={()=>setQrName(suggestion)}>{suggestion}</button>)}
               </div>
               <div className="onboardingTwoCols">
-                <div className="merchantField"><label>QR name / touchpoint</label><input value={qrName} onChange={(event)=>setQrName(event.target.value)} placeholder="e.g. Reception" required /></div>
-                <div className="merchantField"><label>Reference (optional)</label><input value={qrReference} onChange={(event)=>setQrReference(event.target.value)} placeholder="e.g. desk-01, table-12" /></div>
+                <div className="merchantField"><label htmlFor="onboarding-qr-name">QR name / touchpoint</label><input id="onboarding-qr-name" value={qrName} onChange={(event)=>setQrName(event.target.value)} placeholder="e.g. Reception" required /></div>
+                <div className="merchantField"><label htmlFor="onboarding-reference">Reference (optional)</label><input id="onboarding-reference" value={qrReference} onChange={(event)=>setQrReference(event.target.value)} placeholder="e.g. desk-01, table-12" /></div>
               </div>
               <div className="onboardingInfo"><strong>Independent analytics</strong><span>Later, each QR can show its own scans and Google-open conversion so you know which placement performs best.</span></div>
               {error ? <div className="merchantError" role="alert">{error}</div> : null}
