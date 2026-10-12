@@ -17,7 +17,8 @@ app.stderr.on('data', chunk => { logs = (logs + chunk).slice(-12000); });
 let browser;
 
 async function noOverflow(page) {
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `Horizontal overflow at ${page.viewportSize().width}px on ${page.url()}`);
+  const details = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth, width: document.documentElement.scrollWidth, viewport: innerWidth, nodes: [...document.querySelectorAll('main, section, article, .qrPerformanceKpis, .qrPerformanceKpi')].map(el => ({ className: el.className, width: el.getBoundingClientRect().width })).filter(el => el.width > innerWidth) }));
+  assert.equal(details.overflow, false, `Horizontal overflow on ${page.url()}: ${JSON.stringify(details)}`);
 }
 
 try {
