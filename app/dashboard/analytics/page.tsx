@@ -1,9 +1,9 @@
 import Link from "next/link";
+import { activityPercentage, funnelLabel } from "@/lib/merchant-display";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";
 import { getMerchantService } from "@/server/bootstrap/merchant-container";
 import { getQrPerformanceService } from "@/server/bootstrap/qr-performance-container";
 
-function pct(value: number, max: number) { return Math.max(2, max ? Math.round((value / max) * 100) : 2); }
 function metric(value: number) { return Number.isFinite(value) ? `${value}%` : "0%"; }
 
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ days?: string; location?: string }> }) {
@@ -47,12 +47,12 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
       <section className="merchantGrid2">
         <article className="merchantCard merchantSectionCard">
           <div className="merchantSectionHead"><div><span className="merchantEyebrow">DAILY TREND · {data.days} DAYS</span><h2>Review activity over time</h2><p>Hover a bar group to inspect each day.</p></div></div>
-          <div className="merchantTrend">{data.trend.map((point)=><div className="merchantTrendDay" key={point.date} title={`${point.date}: ${point.scans} scans · ${point.generated} generated · ${point.googleOpens} Google opens`}><span className="merchantTrendBar" style={{height:`${pct(point.scans,maxTrend)}%`}}/><span className="merchantTrendBar generated" style={{height:`${pct(point.generated,maxTrend)}%`}}/><span className="merchantTrendBar google" style={{height:`${pct(point.googleOpens,maxTrend)}%`}}/></div>)}</div>
+          <div className="merchantTrend">{data.trend.map((point)=><div className="merchantTrendDay" key={point.date} title={`${point.date}: ${point.scans} scans · ${point.generated} generated · ${point.googleOpens} Google opens`}><span className="merchantTrendBar" style={{height:`${activityPercentage(point.scans,maxTrend)}%`}}/><span className="merchantTrendBar generated" style={{height:`${activityPercentage(point.generated,maxTrend)}%`}}/><span className="merchantTrendBar google" style={{height:`${activityPercentage(point.googleOpens,maxTrend)}%`}}/></div>)}</div>
           <div className="merchantLegend"><span>Scans</span><span>Generated</span><span>Google opens</span></div>
         </article>
         <article className="merchantCard merchantSectionCard">
           <div className="merchantSectionHead"><div><span className="merchantEyebrow">CONVERSION FUNNEL</span><h2>Customer progression</h2><p>Distinct sessions reaching each measurable milestone.</p></div></div>
-          <div className="merchantFunnel">{data.funnel.map((item)=><div className="merchantFunnelRow" key={item.event}><span>{item.event.replaceAll("_"," ")}</span><div className="merchantFunnelTrack"><i style={{width:`${pct(item.value,maxFunnel)}%`}}/></div><strong>{item.value}</strong></div>)}</div>
+          <div className="merchantFunnel">{data.funnel.map((item)=><div className="merchantFunnelRow" key={item.event}><span>{item.event.replaceAll("_"," ")}</span><div className="merchantFunnelTrack"><i style={{width:`${activityPercentage(item.value,maxFunnel)}%`}}/></div><strong>{item.value}</strong></div>)}</div>
         </article>
       </section>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import UiIcon, { type IconName } from "@/components/UiIcon";
 import { polishText, type Rating } from "@/lib/review";
 import {
@@ -90,6 +91,16 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
   const sessionPromiseRef = useRef<Promise<string> | null>(null);
   const pendingGenerationRef = useRef<PendingGeneration | null>(null);
   const editedDraftsRef = useRef(new Set<string>());
+  const composeHeadingRef = useRef<HTMLHeadingElement>(null);
+  const reviewHeadingRef = useRef<HTMLHeadingElement>(null);
+  const previousScreenRef = useRef(screen);
+
+  useEffect(() => {
+    if (previousScreenRef.current !== screen) {
+      (screen === "review" ? reviewHeadingRef : composeHeadingRef).current?.focus();
+      previousScreenRef.current = screen;
+    }
+  }, [screen]);
 
   const selectedCount = selected.length;
   const isDemo = qrToken === "mangal-counter-demo";
@@ -355,8 +366,11 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
 
   return (
     <main className="productShell customerFlowV2">
+      <header className="experienceNav">
+        <span className="productWordmark"><span className="productLogo"><UiIcon name="qr" /></span> QR Review<span className="wordmarkDot">.</span></span>
+        <div className="experienceNavRight">{isDemo ? <><span className="demoBadge">Interactive demo</span><Link href="/login">Business workspace <UiIcon name="external" /></Link></> : <span className="reviewNavLabel">THE CUSTOMER EXPERIENCE</span>}</div>
+      </header>
       <section className="experienceStage" aria-label="Customer review">
-        <div className="customerBrandBar"><span className="productWordmark"><UiIcon name="qr" /> QR Review</span>{isDemo ? <span className="demoBadge">Customer preview</span> : null}</div>
         <div className="phoneCard">
           <header className="merchantHeader customerHeader">
             <div className="merchantBrand">
@@ -367,6 +381,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                 <p>{location?.subtitle || "Share your experience in a few taps."}</p>
               </div>
             </div>
+            <span className="headerTouchpoint"><UiIcon name="qr" /></span>
           </header>
 
           <div className="customerSteps" aria-label="Review progress">
@@ -377,9 +392,9 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
           {screen === "compose" ? (
             <div className="contentPane composePane">
               <section className="heroQuestion customerQuestion">
-                <span className="sectionEyebrow">LET’S START WITH YOU</span>
-                <h2>How was your<br />experience?</h2>
-                <p>A few taps. An honest review. All in your words.</p>
+                <span className="sectionEyebrow">01 / START WITH A RATING</span>
+                <h2 ref={composeHeadingRef} tabIndex={-1}>How did it feel?</h2>
+                <p>Your honest take. Good, bad, or in between.</p>
 
                 <div className="ratingGrid" role="group" aria-label="Select rating">
                   {[1, 2, 3, 4, 5].map((value) => (
@@ -402,7 +417,8 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                 </div>
               </section>
 
-              <section className={`sectionBlock topicSection ${rating ? "ready" : ""}`}>
+              <div className="detailFields" hidden={!rating}>
+              <section className="sectionBlock topicSection ready">
                 <div className="sectionHeading">
                   <div>
                     <h3>What stood out?</h3>
@@ -426,7 +442,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                       >
                         <span className="chipIcon" aria-hidden="true">{defaultTopicIcons[topic.icon] ? <UiIcon name={defaultTopicIcons[topic.icon]} /> : topic.icon}</span>
                         <span>{topic.label}</span>
-                        <span className="chipCheck">{isActive ? "✓" : "+"}</span>
+                        <span className="chipCheck" aria-hidden="true">{isActive ? <UiIcon name="check" /> : "+"}</span>
                       </button>
                     );
                   })}
@@ -464,7 +480,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                           type="button"
                           className="inlinePolishAction"
                           onClick={() => updateNote(polishText(note))}
-                          disabled={!note.trim()}
+                          disabled={!note.trim() || isGenerating}
                         >
                           ✦ Polish wording
                         </button>
@@ -474,6 +490,9 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                   </div>
                 ) : null}
               </section>
+              </div>
+
+              {!rating && !error ? <div className="ratingInvitation"><span className="invitationGlyph"><UiIcon name="edit" /></span><div><strong>Start small. Make it yours.</strong><p>Choose a rating to add optional details and create your review.</p></div></div> : null}
 
               {error ? <p className="customerError" role="alert">{error}</p> : null}
               {error && !location ? <button type="button" className="retryAction" onClick={() => { setError(""); void ensureSession().catch((cause) => setError(cause instanceof Error ? cause.message : "Could not load the review.")); }}>Try loading again <UiIcon name="arrow" /></button> : null}
@@ -489,7 +508,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                   <span>{isGenerating ? "Writing your review…" : "Generate my review"}</span>
                   <span className="actionArrow"><UiIcon name="arrow" /></span>
                 </button>
-                <p>You’re always in control of what you share.</p>
+                <p><UiIcon name="check" /> Read it. Edit it. Share when you’re ready.</p>
               </div>
             </div>
           ) : (
@@ -499,7 +518,8 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
               <div className="reviewReadyHeader">
                 <div className="successGlyph"><UiIcon name="check" /></div>
                 <div>
-                  <h2>Your review is ready</h2>
+                  <span className="sectionEyebrow">02 / MAKE IT YOURS</span>
+                  <h2 ref={reviewHeadingRef} tabIndex={-1}>Your review is ready</h2>
                   <p className="reviewLead">Read it once, edit anything you want, then continue to Google.</p>
                 </div>
               </div>
@@ -510,6 +530,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                   value={review}
                   onChange={(event) => editGeneratedReview(event.target.value)}
                   aria-label="Generated review"
+                  disabled={isGenerating || isOpeningGoogle}
                 />
                 <div className="reviewEditorFoot"><span>Make it sound like you.</span><span>{review.length} characters</span></div>
               </div>
@@ -521,7 +542,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                 type="button"
                 className="primaryAction googleAction"
                 onClick={() => void handleGoogle()}
-                disabled={!review.trim() || !location?.googleReviewUrl || isOpeningGoogle}
+                disabled={!review.trim() || !location?.googleReviewUrl || isGenerating || isOpeningGoogle}
               >
                 <span className="googleG">G</span>
                 <span>{isOpeningGoogle ? "Opening Google…" : "Copy & open Google review"}</span>
@@ -534,7 +555,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
                 <button type="button" disabled={isGenerating || isOpeningGoogle} onClick={() => void createDraft(variation + 1)}>
                   {isGenerating ? "Writing…" : "↻ Try another"}
                 </button>
-                <button type="button" disabled={isOpeningGoogle || !review.trim()} onClick={() => void handleCopy()}>
+                <button type="button" disabled={isGenerating || isOpeningGoogle || !review.trim()} onClick={() => void handleCopy()}>
                   <UiIcon name={copied ? "check" : "copy"} /> {copied ? "Copied" : "Copy only"}
                 </button>
               </div>
@@ -543,23 +564,24 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Re
             </div>
           )}
         </div>
-        <footer className="customerFooter"><span>Thoughtful feedback, made simple.</span><span>Powered by <strong>QR Review</strong></span></footer>
+        <footer className="customerFooter"><span>No sign-in needed here.</span><span>Powered by <strong>QR Review</strong></span></footer>
       </section>
 
       <aside className="partnerPanel">
-        <div className="panelTopline"><UiIcon name="qr" /><strong>QR Review</strong><span>THE CUSTOMER EXPERIENCE</span></div>
         <div className="partnerHero">
-          <span className="panelEyebrow">EVERY EXPERIENCE HAS A STORY</span>
-          <h2>A little feedback.<br /><em>A lasting<br />impression.</em></h2>
-          <p>Good, bad, or somewhere in between.<br />Help others with a review that feels like you.</p>
+          <span className="panelEyebrow"><i /> LESS EFFORT. MORE YOU.</span>
+          <h2>Every experience.<br /><span>Worth sharing.</span></h2>
+          <p>No perfect words needed. Start with how it felt.<br />We’ll help you shape a review you can make your own.</p>
         </div>
-        <div className="editorialCard" aria-hidden="true">
-          <div className="editorialCardTop"><span>THE HUMAN SIDE OF FEEDBACK</span><UiIcon name="sparkle" /></div>
-          <p>Your words.<br />Your experience.</p>
-          <div className="editorialCardBottom"><span>Rate. Refine. Share.</span><UiIcon name="arrow" /></div>
+        <div className="experienceGuide">
+          <div><span>01</span><strong>Rate the moment</strong><p>Start with your honest impression.</p></div>
+          <div><span>02</span><strong>Make it personal</strong><p>Add a detail. Edit every word.</p></div>
+          <div><span>03</span><strong>Share your voice</strong><p>Copy your review and continue to Google.</p></div>
         </div>
-        <div className="panelFootnote"><span><UiIcon name="check" /> Honest at every rating</span><span><UiIcon name="edit" /> Always yours to edit</span></div>
+        <div className="voiceObject" aria-hidden="true"><div className="voiceObjectMark"><UiIcon name="qr" /></div><div><span>FEEDBACK, WITHOUT THE FRICTION</span><strong>Your voice.<br />A little louder.</strong></div><span className="voiceObjectArrow"><UiIcon name="external" /></span></div>
+        <div className="panelFootnote"><span><UiIcon name="check" /> Every rating welcome</span><span><UiIcon name="edit" /> Always yours to edit</span></div>
       </aside>
+      <footer className="experiencePageFooter"><span>QR Review / Thoughtful feedback, made simple.</span><span>YOUR EXPERIENCE. YOUR WORDS.</span></footer>
     </main>
   );
 }

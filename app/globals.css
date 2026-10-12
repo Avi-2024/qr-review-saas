@@ -1,28 +1,37 @@
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("/fonts/manrope-latin.woff2") format("woff2");
+}
 :root {
-  --ink: #192d28;
-  --muted: #687670;
-  --line: #e1e6df;
+  --ink: #20231e;
+  --muted: #71746d;
+  --line: #e5e7df;
   --surface: #fff;
-  --canvas: #f6f6f1;
-  --green: #214d3f;
-  --green-2: #306451;
-  --green-soft: #edf3eb;
-  --gold: #b58232;
-  --cream: #f6f2e6;
-  --serif: Georgia, "Times New Roman", serif;
-  --shadow: 0 24px 70px -24px rgb(28 50 39 / 18%);
+  --canvas: #f7f8f2;
+  --green: #242a22;
+  --green-2: #3c4537;
+  --green-soft: #eff3e7;
+  --accent: #d6f277;
+  --accent-soft: #f0f8da;
+  --gold: #a57b25;
+  --cream: #f4f5e9;
+  --heading-font: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --shadow: 0 30px 80px -40px rgb(30 40 22 / 18%);
 }
 * { box-sizing: border-box; }
 html { background: var(--canvas); color-scheme: light; }
-body { margin: 0; color: var(--ink); font-family: "Inter", "Aptos", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+body { margin: 0; color: var(--ink); font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { touch-action: manipulation; }
 button:disabled { cursor: not-allowed; }
-a { color: var(--green); }
-:focus-visible { outline: 3px solid #b58232; outline-offset: 4px; }
-::selection { background: #d7e7d0; color: #192d28; }
-.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .14em; color: var(--muted); }
+a { color: var(--ink); }
+:focus-visible { outline: 3px solid #728833; outline-offset: 4px; }
+::selection { background: var(--accent); color: var(--ink); }
+.eyebrow { font-size: 10px; font-weight: 650; letter-spacing: .14em; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }

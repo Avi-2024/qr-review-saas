@@ -62,3 +62,17 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Install browser for UI smoke checks
+        run: npx playwright install --with-deps chromium
+
+      - name: Customer and merchant UI smoke checks
+        run: npm run test:ui
+
+      - name: Upload UI previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-previews
+          path: .next/ui-artifacts
+          if-no-files-found: ignore

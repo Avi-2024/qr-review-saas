@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:ui": "node tests/ui-smoke.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "merchant:create-admin": "node scripts/create-merchant-admin.mjs"
   },
@@ -26,6 +27,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "playwright": "1.62.1",
     "typescript": "^5.7.2",
     "vitest": "^3.2.4"
   }
