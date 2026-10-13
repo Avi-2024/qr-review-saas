@@ -14,7 +14,7 @@ See [backend architecture](docs/backend.md) for session, idempotency and deploym
 
 ## Interface
 
-The customer and merchant screens share a charcoal/lime studio theme, locally bundled Manrope typography, accessible focus states and responsive controls. The customer screen reveals optional details after a rating and keeps the mobile generation action within reach. See the [UI guide and customer previews](docs/ui.md) for the design and validation scope.
+The customer and merchant screens share a charcoal/lime studio theme, locally bundled Inter typography, accessible focus states and responsive controls. The customer screen reveals optional details after a rating and keeps the mobile generation action within reach. See the [UI guide and customer previews](docs/ui.md) for the design and validation scope.
 
 ## Sector-agnostic model
 

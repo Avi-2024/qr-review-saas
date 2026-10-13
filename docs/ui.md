@@ -1,6 +1,6 @@
 # Studio interface
 
-QR Review uses a warm white canvas, charcoal surfaces, lime accents and locally bundled Manrope typography. The new desktop layout frames the customer card with a concise three-part guide, while mobile starts with one task: choosing a rating.
+QR Review uses a warm white canvas, charcoal surfaces, lime accents and locally bundled Inter typography. The new desktop layout frames the customer card with a concise three-part guide, while mobile starts with one task: choosing a rating.
 
 Optional topics and comments appear after the rating is selected. The mobile generation action stays at the bottom of the viewport. Screen transitions move keyboard focus to the new heading. Draft editing, copying and Google handoff are disabled during regeneration; empty drafts cannot be copied or sent to Google. All ratings can reach the Google handoff.
 
@@ -31,4 +31,8 @@ npx playwright install chromium
 npm run test:ui
 ```
 
-Run all database migrations first when using PostgreSQL. Manrope is served from `public/fonts/manrope-latin.woff2`; its SIL Open Font License is included alongside it. No external font request is required.
+Run all database migrations first when using PostgreSQL. Inter is served from `public/fonts/inter-latin.woff2`; its SIL Open Font License is included alongside it. No external font request is required.
+
+## Typography
+
+Inter is bundled locally. Body copy and actions use 15–16px, supporting labels use 12–14px, and section headings use 20–30px. Display headlines are capped at 54px on the customer page. Heading tracking is limited to −0.025em so letterforms stay distinct. Inputs and review text use 16px to remain readable on phones. Mobile navigation uses compact 11px labels.
