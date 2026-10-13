@@ -35,7 +35,7 @@ try {
     executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined,
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
   });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ['clipboard-read', 'clipboard-write'] });
+  const context = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 1000 }, permissions: ['clipboard-read', 'clipboard-write'] });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -53,6 +53,7 @@ try {
     }
     assert.equal(await action.isDisabled(), true);
   }
+  await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: `${screenshots}/customer-desktop.png`, fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: `${screenshots}/customer-mobile.png`, fullPage: true });
