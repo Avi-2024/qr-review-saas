@@ -1,9 +1,9 @@
 @font-face {
-  font-family: "Manrope";
+  font-family: "Inter";
   font-style: normal;
-  font-weight: 200 800;
+  font-weight: 100 900;
   font-display: swap;
-  src: url("/fonts/manrope-latin.woff2") format("woff2");
+  src: url("/fonts/inter-latin.woff2") format("woff2");
 }
 :root {
   --ink: #20231e;
@@ -18,12 +18,12 @@
   --accent-soft: #f0f8da;
   --gold: #a57b25;
   --cream: #f4f5e9;
-  --heading-font: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --heading-font: "Inter", ui-sans-serif, system-ui, sans-serif;
   --shadow: 0 30px 80px -40px rgb(30 40 22 / 18%);
 }
 * { box-sizing: border-box; }
 html { background: var(--canvas); color-scheme: light; }
-body { margin: 0; color: var(--ink); font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+body { font-size: 16px; line-height: 1.5; font-optical-sizing: auto; margin: 0; color: var(--ink); font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { touch-action: manipulation; }
@@ -31,7 +31,7 @@ button:disabled { cursor: not-allowed; }
 a { color: var(--ink); }
 :focus-visible { outline: 3px solid #728833; outline-offset: 4px; }
 ::selection { background: var(--accent); color: var(--ink); }
-.eyebrow { font-size: 10px; font-weight: 650; letter-spacing: .14em; color: var(--muted); }
+.eyebrow { font-size: 12px; font-weight: 650; letter-spacing: .14em; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
