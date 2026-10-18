@@ -132,7 +132,7 @@ export default function QrManager({ qrCodes, locations, role }: { qrCodes: Merch
       ) : null}
 
       <section className="merchantCard merchantSectionCard nfcSetupInfo" aria-label="How to activate an NFC card">
-        <div className="merchantSectionHead"><div><span className="merchantEyebrow">NFC CARD SETUP</span><h2>Tap to open your Google Review experience</h2><p>Cards do not need batteries or an NFC-enabled website. Write the HTTPS link to a compatible blank NFC tag once, then test the tap on a phone.</p></div></div>
+        <div className="merchantSectionHead"><div><span className="merchantEyebrow">NFC CARD SETUP</span><h2>Tap to open your Google Review experience</h2><p>Cards need no battery or special customer app. Open this dashboard on your permanent production HTTPS domain before copying a tag URL — never program a localhost or preview link. Then write the URL to a compatible NFC tag and test the tap.</p></div></div>
         <div className="nfcSetupSteps">
           <div><span>01</span><strong>Create a card link</strong><p>Use one unique touchpoint per physical card, for example Reception Card 01.</p></div>
           <div><span>02</span><strong>Program the tag</strong><p>Tap “Copy NFC URL” below. In an NFC writing app, write it as a URL/URI NDEF record. Never store the Google review text on the card.</p></div>
