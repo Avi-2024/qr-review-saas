@@ -15,7 +15,7 @@ QR remains available as a fallback using `/r/TOKEN` and the existing SVG QR expo
 ## Set up a physical card
 
 1. In the merchant workspace open **NFC cards** (the existing `/dashboard/qr-codes` page).
-2. Create a **separate touchpoint for each physical card** and choose its location. Name it something recognizable like `Reception Card 01`; optionally add a location/desk reference.
+2. Open your dashboard using its **final production HTTPS domain**, not localhost or a temporary preview domain. Create a **separate touchpoint for each physical card** and choose its location. Name it something recognizable like `Reception Card 01`; optionally add a location/desk reference.
 3. Select **Copy NFC URL**. The copied link uses the current app origin and `/n/TOKEN`.
 4. In a trusted NFC writing app (for example an app offering a **Write → URL/URI** action), write the link as an NDEF URI record on a genuine writable NFC Forum Type 2 tag such as NTAG213, NTAG215 or NTAG216. Check the URL fits the tag's usable memory; use a larger-capacity tag for long domains.
 5. **Read the tag back** and confirm it contains the correct, public HTTPS URL. Open it on a compatible phone and complete a test review session. Test both Android and iPhone devices you intend to support.
