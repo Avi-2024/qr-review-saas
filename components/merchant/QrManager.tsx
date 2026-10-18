@@ -69,7 +69,7 @@ export default function QrManager({ qrCodes, locations, role }: { qrCodes: Merch
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ locationId, name, sourceType, reference: reference || undefined }),
       });
-      if (!response.ok) throw new Error(await readError(response, "Could not create QR code."));
+      if (!response.ok) throw new Error(await readError(response, "Could not create review touchpoint."));
       setName("");
       setSourceType("general");
       setReference("");
@@ -101,53 +101,66 @@ export default function QrManager({ qrCodes, locations, role }: { qrCodes: Merch
     }
   }
 
-  async function copyLink(qr: MerchantQrCode) {
+  async function copyLink(qr: MerchantQrCode, channel: "nfc" | "qr") {
     setError("");
-    const link = `${window.location.origin}/r/${qr.publicToken}`;
+    const link = `${window.location.origin}/${channel === "nfc" ? "n" : "r"}/${encodeURIComponent(qr.publicToken)}`;
     if (!(await copyText(link))) {
-      setError("The browser blocked automatic copying. Open the public route and copy its URL manually.");
+      setError("The browser blocked automatic copying. Open the card link and copy its URL manually.");
       return;
     }
 
-    setCopied(qr.id);
-    window.setTimeout(() => setCopied((value) => value === qr.id ? null : value), 1400);
+    const key = `${qr.id}-${channel}`;
+    setCopied(key);
+    window.setTimeout(() => setCopied((value) => value === key ? null : value), 1400);
   }
 
   return (
     <>
       {canWrite ? (
         <form className="merchantCard merchantFormCard" onSubmit={createQr}>
-          <span className="merchantEyebrow">CREATE QR TOUCHPOINT</span><h2>Add a measurable customer entry point</h2><p>Create a separate QR for any real-world customer touchpoint: reception, table, room, checkout, appointment desk, vehicle, delivery, classroom, service area, event booth, packaging, poster or anything else you want to measure independently.</p>
+          <span className="merchantEyebrow">CREATE REVIEW TOUCHPOINT</span><h2>Create an NFC-ready review card</h2><p>Each card has its own secure public link for an NFC tag. Use a separate touchpoint for reception, checkout, room or counter so its review activity can be measured independently. A printable QR backup stays available.</p>
           <div className="merchantFormGrid">
             <div className="merchantField"><label>Location</label><select value={locationId} onChange={(e)=>setLocationId(e.target.value)} required><option value="">Select location</option>{activeLocations.map((location)=><option key={location.id} value={location.id}>{location.name}</option>)}</select></div>
-            <div className="merchantField"><label>QR name</label><input value={name} onChange={(e)=>setName(e.target.value)} placeholder="e.g. Reception Desk / Table 12 / Room 204" required /></div>
+            <div className="merchantField"><label>Card name</label><input value={name} onChange={(e)=>setName(e.target.value)} placeholder="e.g. Reception Desk / Table 12 / Room 204" required /></div>
             <div className="merchantField"><label>Touchpoint type</label><input value={sourceType} onChange={(e)=>setSourceType(e.target.value)} placeholder="e.g. reception, room, checkout, vehicle" required /></div>
             <div className="merchantField"><label>Reference (optional)</label><input value={reference} onChange={(e)=>setReference(e.target.value)} placeholder="e.g. branch-a-desk-01" /></div>
           </div>
-          {!activeLocations.length ? <div className="merchantError">Activate or create a location before adding QR codes.</div> : null}
+          {!activeLocations.length ? <div className="merchantError">Activate or create a location before adding review cards.</div> : null}
           {error ? <div className="merchantError" role="alert">{error}</div> : null}
-          <div className="merchantFormActions"><button className="merchantBtn" disabled={loading || Boolean(updatingId) || !locationId}>{loading ? "Creating…" : "Create QR code"}</button></div>
+          <div className="merchantFormActions"><button className="merchantBtn" disabled={loading || Boolean(updatingId) || !locationId}>{loading ? "Creating…" : "Create card link"}</button></div>
         </form>
       ) : null}
 
+      <section className="merchantCard merchantSectionCard" aria-label="How to activate an NFC card">
+        <div className="merchantSectionHead"><div><span className="merchantEyebrow">NFC CARD SETUP</span><h2>Tap to open your Google Review experience</h2><p>Cards do not need batteries or an NFC-enabled website. Write the HTTPS link to a compatible blank NFC tag once, then test the tap on a phone.</p></div></div>
+        <div className="experienceGuide">
+          <div><span>01</span><strong>Create a card link</strong><p>Use one unique touchpoint per physical card, for example Reception Card 01.</p></div>
+          <div><span>02</span><strong>Program the tag</strong><p>Tap “Copy NFC URL” below. In an NFC writing app, write it as a URL/URI NDEF record. Never store the Google review text on the card.</p></div>
+          <div><span>03</span><strong>Test before printing</strong><p>Tap with an unlocked NFC-capable phone. Confirm the review page opens over HTTPS, and use the QR image as a fallback.</p></div>
+        </div>
+        <p>Tip: Write to an NTAG213/215/216 card, verify the saved URL, and only then lock the tag if needed. Pausing the link below disables the same review entry for that card and its QR backup.</p>
+      </section>
+
       <section className="merchantCard merchantTableCard">
-        <div className="merchantTableHead"><h2>QR touchpoints</h2><span className="merchantPill">{qrCodes.length} total</span></div>
+        <div className="merchantTableHead"><h2>NFC cards &amp; QR backups</h2><span className="merchantPill">{qrCodes.length} total</span></div>
         {qrCodes.length ? (
-          <table className="merchantTable"><thead><tr><th>QR</th><th>Location</th><th>Public route</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+          <table className="merchantTable"><thead><tr><th>Card / touchpoint</th><th>Location</th><th>NFC destination</th><th>Status</th><th>Actions</th></tr></thead><tbody>
             {qrCodes.map((qr) => <tr key={qr.id}>
               <td><strong>{qr.name}</strong><small>{qr.sourceType}{qr.reference ? ` · ${qr.reference}` : ""}</small></td>
               <td><strong>{qr.locationName}</strong></td>
-              <td><span className="merchantQrLink">/r/{qr.publicToken}</span></td>
+              <td><span className="merchantQrLink">/n/{qr.publicToken}</span><small>QR backup: /r/{qr.publicToken}</small></td>
               <td><span className={`merchantStatus ${qr.isActive ? "" : "off"}`}>{qr.isActive ? "Active" : "Paused"}</span></td>
               <td><div className="merchantActions">
-                <button type="button" onClick={()=>void copyLink(qr)}>{copied === qr.id ? "Copied" : "Copy link"}</button>
+                <button type="button" onClick={()=>void copyLink(qr, "nfc")}>{copied === `${qr.id}-nfc` ? "Copied!" : "Copy NFC URL"}</button>
+                <button type="button" onClick={()=>window.open(`/n/${encodeURIComponent(qr.publicToken)}`, "_blank", "noopener,noreferrer")}>Test link</button>
+                <button type="button" onClick={()=>void copyLink(qr, "qr")}>{copied === `${qr.id}-qr` ? "Copied!" : "Copy QR URL"}</button>
                 <button type="button" onClick={()=>window.open(`/api/v1/merchant/qr-codes/${qr.id}/svg`,"_blank","noopener,noreferrer")}>View QR</button>
                 <button type="button" onClick={()=>window.open(`/api/v1/merchant/qr-codes/${qr.id}/svg?download=1`,"_blank","noopener,noreferrer")}>Download</button>
                 {canWrite ? <button type="button" disabled={Boolean(updatingId)} onClick={()=>void toggle(qr)}>{updatingId === qr.id ? "Updating…" : qr.isActive ? "Pause" : "Activate"}</button> : null}
               </div></td>
             </tr>)}
           </tbody></table>
-        ) : <div className="merchantEmpty">No QR codes yet. Create your first measurable touchpoint above.</div>}
+        ) : <div className="merchantEmpty">No review links yet. Create your first NFC-ready card above.</div>}
       </section>
     </>
   );
