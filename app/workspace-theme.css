@@ -203,3 +203,16 @@
 .onboardingQrMeta p, .onboardingQrActions button { font-size: 14px; }
 .onboardingQrMeta code, .onboardingSteps li > span { font-size: 12px; }
 .onboardingTopicRow input, .merchantTopicIconField input, .merchantTopicLabelField input, .qrPerformanceFilter select { font-size: 16px; }
+
+/* NFC card writer guide: retain readable text across dashboard breakpoints. */
+.nfcSetupInfo { margin-bottom: 18px; }
+.nfcSetupInfo > p { margin: 18px 0 0; font-size: 14px; line-height: 1.65; color: #607456; }
+.nfcSetupSteps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+.nfcSetupSteps > div { min-width: 0; padding: 18px; border: 1px solid #e1e9d9; border-radius: 14px; background: #f8faf5; }
+.nfcSetupSteps > div > span { display: inline-flex; padding: 5px 8px; border-radius: 6px; background: #e6f0d7; color: #416344; font-size: 11px; font-weight: 750; }
+.nfcSetupSteps strong { display: block; margin-top: 12px; font-size: 15px; font-weight: 650; color: #243d2b; }
+.nfcSetupSteps p { margin: 7px 0 0; font-size: 13px; line-height: 1.6; color: #6d7e63; }
+@media (max-width: 720px) {
+  .nfcSetupSteps { grid-template-columns: 1fr; gap: 10px; }
+  .nfcSetupSteps > div { padding: 15px; }
+}
