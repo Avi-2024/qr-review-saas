@@ -144,6 +144,12 @@ try {
       await page.locator('.merchantTopbar h1').waitFor();
       await noOverflow(page);
       assert.equal(await page.locator('.merchantNav a[aria-current="page"]').innerText(), label);
+      if (route === '/dashboard/qr-codes') {
+        await page.getByRole('button', { name: 'Copy NFC URL' }).first().click();
+        const writtenUrl = await page.evaluate(() => navigator.clipboard.readText());
+        assert.equal(new URL(writtenUrl).pathname, customerPath, 'NFC card copy action should target the new /n/ review route');
+        assert.equal(await page.getByRole('button', { name: 'Copy QR URL' }).count() > 0, true, 'Legacy QR fallback must remain available');
+      }
       if (route === '/dashboard') await page.screenshot({ path: `${screenshots}/dashboard.png`, fullPage: true });
       await page.setViewportSize({ width: 390, height: 844 });
       await noOverflow(page);
