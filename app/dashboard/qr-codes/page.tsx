@@ -12,7 +12,7 @@ export default async function QrCodesPage() {
   return (
     <>
       <header className="merchantTopbar">
-        <div><span className="merchantEyebrow">QR MANAGEMENT</span><h1>QR touchpoints</h1><p>Create separate customer entry points for each location and understand which physical placement actually drives review activity.</p></div>
+        <div><span className="merchantEyebrow">NFC &amp; QR MANAGEMENT</span><h1>NFC review cards</h1><p>Create NFC-ready tap links for each location, program them onto physical cards, and keep QR codes as a fallback. Track each card's review journey.</p></div>
         <span className="merchantPill">{qrCodes.filter((item)=>item.isActive).length} active</span>
       </header>
       <QrManager qrCodes={qrCodes} locations={locations} role={identity.role} />
