@@ -51,7 +51,7 @@ const STEPS = [
   ["business", "Business"],
   ["location", "Location"],
   ["topics", "Review topics"],
-  ["qr", "First QR"],
+  ["qr", "First card"],
   ["ready", "Ready"],
 ] as const;
 
@@ -248,7 +248,7 @@ export default function OnboardingWizard({
       }));
       await refreshState();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create your first QR code.");
+      setError(cause instanceof Error ? cause.message : "Could not create your first review card.");
     } finally {
       setLoading(null);
     }
@@ -270,7 +270,7 @@ export default function OnboardingWizard({
 
   async function copyPublicLink() {
     if (!firstQr) return;
-    const didCopy = await copyText(`${window.location.origin}/r/${firstQr.publicToken}`);
+    const didCopy = await copyText(`${window.location.origin}/n/${encodeURIComponent(firstQr.publicToken)}`);
     setCopied(didCopy);
     if (!didCopy) setError("The browser blocked automatic copying. Open the review page and copy the URL manually.");
     window.setTimeout(() => setCopied(false), 1500);
@@ -282,8 +282,8 @@ export default function OnboardingWizard({
         <div className="onboardingBrand"><span className="merchantLogoMark">QR</span><strong>QR Review</strong></div>
         <div className="onboardingAsideCopy">
           <span className="merchantEyebrow">GUIDED SETUP</span>
-          <h1>Get your first working review QR ready.</h1>
-          <p>We’ll configure only what you need to start collecting authentic customer reviews. You can expand locations and QR touchpoints later.</p>
+          <h1>Create your first NFC-ready review card.</h1>
+          <p>We’ll configure only what you need to start collecting authentic customer reviews. You can add locations, NFC cards and QR backup links later.</p>
         </div>
         <ol className="onboardingSteps">
           {STEPS.map(([step, label], index) => {
@@ -357,39 +357,39 @@ export default function OnboardingWizard({
 
           {stage === "qr" ? (
             <form onSubmit={saveQr} className="onboardingStepPane">
-              <div className="onboardingHeading"><span className="merchantEyebrow">STEP 4 OF 5</span><h2>Where will your first QR be placed?</h2><p>Name the physical touchpoint so its scan and conversion performance can be measured separately.</p></div>
+              <div className="onboardingHeading"><span className="merchantEyebrow">STEP 4 OF 5</span><h2>Where will your first review card be placed?</h2><p>Name a physical touchpoint for an NFC card so you can track its review entry and Google handoff activity.</p></div>
               <div className="onboardingSuggestionRow">
                 {activePreset.qrSuggestions.map((suggestion) => <button type="button" key={suggestion} className={qrName === suggestion ? "selected" : ""} onClick={()=>setQrName(suggestion)}>{suggestion}</button>)}
               </div>
               <div className="onboardingTwoCols">
-                <div className="merchantField"><label htmlFor="onboarding-qr-name">QR name / touchpoint</label><input id="onboarding-qr-name" value={qrName} onChange={(event)=>setQrName(event.target.value)} placeholder="e.g. Reception" required /></div>
+                <div className="merchantField"><label htmlFor="onboarding-qr-name">Card name / touchpoint</label><input id="onboarding-qr-name" value={qrName} onChange={(event)=>setQrName(event.target.value)} placeholder="e.g. Reception" required /></div>
                 <div className="merchantField"><label htmlFor="onboarding-reference">Reference (optional)</label><input id="onboarding-reference" value={qrReference} onChange={(event)=>setQrReference(event.target.value)} placeholder="e.g. desk-01, table-12" /></div>
               </div>
-              <div className="onboardingInfo"><strong>Independent analytics</strong><span>Later, each QR can show its own scans and Google-open conversion so you know which placement performs best.</span></div>
+              <div className="onboardingInfo"><strong>Independent analytics</strong><span>Each touchpoint has a unique link for NFC programming and a QR backup. Analytics measures customer sessions and Google handoffs, not confirmed published reviews.</span></div>
               {error ? <div className="merchantError" role="alert">{error}</div> : null}
-              <div className="onboardingActions"><button className="merchantBtn" disabled={Boolean(loading)}>{loading === "qr" ? "Creating QR…" : "Create my first QR →"}</button></div>
+              <div className="onboardingActions"><button className="merchantBtn" disabled={Boolean(loading)}>{loading === "qr" ? "Creating card…" : "Create my first card →"}</button></div>
             </form>
           ) : null}
 
           {stage === "ready" && firstQr ? (
             <div className="onboardingStepPane onboardingReady">
-              <div className="onboardingHeading"><span className="merchantEyebrow">STEP 5 OF 5</span><h2>Your first QR is ready 🎉</h2><p>Test the customer flow now, then download the QR and place it where customers naturally finish their experience.</p></div>
+              <div className="onboardingHeading"><span className="merchantEyebrow">STEP 5 OF 5</span><h2>Your first NFC card link is ready 🎉</h2><p>Copy the NFC URL into a writable tag using an NFC writing app, then test the tap on a phone. You can also download the QR fallback.</p></div>
               <div className="onboardingQrReady">
                 <div className="onboardingQrPreview"><img src={`/api/v1/merchant/qr-codes/${firstQr.id}/svg`} alt={`QR code for ${firstQr.name}`} /></div>
                 <div className="onboardingQrMeta">
                   <span className="merchantEyebrow">FIRST TOUCHPOINT</span>
                   <h3>{firstQr.name}</h3>
                   <p>{firstQr.locationName}</p>
-                  <code>/r/{firstQr.publicToken}</code>
+                  <code>/n/{firstQr.publicToken}</code>
                   <div className="onboardingQrActions">
-                    <button type="button" onClick={()=>window.open(`/r/${firstQr.publicToken}`,"_blank","noopener,noreferrer")}>Test review page</button>
-                    <button type="button" onClick={()=>void copyPublicLink()}>{copied ? "Copied ✓" : "Copy link"}</button>
+                    <button type="button" onClick={()=>window.open(`/n/${encodeURIComponent(firstQr.publicToken)}`,"_blank","noopener,noreferrer")}>Test review page</button>
+                    <button type="button" onClick={()=>void copyPublicLink()}>{copied ? "Copied ✓" : "Copy NFC URL"}</button>
                     <button type="button" onClick={()=>window.open(`/api/v1/merchant/qr-codes/${firstQr.id}/svg?download=1`,"_blank","noopener,noreferrer")}>Download SVG</button>
                   </div>
                 </div>
               </div>
               {error ? <div className="merchantError" role="alert">{error}</div> : null}
-              <div className="onboardingActions onboardingFinish"><div><strong>Setup complete</strong><span>You can add more locations and QR touchpoints from the dashboard anytime.</span></div><button type="button" className="merchantBtn" onClick={()=>void finish()} disabled={Boolean(loading)}>{loading === "complete" ? "Opening dashboard…" : "Finish & open dashboard →"}</button></div>
+              <div className="onboardingActions onboardingFinish"><div><strong>Setup complete</strong><span>You can program more NFC cards and use QR backups from the dashboard anytime.</span></div><button type="button" className="merchantBtn" onClick={()=>void finish()} disabled={Boolean(loading)}>{loading === "complete" ? "Opening dashboard…" : "Finish & open dashboard →"}</button></div>
             </div>
           ) : null}
         </div>
