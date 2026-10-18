@@ -75,7 +75,7 @@ export default function QrManager({ qrCodes, locations, role }: { qrCodes: Merch
       setReference("");
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create QR code.");
+      setError(cause instanceof Error ? cause.message : "Could not create review touchpoint.");
     } finally {
       setLoading(false);
     }
@@ -92,10 +92,10 @@ export default function QrManager({ qrCodes, locations, role }: { qrCodes: Merch
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ isActive: !qr.isActive }),
       });
-      if (!response.ok) throw new Error(await readError(response, "Could not update QR code."));
+      if (!response.ok) throw new Error(await readError(response, "Could not update review touchpoint."));
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not update QR code.");
+      setError(cause instanceof Error ? cause.message : "Could not update review touchpoint.");
     } finally {
       setUpdatingId(null);
     }
@@ -131,9 +131,9 @@ export default function QrManager({ qrCodes, locations, role }: { qrCodes: Merch
         </form>
       ) : null}
 
-      <section className="merchantCard merchantSectionCard" aria-label="How to activate an NFC card">
+      <section className="merchantCard merchantSectionCard nfcSetupInfo" aria-label="How to activate an NFC card">
         <div className="merchantSectionHead"><div><span className="merchantEyebrow">NFC CARD SETUP</span><h2>Tap to open your Google Review experience</h2><p>Cards do not need batteries or an NFC-enabled website. Write the HTTPS link to a compatible blank NFC tag once, then test the tap on a phone.</p></div></div>
-        <div className="experienceGuide">
+        <div className="nfcSetupSteps">
           <div><span>01</span><strong>Create a card link</strong><p>Use one unique touchpoint per physical card, for example Reception Card 01.</p></div>
           <div><span>02</span><strong>Program the tag</strong><p>Tap “Copy NFC URL” below. In an NFC writing app, write it as a URL/URI NDEF record. Never store the Google review text on the card.</p></div>
           <div><span>03</span><strong>Test before printing</strong><p>Tap with an unlocked NFC-capable phone. Confirm the review page opens over HTTPS, and use the QR image as a fallback.</p></div>
