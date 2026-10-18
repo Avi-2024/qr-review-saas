@@ -8,7 +8,7 @@ const nav = [
   ["/dashboard", "grid", "Overview"],
   ["/dashboard/locations", "pin", "Locations"],
   ["/dashboard/topics", "topics", "Topics"],
-  ["/dashboard/qr-codes", "qr", "QR codes"],
+  ["/dashboard/qr-codes", "qr", "NFC cards"],
   ["/dashboard/analytics", "chart", "Analytics"],
   ["/billing", "billing", "Billing"],
 ] as const;
