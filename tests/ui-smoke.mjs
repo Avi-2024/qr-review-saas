@@ -83,10 +83,15 @@ try {
   await page.waitForFunction(() => document.activeElement?.textContent === 'How did it feel?');
   await noOverflow(page);
   await page.screenshot({ path: `${screenshots}/customer-details.png`, fullPage: true });
-  await page.goto(`${base}/r/ui-invalid-token`);
-  await page.locator('.customerError[role=alert]').waitFor();
-  await page.getByRole('button', { name: 'Try loading again' }).click();
-  await page.locator('.customerError[role=alert]').waitFor();
+  for (const entryRoute of ['r', 'n']) {
+    await page.goto(`${base}/${entryRoute}/ui-invalid-token`);
+    await page.locator('.customerError[role=alert]').waitFor();
+    await page.getByRole('button', { name: 'Try loading again' }).click();
+    await page.locator('.customerError[role=alert]').waitFor();
+  }
+  await page.goto(`${base}/n/mangal-counter-demo`);
+  await page.getByRole('heading', { name: 'Mangal Traders', exact: true }).waitFor();
+  await noOverflow(page);
   for (const route of ['login', 'signup']) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`${base}/${route}`);
@@ -95,7 +100,7 @@ try {
     await page.setViewportSize({ width: 320, height: 700 });
     await noOverflow(page);
   }
-  console.log('Customer UI, keyboard focus, sticky action, empty-draft controls and public auth layouts passed.');
+  console.log('Customer NFC/QR entry routes, keyboard focus, sticky action, empty-draft controls and public auth layouts passed.');
 
   if (process.env.REVIEW_REPOSITORY === 'postgres') {
     const email = `ui-${randomUUID()}@example.com`;
@@ -114,8 +119,8 @@ try {
     await page.getByLabel('Google Place ID', { exact: true }).fill('ChIJ-ui-test-place');
     await page.getByRole('button', { name: 'Save location' }).click();
     await page.getByRole('button', { name: 'Use these topics' }).click();
-    await page.getByLabel('QR name / touchpoint', { exact: true }).fill('Studio Test Reception');
-    await page.getByRole('button', { name: 'Create my first QR' }).click();
+    await page.getByLabel('Card name / touchpoint', { exact: true }).fill('Studio Test Reception');
+    await page.getByRole('button', { name: 'Create my first card' }).click();
     const customerPath = await page.locator('.onboardingQrMeta code').innerText();
     await page.getByRole('button', { name: 'Finish & open dashboard' }).click();
     await page.getByRole('heading', { name: 'Reputation overview' }).waitFor();
@@ -132,7 +137,7 @@ try {
     await page.getByRole('button', { name: 'Generate my review' }).click();
     await page.getByRole('textbox', { name: 'Generated review' }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), false);
-    const pages = [['/dashboard', 'Overview'], ['/dashboard/locations', 'Locations'], ['/dashboard/topics', 'Topics'], ['/dashboard/qr-codes', 'QR codes'], ['/dashboard/analytics', 'Analytics']];
+    const pages = [['/dashboard', 'Overview'], ['/dashboard/locations', 'Locations'], ['/dashboard/topics', 'Topics'], ['/dashboard/qr-codes', 'NFC cards'], ['/dashboard/analytics', 'Analytics']];
     for (const [route, label] of pages) {
       await page.setViewportSize({ width: 1440, height: 1000 });
       await page.goto(base + route);
