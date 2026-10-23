@@ -39,7 +39,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         ) : null}
         {billing.needsUpgrade ? (
           <div className={`${styles.banner} ${styles.expired}`}>
-            <div><strong>Your workspace is read-only.</strong><span>Activate a subscription to create or change locations, topics and QR codes and to accept new review sessions.</span></div>
+            <div><strong>Your workspace is read-only.</strong><span>Activate a subscription to create or change locations, topics and review touchpoints and to accept new review sessions.</span></div>
             <Link href="/billing">Choose a plan</Link>
           </div>
         ) : null}

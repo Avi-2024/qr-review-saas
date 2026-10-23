@@ -8,8 +8,8 @@ import "./qr-analytics.css";
 import "./workspace-theme.css";
 
 export const metadata: Metadata = {
-  title: "QR Review · Customer Feedback & Reputation",
-  description: "QR-powered customer review, feedback and reputation intelligence platform.",
+  title: "NFC & QR Review · Customer Feedback & Reputation",
+  description: "Tap an NFC review card or scan a QR code to share authentic customer feedback with an editable Google review handoff.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
