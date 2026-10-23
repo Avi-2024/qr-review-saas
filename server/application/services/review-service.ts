@@ -90,6 +90,7 @@ export class ReviewService {
     try {
       const generated = await this.generator.generate({
         businessName: location.name,
+        businessType: location.businessType,
         rating: input.rating,
         topics,
         note: input.note,
