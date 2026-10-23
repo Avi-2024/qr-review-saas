@@ -2,6 +2,7 @@ import type { Rating, ReviewTopic } from "@/server/domain/review";
 
 export interface GenerateReviewInput {
   businessName: string;
+  businessType?: string;
   rating: Rating;
   topics: ReviewTopic[];
   note?: string;

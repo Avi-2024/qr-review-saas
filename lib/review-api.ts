@@ -10,6 +10,7 @@ export interface LocationDto {
   name: string;
   subtitle: string;
   googleReviewUrl: string;
+  businessType?: string;
   topics: ReviewTopicDto[];
 }
 

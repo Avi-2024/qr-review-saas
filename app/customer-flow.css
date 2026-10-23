@@ -176,3 +176,29 @@
 @media (max-width: 350px) { .productShell { padding-inline: 12px; } .merchantHeader, .contentPane { padding-inline: 16px; } .customerSteps { padding-inline: 16px; gap: 16px; } .chipGrid { grid-template-columns: 1fr; } .ratingButton { height: 62px; } .ratingButton svg { width: 21px; height: 21px; } .heroQuestion h2 { font-size: 28px; } .demoBadge { font-size: 11px; padding: 5px 8px; } }
 @media (max-width: 800px) { .experienceNavRight .demoBadge { display: none; } .experienceNavRight a { display: flex; font-size: 13px; } }
 @media (max-width: 480px) { .reviewNavLabel { display: none; } .experienceNavRight { gap: 0; } .experienceNavRight a { font-size: 12px; } }
+
+/* Minimal one-tap customer flow: no topics, comments or generation CTA. */
+.minimalCustomerFlow .minimalComposePane { min-height: 310px; display: flex; flex-direction: column; justify-content: center; }
+.minimalCustomerFlow .customerQuestion { padding: 10px 0 4px; }
+.minimalCustomerFlow .ratingGrid { margin-top: 28px; }
+.minimalCustomerFlow .ratingButton { min-height: 76px; }
+.minimalCustomerFlow .ratingFeedback { margin-bottom: 12px; }
+.minimalCustomerFlow .minimalTrust { display: flex; align-items: center; justify-content: center; gap: 6px; color: #657153; font-size: 12px; margin: 24px 0 0; text-align: center; }
+.minimalCustomerFlow .minimalTrust svg { width: 14px; height: 14px; }
+.minimalCustomerFlow .minimalLoading { display: flex; align-items: center; justify-content: center; gap: 9px; padding: 16px; margin-top: 14px; background: #f3f7e6; border: 1px solid #e0e9ce; border-radius: 12px; font-weight: 600; font-size: 14px; color: #394a27; }
+.minimalCustomerFlow .minimalLoading svg { width: 18px; height: 18px; }
+.minimalCustomerFlow .minimalReviewPane .reviewReadyHeader { margin-top: 12px; }
+.minimalCustomerFlow .minimalSecondaryActions { justify-content: center; }
+.minimalCustomerFlow .minimalSecondaryActions button { width: 100%; justify-content: center; }
+.minimalCustomerFlow .minimalManualGoogle { display: inline-flex; margin-top: 14px; }
+@media (max-width: 600px) {
+  .minimalCustomerFlow .minimalComposePane { min-height: 320px; padding-bottom: 30px; }
+  .minimalCustomerFlow .ratingButton { min-height: 70px; }
+  .minimalCustomerFlow .minimalTrust { margin-top: 25px; }
+  .minimalCustomerFlow .minimalReviewPane { padding-bottom: 24px; }
+}
+
+/* Programmatic heading focus supports announcements; only interactive controls need a focus ring. */
+.minimalCustomerFlow .customerQuestion h2:focus,
+.minimalCustomerFlow .reviewReadyHeader h2:focus { outline: none; }
+.minimalCustomerFlow .minimalSecondaryActions { display: grid; grid-template-columns: 1fr; }
