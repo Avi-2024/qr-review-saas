@@ -17,10 +17,10 @@ export default async function DashboardPage() {
       </header>
 
       <section className="merchantKpis">
-        <article className="merchantCard merchantKpi"><div className="merchantKpiLabel"><span>Card / QR opens</span><span>↗</span></div><strong>{data.summary.scans.toLocaleString()}</strong><small>Unique review sessions started</small></article>
+        <article className="merchantCard merchantKpi"><div className="merchantKpiLabel"><span>QR scans</span><span>↗</span></div><strong>{data.summary.scans.toLocaleString()}</strong><small>Unique review sessions started</small></article>
         <article className="merchantCard merchantKpi"><div className="merchantKpiLabel"><span>Reviews generated</span><span>✦</span></div><strong>{data.summary.reviewsGenerated.toLocaleString()}</strong><small>Customers reaching a review draft</small></article>
         <article className="merchantCard merchantKpi"><div className="merchantKpiLabel"><span>Google opens</span><span>G</span></div><strong>{data.summary.googleOpens.toLocaleString()}</strong><small>Review composer handoffs</small></article>
-        <article className="merchantCard merchantKpi"><div className="merchantKpiLabel"><span>Open → Google</span><span>%</span></div><strong>{data.summary.conversionRate}%</strong><small>Measured handoff conversion</small></article>
+        <article className="merchantCard merchantKpi"><div className="merchantKpiLabel"><span>Scan → Google</span><span>%</span></div><strong>{data.summary.conversionRate}%</strong><small>Measured handoff conversion</small></article>
       </section>
 
       <section className="merchantGrid2">
@@ -53,8 +53,8 @@ export default async function DashboardPage() {
       </section>
 
       <section className="merchantGrid2">
-        <article className="merchantCard merchantSectionCard"><div className="merchantSectionHead"><div><span className="merchantEyebrow">FOOTPRINT</span><h2>{data.summary.locations} active location{data.summary.locations === 1 ? "" : "s"}</h2><p>{data.summary.qrCodes} active review touchpoint{data.summary.qrCodes === 1 ? "" : "s"} currently collecting customer activity.</p></div><Link href="/dashboard/locations" className="merchantPill">Manage locations</Link></div></article>
-        <article className="merchantCard merchantSectionCard"><div className="merchantSectionHead"><div><span className="merchantEyebrow">NEXT ACTION</span><h2>Place NFC cards where intent is highest</h2><p>Program a unique card link per counter or desk. Customers can tap their phones or scan the QR backup to open the same review flow.</p></div><Link href="/dashboard/qr-codes" className="merchantPill">Manage NFC cards</Link></div></article>
+        <article className="merchantCard merchantSectionCard"><div className="merchantSectionHead"><div><span className="merchantEyebrow">FOOTPRINT</span><h2>{data.summary.locations} active location{data.summary.locations === 1 ? "" : "s"}</h2><p>{data.summary.qrCodes} active QR touchpoint{data.summary.qrCodes === 1 ? "" : "s"} currently collecting customer activity.</p></div><Link href="/dashboard/locations" className="merchantPill">Manage locations</Link></div></article>
+        <article className="merchantCard merchantSectionCard"><div className="merchantSectionHead"><div><span className="merchantEyebrow">NEXT ACTION</span><h2>Place QR where intent is highest</h2><p>Billing counters, checkout, reception and post-service handoff points usually create the cleanest customer flow.</p></div><Link href="/dashboard/qr-codes" className="merchantPill">Manage QR</Link></div></article>
       </section>
     </>
   );

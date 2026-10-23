@@ -6,9 +6,9 @@ The product core is **sector agnostic**. The same QR, session, review-generation
 
 ## Customer flow
 
-NFC tap or QR scan → rating → neutral contextual topics → optional note → backend review generation → edit/regenerate → copy → direct Google review composer.
+QR scan → rating → neutral contextual topics → optional note → backend review generation → edit/regenerate → copy → direct Google review composer.
 
-Start with `/` for the customer demo, `/n/:token` for a physical NFC card, or `/r/:token` for its QR fallback. Customers choose 1–5 stars, optionally select up to three topics and add a comment, then generate an editable draft. They can regenerate or copy the draft before opening Google. Posting happens on Google after the customer pastes and confirms their review; this app measures composer opens, not completed posts. Drafts currently use a local server-side generator, not an external AI API.
+Start with `/` for the customer demo, or `/r/:token` for a merchant QR touchpoint. Customers choose 1–5 stars, optionally select up to three topics and add a comment, then generate an editable draft. They can regenerate or copy the draft before opening Google. Posting happens on Google after the customer pastes and confirms their review; this app measures composer opens, not completed posts. Drafts currently use a local server-side generator, not an external AI API.
 
 See [backend architecture](docs/backend.md) for session, idempotency and deployment contracts.
 
@@ -24,12 +24,6 @@ The customer and merchant screens share a charcoal/lime studio theme, locally bu
 - Generated review language does not assume a physical store visit.
 - Customer branding is derived from the configured business/location rather than a hardcoded merchant identity.
 - Sector presets are an onboarding convenience only; the core data model remains generic and configurable.
-
-## NFC review cards
-
-The merchant's **NFC cards** workspace (`/dashboard/qr-codes`) creates a unique review link for each physical card. Choose **Copy NFC URL** and write that HTTPS link to a compatible NFC tag as an NDEF URL/URI record using an NFC writing app. The physical tag must be written and tested separately; this SaaS cannot program NFC hardware remotely.
-
-Every card keeps a QR fallback, independent pause/activation and per-touchpoint review entry attribution. The existing analytics session/event schema intentionally remains backward compatible, so traffic from the NFC link and QR backup of the same touchpoint is aggregated — it is not claimed to be separately measured RF taps. See [NFC card setup & limitations](docs/nfc-cards.md).
 
 ## Merchant platform
 
@@ -47,7 +41,7 @@ The merchant workspace includes:
 - location management
 - per-location review topic management with add/edit/reorder/archive/restore
 - sector-aware suggested topic presets without sector-locking the data model
-- NFC-ready touchpoint creation, activation and QR backup export
+- QR touchpoint creation and activation
 - scannable SVG QR preview/download
 - organization funnel analytics
 - per-QR placement analytics for scans, generated drafts, Google opens and measured conversion
@@ -240,7 +234,7 @@ No merchant password is hardcoded in the repository. The bootstrap script hashes
 ## Public customer API
 
 - `GET /api/health`
-- `GET /api/v1/public/qr/:token` (shared config for NFC and QR entry links)
+- `GET /api/v1/public/qr/:token`
 - `GET /api/v1/public/locations/:publicId` (compatibility endpoint)
 - `POST /api/v1/public/sessions`
 - `POST /api/v1/public/sessions/:sessionId/events`
