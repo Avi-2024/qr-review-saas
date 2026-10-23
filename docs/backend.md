@@ -14,7 +14,7 @@ The backend uses a layered architecture so HTTP, business rules, persistence, an
 
 ## Public review identity
 
-The customer entry point is a unique review touchpoint token (used by both NFC and QR), not a location slug.
+The customer entry point is a QR token, not a location slug.
 
 Example:
 
@@ -22,9 +22,7 @@ Example:
 /r/mangal-counter-demo
 ```
 
-The token resolves to the existing QR asset record and then to its location. The record remains named `qr_codes` for backward compatibility, but its public link can be programmed onto NFC hardware. This lets one location have multiple measurable QR assets such as counter, billing, entrance or packaging QR codes.
-
-The **NFC** entry route is `/n/TOKEN` and the legacy **QR** route remains `/r/TOKEN`. Both reuse the same public review flow. Per-token metrics combine these entry channels until a persisted channel dimension is introduced; we do not claim to distinguish RF taps from scanned QR sessions. [Card setup](nfc-cards.md).
+The token resolves to a QR asset and then to its location. This lets one location have multiple measurable QR assets such as counter, billing, entrance or packaging QR codes.
 
 ## Session lifecycle
 
