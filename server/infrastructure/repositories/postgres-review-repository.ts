@@ -18,6 +18,7 @@ interface LocationRow {
   subtitle: string;
   google_place_id: string;
   google_review_url: string;
+  business_type: string | null;
 }
 
 interface TopicRow {
@@ -46,9 +47,10 @@ export class PostgresReviewRepository implements ReviewRepository {
 
   async getLocationByPublicId(publicId: string) {
     const result = await this.pool.query<LocationRow>(
-      `SELECT id, public_id, name, subtitle, google_place_id, google_review_url
-       FROM locations
-       WHERE public_id = $1 AND is_active = TRUE
+      `SELECT l.id, l.public_id, l.name, l.subtitle, l.google_place_id, l.google_review_url,
+              COALESCE(l.business_type_override, o.business_type, 'other') AS business_type
+       FROM locations l LEFT JOIN organizations o ON o.id = l.organization_id
+       WHERE l.public_id = $1 AND l.is_active = TRUE
        LIMIT 1`,
       [publicId],
     );
@@ -57,9 +59,10 @@ export class PostgresReviewRepository implements ReviewRepository {
 
   async getLocationById(id: string) {
     const result = await this.pool.query<LocationRow>(
-      `SELECT id, public_id, name, subtitle, google_place_id, google_review_url
-       FROM locations
-       WHERE id = $1 AND is_active = TRUE
+      `SELECT l.id, l.public_id, l.name, l.subtitle, l.google_place_id, l.google_review_url,
+              COALESCE(l.business_type_override, o.business_type, 'other') AS business_type
+       FROM locations l LEFT JOIN organizations o ON o.id = l.organization_id
+       WHERE l.id = $1 AND l.is_active = TRUE
        LIMIT 1`,
       [id],
     );
@@ -330,6 +333,7 @@ export class PostgresReviewRepository implements ReviewRepository {
       subtitle: row.subtitle,
       googlePlaceId: row.google_place_id,
       googleReviewUrl: row.google_review_url,
+      businessType: row.business_type ?? "other",
       topics: topics.rows.map((topic) => ({
         id: topic.id,
         label: topic.label,

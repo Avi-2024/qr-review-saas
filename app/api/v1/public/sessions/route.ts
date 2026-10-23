@@ -39,6 +39,7 @@ export async function POST(request: Request) {
         name: result.location.name,
         subtitle: result.location.subtitle,
         googleReviewUrl: result.location.googleReviewUrl,
+        businessType: result.location.businessType,
         topics: result.location.topics,
       },
     };

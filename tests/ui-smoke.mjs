@@ -45,43 +45,32 @@ try {
     await page.goto(base);
     await page.getByRole('heading', { name: 'Mangal Traders', exact: true }).waitFor();
     await noOverflow(page);
-    assert.equal(await page.locator('.detailFields').isVisible(), false, 'Optional details should start hidden');
-    const action = page.getByRole('button', { name: 'Generate my review' });
-    if (width <= 390) {
-      const box = await action.boundingBox();
-      assert.ok(box && box.y >= 0 && box.y + box.height <= 700, 'Mobile primary action should stay in the viewport');
-    }
-    assert.equal(await action.isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Generate my review' }).count(), 0);
+    assert.equal(await page.locator('.detailFields').count(), 0);
+    assert.equal(await page.getByRole('button', { name: '1 star', exact: true }).isDisabled(), false);
   }
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: `${screenshots}/customer-desktop.png`, fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: `${screenshots}/customer-mobile.png`, fullPage: true });
-  await page.getByRole('button', { name: '1 star', exact: true }).click();
-  assert.equal(await page.locator('.detailFields').isVisible(), true);
-  const topics = page.locator('.topicChip');
-  for (let i = 0; i < 3; i++) await topics.nth(i).click();
-  assert.equal(await topics.nth(3).isDisabled(), true, 'Only three topics can be selected');
-  await page.getByRole('button', { name: 'Add a comment' }).click();
-  await page.getByRole('textbox', { name: 'Your comment' }).fill('I had to wait a long time.');
-  await page.getByRole('button', { name: 'Generate my review' }).click();
-  const review = page.getByRole('textbox', { name: 'Generated review' });
-  await review.waitFor();
-  await page.waitForFunction(() => document.activeElement?.textContent === 'Your review is ready');
-  assert.match(await review.inputValue(), /wait a long time/i);
-  assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), false, 'Google handoff must also be available for a one-star rating');
-  await review.fill('');
-  assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), true);
-  await review.fill('My own edited review.');
-  await page.getByRole('button', { name: 'Copy only' }).click();
-  await page.getByRole('status').filter({ hasText: 'Review copied' }).waitFor();
-  await page.getByRole('button', { name: 'Try another' }).click();
-  await page.waitForFunction(() => document.querySelector('[aria-label="Generated review"]')?.value.includes('wait a long time'));
-  assert.match(await review.inputValue(), /wait a long time/i);
-  await page.screenshot({ path: `${screenshots}/customer-review.png`, fullPage: true });
-  await page.getByRole('button', { name: 'Edit rating & details' }).click();
-  await page.waitForFunction(() => document.activeElement?.textContent === 'How did it feel?');
-  await noOverflow(page);
+  for (let rating = 1; rating <= 5; rating++) {
+    await page.getByRole('button', { name: `${rating} star${rating === 1 ? '' : 's'}`, exact: true }).click();
+    const review = page.getByRole('textbox', { name: 'Generated review' });
+    await review.waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), false, 'Google handoff must be available for every rating');
+    assert.match(await review.inputValue(), /Mangal Traders/);
+    if (rating === 1) {
+      await review.fill('');
+      assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), true);
+      await review.fill('My own edited review.');
+      await page.getByRole('button', { name: 'Copy only' }).click();
+      await page.getByRole('status').filter({ hasText: 'Review copied' }).waitFor();
+      await page.screenshot({ path: `${screenshots}/customer-review.png`, fullPage: true });
+    }
+    await page.getByRole('button', { name: 'Change rating' }).click();
+    await page.getByRole('heading', { name: 'How was your experience?' }).waitFor();
+    await noOverflow(page);
+  }
   await page.screenshot({ path: `${screenshots}/customer-details.png`, fullPage: true });
   await page.goto(`${base}/r/ui-invalid-token`);
   await page.locator('.customerError[role=alert]').waitFor();
@@ -129,7 +118,6 @@ try {
     await noOverflow(page);
     assert.equal(await page.getByRole('link', { name: 'Business workspace' }).count(), 0);
     await page.getByRole('button', { name: '5 stars', exact: true }).click();
-    await page.getByRole('button', { name: 'Generate my review' }).click();
     await page.getByRole('textbox', { name: 'Generated review' }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), false);
     const pages = [['/dashboard', 'Overview'], ['/dashboard/locations', 'Locations'], ['/dashboard/topics', 'Topics'], ['/dashboard/qr-codes', 'QR codes'], ['/dashboard/analytics', 'Analytics']];

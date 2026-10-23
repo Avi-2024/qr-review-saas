@@ -23,6 +23,29 @@ describe("LocalReviewGenerator", () => {
     expect(result.text.toLowerCase()).not.toContain("reasonable");
   });
 
+  it("uses the sector when deciding neutral language without inventing details", async () => {
+    const generator = new LocalReviewGenerator();
+    const sectors = [
+      ["restaurant-cafe", "at"], ["salon-beauty", "at"],
+      ["hospitality", "at"], ["fitness", "at"], ["retail", "at"],
+      ["education", "at"], ["healthcare", "with"],
+      ["automotive", "with"], ["real-estate", "with"],
+      ["professional-services", "with"], ["other", "with"],
+      ["invalid-sector", "with"],
+    ] as const;
+
+    for (const [businessType, preposition] of sectors) {
+      for (const rating of [1, 2, 3, 4, 5] as const) {
+        const result = await generator.generate({
+          businessName: "Sample Company", businessType, rating,
+          topics: [], variation: 0,
+        });
+        expect(result.text).toContain(`experience ${preposition} Sample Company`);
+        expect(result.text).not.toMatch(/food|staff|doctor|treatment|clean|fast|delicious|price|recommend/i);
+      }
+    }
+  });
+
   it("does not assume the customer physically visited a store", async () => {
     const generator = new LocalReviewGenerator();
 

@@ -25,6 +25,8 @@ export interface LocationConfig {
   subtitle: string;
   googlePlaceId: string;
   googleReviewUrl: string;
+  /** Resolved business sector for this location (optional for legacy demo/test fixtures). */
+  businessType?: string;
   topics: ReviewTopic[];
 }
 

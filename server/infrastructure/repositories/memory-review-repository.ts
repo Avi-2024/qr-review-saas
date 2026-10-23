@@ -18,6 +18,7 @@ const MANGAL_TRADERS: LocationConfig = {
   subtitle: "Fast feedback. No login required.",
   googlePlaceId: "ChIJIxP2kbaJgzkR6h4dYXKWCcI",
   googleReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJIxP2kbaJgzkR6h4dYXKWCcI",
+  businessType: "retail",
   topics: [
     { id: "quality", label: "Overall Quality", icon: "★", sortOrder: 10 },
     { id: "staff", label: "Staff / Support", icon: "🤝", sortOrder: 20 },
