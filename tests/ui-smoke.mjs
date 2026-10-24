@@ -54,14 +54,14 @@ try {
     assert.ok(targets.every(target => target.width >= 44 && target.height >= 44), 'Rating targets must be at least 44px');
     assert.equal(await page.getByRole('button', { name: 'Generate my review' }).count(), 0);
     assert.equal(await page.locator('.detailFields').count(), 0);
-    assert.equal(await page.getByRole('button', { name: '1 star', exact: true }).isDisabled(), false);
+    assert.equal(await page.getByRole('button', { name: /^1 star:/ }).isDisabled(), false);
   }
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ style: "nextjs-portal { display: none; }", path: `${screenshots}/customer-desktop.png`, fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ style: "nextjs-portal { display: none; }", path: `${screenshots}/customer-mobile.png`, fullPage: true });
   for (let rating = 1; rating <= 5; rating++) {
-    await page.getByRole('button', { name: `${rating} star${rating === 1 ? '' : 's'}`, exact: true }).click();
+    await page.getByRole('button', { name: new RegExp(`^${rating} stars?:`) }).click();
     const review = page.getByRole('textbox', { name: 'Generated review' });
     await review.waitFor();
     assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), false, 'Google handoff must be available for every rating');
@@ -100,7 +100,7 @@ try {
   await page.route('**/api/v1/public/reviews/generate', async route => {
     await route.fulfill({ status: 503, json: { success: false, error: { message: 'Could not prepare your review. Please retry.' } } });
   });
-  await page.getByRole('button', { name: '2 stars', exact: true }).click();
+  await page.getByRole('button', { name: /^2 stars:/ }).click();
   await page.locator('.customerError[role=alert]').waitFor();
   await page.unroute('**/api/v1/public/reviews/generate');
   await page.getByRole('button', { name: 'Retry review' }).click();
@@ -149,7 +149,7 @@ try {
     await route.fulfill({ response, json });
   });
   await page.goto(`${base}/r/mangal-counter-demo`);
-  await page.getByRole('button', { name: '3 stars', exact: true }).click();
+  await page.getByRole('button', { name: /^3 stars:/ }).click();
   await page.getByRole('textbox', { name: 'Generated review' }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), true);
   await page.getByRole('status').filter({ hasText: "hasn't added a Google review link" }).waitFor();
@@ -197,7 +197,7 @@ try {
     await page.setViewportSize({ width: 320, height: 700 });
     await noOverflow(page);
     assert.equal(await page.getByRole('link', { name: 'Business workspace' }).count(), 0);
-    await page.getByRole('button', { name: '5 stars', exact: true }).click();
+    await page.getByRole('button', { name: /^5 stars:/ }).click();
     await page.getByRole('textbox', { name: 'Generated review' }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), false);
     const pages = [['/dashboard', 'Overview'], ['/dashboard/locations', 'Locations'], ['/dashboard/topics', 'Topics'], ['/dashboard/qr-codes', 'NFC cards'], ['/dashboard/analytics', 'Analytics']];
