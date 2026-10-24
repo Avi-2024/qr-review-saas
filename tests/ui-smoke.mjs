@@ -45,6 +45,10 @@ try {
     await page.goto(base);
     await page.getByRole('heading', { name: 'Mangal Traders', exact: true }).waitFor();
     await noOverflow(page);
+    assert.match(await page.title(), /Raaylo/);
+    const logo = page.getByRole('img', { name: 'Raaylo', exact: true });
+    await logo.evaluate(image => image.decode());
+    assert.equal(await logo.evaluate(image => image.naturalWidth > 0), true, 'The approved brand logo must load');
     const targets = await page.getByRole('group', { name: 'Select rating' }).getByRole('button').evaluateAll(buttons =>
       buttons.map(button => ({ width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })));
     assert.ok(targets.every(target => target.width >= 44 && target.height >= 44), 'Rating targets must be at least 44px');

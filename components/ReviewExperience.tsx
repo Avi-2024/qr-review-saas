@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import styles from "./ReviewExperience.module.css";
 import UiIcon from "@/components/UiIcon";
 import type { Rating } from "@/lib/review";
@@ -10,10 +11,6 @@ import {
 } from "@/lib/review-api";
 
 const ratingLabels = ["", "Very poor", "Could be better", "Okay", "Good", "Excellent"];
-
-function businessInitials(name?: string) {
-  return name?.trim().split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase()).join("") || "QR";
-}
 
 async function copyText(value: string) {
   try {
@@ -287,36 +284,22 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
     <main className={styles.page}>
       <div className={styles.shell}>
         <header className={styles.topbar}>
-          <span className={styles.wordmark}><UiIcon name="qr" /> QR Review<span>.</span></span>
-          <span className={styles.topline}>Your experience matters</span>
+          <Image className={styles.brandLogo} src="/brand/raaylo-logo.png"
+            alt="Raaylo" width={1774} height={887} sizes="260px" priority />
+          <p className={styles.tagline}>Every experience has a voice.</p>
         </header>
 
         <section className={styles.card} aria-label="Customer review">
           <header className={styles.business}>
-            <div className={styles.avatar} aria-hidden="true">{businessInitials(location?.name)}</div>
-            <div className={styles.businessText}>
-              <span className={styles.eyebrow}>YOU'RE REVIEWING</span>
-              <h1>{location?.name || (error ? "Review unavailable" : "Getting ready…")}</h1>
-              {location?.subtitle ? <p>{location.subtitle}</p> : null}
-            </div>
-            <span className={styles.scanMark} aria-hidden="true"><UiIcon name="qr" /></span>
+            <span className={styles.businessLabel}>Your experience at</span>
+            <h1>{location?.name || (error ? "Review unavailable" : "Getting ready…")}</h1>
+            {location?.subtitle && qrToken !== "mangal-counter-demo" ? <p>{location.subtitle}</p> : null}
           </header>
-
-          <ol className={styles.steps} aria-label="Review progress">
-            <li className={!isReady ? styles.currentStep : styles.doneStep} aria-current={!isReady ? "step" : undefined}>
-              <span>{isReady ? <UiIcon name="check" /> : "1"}</span> Rate your visit
-            </li>
-            <li className={styles.stepLine} aria-hidden="true" />
-            <li className={isReady ? styles.currentStep : undefined} aria-current={isReady ? "step" : undefined}>
-              <span>2</span> Review & share
-            </li>
-          </ol>
 
           {!isReady ? (
             <div className={styles.compose}>
-              <div className={styles.heroGlyph} aria-hidden="true"><UiIcon name="topics" /><span><UiIcon name="star" /></span></div>
               <h2 ref={composeHeadingRef} tabIndex={-1}>How was your experience?</h2>
-              <p className={styles.intro}>Tap a star. Get a short review draft.<br />Make it yours before you share.</p>
+              <p className={styles.intro}>Choose your stars. We’ll help you put<br />your experience into words.</p>
 
               <div className={styles.ratingGrid} role="group" aria-label="Select rating" aria-describedby="rating-help" aria-busy={isGenerating}
                 onMouseLeave={() => setHoverRating(0)}>
@@ -339,7 +322,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                 {isGenerating ? <><span className={styles.spinner} aria-hidden="true" /> Preparing your review…</> :
                   !location ? (error ? "Please try loading the review again." : "Loading business details…") :
                   previewRating ? <><strong>{ratingLabels[previewRating]}</strong><span>·</span>{rating ? "Tap a star to try again" : "Tap to choose"}</> :
-                  <>Choose a rating to get started <UiIcon name="arrow" /></>}
+                  <>Tap a star to get started <UiIcon name="arrow" /></>}
               </div>
               {error ? <p className={`customerError ${styles.error}`} role="alert">{error}</p> : null}
               {error && !location ? (
@@ -353,7 +336,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
               ) : null}
               <div className={styles.reassurance}>
                 <span className={styles.reassuranceIcon}><UiIcon name="edit" /></span>
-                <div><strong>Your experience. Your words.</strong><p>Every rating is welcome. You decide what to post.</p></div>
+                <div><strong>You have the final say.</strong><p>Edit your draft before sharing. Every rating is welcome.</p></div>
               </div>
             </div>
           ) : (
@@ -368,18 +351,18 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                 <button type="button" className={styles.changeRating} disabled={busy} onClick={changeRating}>Change rating</button>
               </div>
               <h2 ref={reviewHeadingRef} tabIndex={-1}>Your review is ready</h2>
-              <p className={styles.reviewIntro}>A starting point. Make it sound like you.</p>
+              <p className={styles.reviewIntro}>Read it, make it yours, then share.</p>
 
               <div className={styles.editor}>
                 <div className={styles.editorTop}>
                   <label htmlFor="review-draft"><UiIcon name="edit" /> Your draft</label>
-                  <span>Tap to edit</span>
+                  <span>Editable</span>
                 </div>
                 <textarea id="review-draft" ref={reviewInputRef} value={review}
                   onChange={(event) => editReview(event.target.value)}
                   aria-label="Generated review" aria-describedby="draft-help"
                   disabled={busy} spellCheck />
-                <p id="draft-help"><UiIcon name="check" /> Keep only what reflects your experience.</p>
+                <p id="draft-help"><UiIcon name="check" /> Share only what matches your experience.</p>
               </div>
 
               {handoffMessage ? <div className={styles.status} role="status"><UiIcon name="check" /> {handoffMessage}</div> : null}
@@ -404,7 +387,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                   <span>{isOpeningGoogle ? "Opening Google…" : isCopying ? "Copying…" : "Copy & open Google review"}</span>
                   <UiIcon name="arrow" />
                 </button>
-                <p className={styles.googleHint}>Next: paste your review on Google, then post.<br /><span>Nothing is posted automatically.</span></p>
+                <p className={styles.googleHint}>We’ll copy your text and open Google.<br /><span>Paste it there and choose when to post.</span></p>
                 <button type="button" className={styles.copyOnly} disabled={busy || !review.trim()} onClick={() => void copyReview(false)}>
                   <UiIcon name={copied ? "check" : "copy"} /> {copied ? "Copied" : "Copy only"}
                 </button>
@@ -413,8 +396,8 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
           )}
         </section>
         <footer className={styles.footer}>
-          <span><UiIcon name="check" /> Your review, your choice.</span>
-          <span>Made simple with <strong>QR Review</strong></span>
+          <span><UiIcon name="check" /> Nothing is posted without you.</span>
+          <span>Honest feedback, made simple.</span>
         </footer>
       </div>
     </main>
