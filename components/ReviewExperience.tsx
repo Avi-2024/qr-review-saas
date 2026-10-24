@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Image from "next/image";
+import styles from "./ReviewExperience.module.css";
 import UiIcon from "@/components/UiIcon";
 import type { Rating } from "@/lib/review";
 import {
@@ -11,10 +12,6 @@ import {
 
 const ratingLabels = ["", "Very poor", "Could be better", "Okay", "Good", "Excellent"];
 
-function businessInitials(name?: string) {
-  return name?.trim().split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase()).join("") || "QR";
-}
-
 async function copyText(value: string) {
   try {
     if (navigator.clipboard?.writeText) {
@@ -23,6 +20,7 @@ async function copyText(value: string) {
     }
   } catch { /* Some browsers block the Clipboard API. Try the legacy fallback. */ }
 
+  const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   let area: HTMLTextAreaElement | null = null;
   try {
     area = document.createElement("textarea");
@@ -37,6 +35,7 @@ async function copyText(value: string) {
     return false;
   } finally {
     area?.remove();
+    previousFocus?.focus({ preventScroll: true });
   }
 }
 
@@ -55,6 +54,10 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
   const [handoffMessage, setHandoffMessage] = useState("");
   const [error, setError] = useState("");
   const [copyFailed, setCopyFailed] = useState(false);
+  const [hoverRating, setHoverRating] = useState<Rating | 0>(0);
+  const [isCopying, setIsCopying] = useState(false);
+  const clipboardLockRef = useRef(false);
+  const reviewInputRef = useRef<HTMLTextAreaElement>(null);
 
   const tokenRef = useRef(qrToken);
   const sessionVersionRef = useRef(0);
@@ -155,6 +158,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
   async function createDraft(selectedRating: Rating) {
     if (generationLockRef.current) return;
     generationLockRef.current = true;
+    setHoverRating(0);
     setRating(selectedRating);
     setError("");
     setCopyFailed(false);
@@ -216,6 +220,8 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
   }
 
   function changeRating() {
+    if (clipboardLockRef.current || isOpeningGoogle) return;
+    setHoverRating(0);
     intentRef.current += 1;
     pendingRef.current = null;
     setRating(0);
@@ -239,155 +245,167 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
     }
   }
 
-  async function handleCopy() {
-    if (!review.trim()) return;
+  async function copyReview(openGoogle: boolean) {
+    if (!review.trim() || clipboardLockRef.current || isOpeningGoogle) return;
+    if (openGoogle && !location?.googleReviewUrl) return;
+    clipboardLockRef.current = true;
+    setIsCopying(true);
     setError("");
-    const success = await copyText(review);
-    setCopied(success);
-    setCopyFailed(!success);
-    if (!success) {
-      setError("Copy was blocked. Select the review text and copy it manually.");
-      return;
+    const intent = intentRef.current;
+    try {
+      const success = await copyText(review);
+      if (intent !== intentRef.current) return;
+      setCopied(success);
+      setCopyFailed(!success);
+      if (!success) {
+        setError("Your browser couldn't copy the text. Select it below and copy it manually.");
+        return;
+      }
+      if (draftId) void recordReviewEvent(draftId, "REVIEW_COPIED").catch(() => undefined);
+      if (openGoogle && location?.googleReviewUrl) {
+        setIsOpeningGoogle(true);
+        setHandoffMessage("Review copied. Opening Google…");
+        if (draftId) recordReviewEventOnExit(draftId, "GOOGLE_REVIEW_OPENED");
+        window.location.assign(location.googleReviewUrl);
+      } else {
+        setHandoffMessage("Review copied. Ready to paste.");
+      }
+    } finally {
+      clipboardLockRef.current = false;
+      setIsCopying(false);
     }
-    setHandoffMessage("Review copied ✓");
-    if (draftId) void recordReviewEvent(draftId, "REVIEW_COPIED").catch(() => undefined);
   }
 
-  async function handleGoogle() {
-    if (!review.trim() || !location?.googleReviewUrl || isOpeningGoogle) return;
-    setError("");
-    const success = await copyText(review);
-    setCopied(success);
-    setCopyFailed(!success);
-    if (!success) {
-      setError("Copy was blocked. Copy the text manually, then open Google using the link below.");
-      return;
-    }
-
-    setIsOpeningGoogle(true);
-    setHandoffMessage("Review copied ✓ Opening Google…");
-    if (draftId) {
-      void recordReviewEvent(draftId, "REVIEW_COPIED").catch(() => undefined);
-      recordReviewEventOnExit(draftId, "GOOGLE_REVIEW_OPENED");
-    }
-    window.setTimeout(() => window.location.assign(location.googleReviewUrl), 350);
-  }
-
-  const isDemo = qrToken === "mangal-counter-demo";
+  const busy = isCopying || isOpeningGoogle;
+  const previewRating = hoverRating || rating;
+  const isReady = screen === "review";
 
   return (
-    <main className="productShell customerFlowV2 minimalCustomerFlow">
-      <header className="experienceNav">
-        <span className="productWordmark"><span className="productLogo"><UiIcon name="qr" /></span> QR Review<span className="wordmarkDot">.</span></span>
-        <div className="experienceNavRight">
-          {isDemo ? <><span className="demoBadge">Interactive demo</span><Link href="/login">Business workspace <UiIcon name="external" /></Link></> : <span className="reviewNavLabel">THE CUSTOMER EXPERIENCE</span>}
-        </div>
-      </header>
-      <section className="experienceStage" aria-label="Customer review">
-        <div className="phoneCard">
-          <header className="merchantHeader customerHeader">
-            <div className="merchantBrand">
-              <div className="brandMark" aria-hidden="true">{businessInitials(location?.name)}</div>
-              <div>
-                <span className="businessEyebrow">SHARE YOUR EXPERIENCE</span>
-                <h1>{location?.name || (error ? "Review unavailable" : "Getting ready…")}</h1>
-                <p>{location?.subtitle || "A quick review, in your own words."}</p>
-              </div>
+    <main className={styles.page}>
+      <div className={styles.shell}>
+        <header className={styles.topbar}>
+          <Image className={styles.brandLogo} src="/brand/raaylo-logo.png"
+            alt="Raaylo" width={1774} height={887} sizes="180px" priority />
+          <p className={styles.tagline}>A little feedback.<br />A big difference.</p>
+        </header>
+
+        <section className={styles.card} aria-label="Customer review">
+          <header className={styles.business}>
+            <span className={styles.businessIcon}><UiIcon name="pin" /></span>
+            <div className={styles.businessDetails}>
+              <span className={styles.businessLabel}>You're reviewing</span>
+              <h1>{location?.name || (error ? "Review unavailable" : "Getting ready…")}</h1>
+              {location?.subtitle && qrToken !== "mangal-counter-demo" ? <p>{location.subtitle}</p> : null}
             </div>
-            <span className="headerTouchpoint"><UiIcon name="qr" /></span>
           </header>
-          {screen === "compose" ? (
-            <div className="contentPane composePane minimalComposePane">
-              <section className="heroQuestion customerQuestion">
-                <span className="sectionEyebrow">YOUR EXPERIENCE</span>
-                <h2 ref={composeHeadingRef} tabIndex={-1}>How was your experience?</h2>
-                <p>Tap a star. We'll prepare a short review you can edit.</p>
-                <div className="ratingGrid" role="group" aria-label="Select rating">
+
+          {!isReady ? (
+            <div className={styles.compose}>
+              <h2 ref={composeHeadingRef} tabIndex={-1}>How was your{" "}<em>experience?</em></h2>
+              <p className={styles.intro}>A little feedback goes a long way.<br />Choose a rating to start your review.</p>
+
+              <div className={styles.ratingPanel}>
+                <div className={styles.ratingPanelTop}><span>Your rating</span><span>1–5 stars</span></div>
+                <div className={styles.ratingGrid} role="group" aria-label="Select rating" aria-describedby="rating-help" aria-busy={isGenerating}
+                  onMouseLeave={() => setHoverRating(0)}>
                   {([1, 2, 3, 4, 5] as Rating[]).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      className={`ratingButton ${rating === value ? "active" : ""}`}
+                    <button key={value} type="button"
+                      className={`${styles.ratingButton} ${previewRating >= value ? styles.filledStar : ""} ${rating === value ? styles.selectedStar : ""}`}
                       onClick={() => selectRating(value)}
+                      onMouseEnter={() => { if (!isGenerating) setHoverRating(value); }}
+                      onFocus={() => { if (!isGenerating) setHoverRating(value); }}
+                      onBlur={() => setHoverRating(0)}
                       aria-label={`${value} star${value === 1 ? "" : "s"}`}
                       aria-pressed={rating === value}
-                      disabled={!location || isGenerating}
-                    >
-                      <UiIcon name="star" /><small>{value}</small>
+                      disabled={!location || isGenerating}>
+                      <UiIcon name="star" /><span>{value}</span>
                     </button>
                   ))}
                 </div>
-                <div className="ratingFeedback" aria-live="polite">
-                  <strong>{rating ? ratingLabels[rating] : "Choose 1–5 stars"}</strong>
-                  <span>{isGenerating ? "Preparing your review…" : "Every rating is welcome"}</span>
+                <div className={styles.ratingScale} aria-hidden="true"><span>Very poor</span><span>Excellent</span></div>
+                <div className={styles.ratingHint} id="rating-help" role="status">
+                  {isGenerating ? <><span className={styles.spinner} aria-hidden="true" /> Preparing your review…</> :
+                    !location ? (error ? "Please try loading the review again." : "Loading business details…") :
+                    previewRating ? <><strong>{ratingLabels[previewRating]}</strong><span>·</span>{rating ? "Tap a star to try again" : "Tap to choose"}</> :
+                    <>Tap a star to get started <UiIcon name="arrow" /></>}
                 </div>
-              </section>
-              {isGenerating ? <div className="minimalLoading" role="status"><UiIcon name="sparkle" /> Preparing your review…</div> : null}
-              {error ? <p className="customerError" role="alert">{error}</p> : null}
+              </div>
+              {error ? <p className={`customerError ${styles.error}`} role="alert">{error}</p> : null}
               {error && !location ? (
-                <button type="button" className="retryAction" onClick={() => {
+                <button type="button" className={styles.textAction} onClick={() => {
                   setError("");
                   void ensureSession().catch((cause) => setError(cause instanceof Error ? cause.message : "Could not load the review."));
                 }}>Try loading again <UiIcon name="arrow" /></button>
               ) : null}
               {error && location && rating && !isGenerating ? (
-                <button type="button" className="retryAction" onClick={() => void createDraft(rating)}>Retry review <UiIcon name="arrow" /></button>
+                <button type="button" className={styles.textAction} onClick={() => void createDraft(rating)}>Retry review <UiIcon name="arrow" /></button>
               ) : null}
-              <p className="minimalTrust"><UiIcon name="check" /> You can edit every word before sharing.</p>
+              <div className={styles.reassurance}>
+                <span className={styles.reassuranceIcon}><UiIcon name="edit" /></span>
+                <div><strong>Your words. Your choice.</strong><p>We’ll prepare a draft you can make your own.<br />Every rating is welcome.</p></div>
+              </div>
             </div>
           ) : (
-            <div className="contentPane reviewPane customerReviewPane minimalReviewPane">
-              <button type="button" className="backLink" disabled={isOpeningGoogle} onClick={changeRating}><span aria-hidden="true">←</span> Change rating</button>
-              <div className="reviewReadyHeader">
-                <div className="successGlyph"><UiIcon name="check" /></div>
-                <div>
-                  <span className="sectionEyebrow">{rating} / 5 STARS</span>
-                  <h2 ref={reviewHeadingRef} tabIndex={-1}>Your review is ready</h2>
-                  <p className="reviewLead">Check the wording, make it yours, then continue.</p>
+            <div className={styles.review}>
+              <div className={styles.ratingSummary}>
+                <div className={styles.ratingValue}>
+                  <span className={styles.miniStars} aria-hidden="true">
+                    {([1, 2, 3, 4, 5] as Rating[]).map((value) => <UiIcon key={value} name="star" className={value <= rating ? styles.miniFilled : ""} />)}
+                  </span>
+                  <span>{rating} / 5</span>
                 </div>
+                <button type="button" className={styles.changeRating} disabled={busy} onClick={changeRating}>Change rating</button>
               </div>
-              <div className="reviewEditor">
-                <div className="reviewEditorHeading"><span><UiIcon name="edit" /> YOUR DRAFT</span><span>Editable</span></div>
-                <textarea value={review} onChange={(event) => editReview(event.target.value)} aria-label="Generated review" disabled={isOpeningGoogle} />
-                <div className="reviewEditorFoot"><span>Share only what reflects your experience.</span><span>{review.length} characters</span></div>
+              <h2 ref={reviewHeadingRef} tabIndex={-1}>Your review is{" "}<em>ready</em></h2>
+              <p className={styles.reviewIntro}>Read it, make it yours, then share.</p>
+
+              <div className={styles.editor}>
+                <div className={styles.editorTop}>
+                  <label htmlFor="review-draft"><UiIcon name="edit" /> Your draft</label>
+                  <span>Editable</span>
+                </div>
+                <textarea id="review-draft" ref={reviewInputRef} value={review}
+                  onChange={(event) => editReview(event.target.value)}
+                  aria-label="Generated review" aria-describedby="draft-help"
+                  disabled={busy} spellCheck />
+                <p id="draft-help"><UiIcon name="check" /> Share only what matches your experience.</p>
               </div>
-              {handoffMessage ? <div className="handoffStatus" role="status">{handoffMessage}</div> : null}
-              {error ? <p className="customerError" role="alert">{error}</p> : null}
-              <button type="button" className="primaryAction googleAction" onClick={() => void handleGoogle()}
-                disabled={!review.trim() || !location?.googleReviewUrl || isOpeningGoogle}>
-                <span className="googleG">G</span>
-                <span>{isOpeningGoogle ? "Opening Google…" : "Copy & open Google review"}</span>
-                <span className="actionArrow"><UiIcon name="external" /></span>
-              </button>
-              <p className="pasteInstruction">Paste your review into Google and post it only if it reflects your experience.</p>
-              <div className="secondaryReviewActions minimalSecondaryActions">
-                <button type="button" disabled={isOpeningGoogle || !review.trim()} onClick={() => void handleCopy()}>
+
+              {handoffMessage ? <div className={styles.status} role="status"><UiIcon name="check" /> {handoffMessage}</div> : null}
+              {error ? <p className={`customerError ${styles.error}`} role="alert">{error}</p> : null}
+              {copyFailed ? (
+                <div className={styles.copyRecovery}>
+                  <button type="button" className={styles.textAction} onClick={() => {
+                    reviewInputRef.current?.focus();
+                    reviewInputRef.current?.select();
+                  }}>Select review text <UiIcon name="copy" /></button>
+                  {location?.googleReviewUrl ? <a className={styles.textAction} href={location.googleReviewUrl} onClick={() => {
+                    if (draftId) recordReviewEventOnExit(draftId, "GOOGLE_REVIEW_OPENED");
+                  }}>Open Google without copying <UiIcon name="external" /></a> : null}
+                </div>
+              ) : null}
+              {!location?.googleReviewUrl ? <p className={styles.unavailable} role="status">This business hasn't added a Google review link yet. You can still copy your review.</p> : null}
+
+              <div className={styles.actions}>
+                <button type="button" className={styles.primary} onClick={() => void copyReview(true)}
+                  disabled={!review.trim() || !location?.googleReviewUrl || busy}>
+                  <span className={styles.googleIcon} aria-hidden="true">G</span>
+                  <span>{isOpeningGoogle ? "Opening Google…" : isCopying ? "Copying…" : "Copy & open Google review"}</span>
+                  <UiIcon name="arrow" />
+                </button>
+                <p className={styles.googleHint}>We’ll copy your text and open Google.<br /><span>Paste it there and choose when to post.</span></p>
+                <button type="button" className={styles.copyOnly} disabled={busy || !review.trim()} onClick={() => void copyReview(false)}>
                   <UiIcon name={copied ? "check" : "copy"} /> {copied ? "Copied" : "Copy only"}
                 </button>
               </div>
-              {copyFailed && location?.googleReviewUrl ? (
-                <a className="retryAction minimalManualGoogle" href={location.googleReviewUrl} onClick={() => {
-                  if (draftId) recordReviewEventOnExit(draftId, "GOOGLE_REVIEW_OPENED");
-                }}>Open Google without copying <UiIcon name="external" /></a>
-              ) : null}
             </div>
           )}
-        </div>
-        <footer className="customerFooter"><span>No sign-in needed.</span><span>Powered by <strong>QR Review</strong></span></footer>
-      </section>
-      <aside className="partnerPanel">
-        <div className="partnerHero">
-          <span className="panelEyebrow"><i /> SHARE YOUR EXPERIENCE</span>
-          <h2>One tap.<br /><span>Your own words.</span></h2>
-          <p>Choose a rating, check the draft, and decide what you'd like to share.</p>
-        </div>
-        <div className="experienceGuide">
-          <div><span>01</span><strong>Choose your rating</strong><p>Every experience matters.</p></div>
-          <div><span>02</span><strong>Review & share</strong><p>Edit freely, then open Google.</p></div>
-        </div>
-        <div className="panelFootnote"><span><UiIcon name="check" /> Every rating welcome</span><span><UiIcon name="edit" /> You control the final words</span></div>
-      </aside>
-      <footer className="experiencePageFooter"><span>QR Review / Thoughtful feedback, made simple.</span><span>YOUR EXPERIENCE. YOUR WORDS.</span></footer>
+        </section>
+        <footer className={styles.footer}>
+          <span><UiIcon name="check" /> Nothing is posted without you.</span>
+          <span className={styles.footerSignature}>Made for honest conversations.</span>
+        </footer>
+      </div>
     </main>
   );
 }

@@ -45,33 +45,48 @@ try {
     await page.goto(base);
     await page.getByRole('heading', { name: 'Mangal Traders', exact: true }).waitFor();
     await noOverflow(page);
+    assert.match(await page.title(), /Raaylo/);
+    const logo = page.getByRole('img', { name: 'Raaylo', exact: true });
+    await logo.evaluate(image => image.decode());
+    assert.equal(await logo.evaluate(image => image.naturalWidth > 0), true, 'The approved brand logo must load');
+    const targets = await page.getByRole('group', { name: 'Select rating' }).getByRole('button').evaluateAll(buttons =>
+      buttons.map(button => ({ width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })));
+    assert.ok(targets.every(target => target.width >= 44 && target.height >= 44), 'Rating targets must be at least 44px');
     assert.equal(await page.getByRole('button', { name: 'Generate my review' }).count(), 0);
     assert.equal(await page.locator('.detailFields').count(), 0);
     assert.equal(await page.getByRole('button', { name: '1 star', exact: true }).isDisabled(), false);
   }
   await page.evaluate(() => document.fonts.ready);
-  await page.screenshot({ path: `${screenshots}/customer-desktop.png`, fullPage: true });
+  await page.screenshot({ style: "nextjs-portal { display: none; }", path: `${screenshots}/customer-desktop.png`, fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: `${screenshots}/customer-mobile.png`, fullPage: true });
+  await page.screenshot({ style: "nextjs-portal { display: none; }", path: `${screenshots}/customer-mobile.png`, fullPage: true });
   for (let rating = 1; rating <= 5; rating++) {
     await page.getByRole('button', { name: `${rating} star${rating === 1 ? '' : 's'}`, exact: true }).click();
     const review = page.getByRole('textbox', { name: 'Generated review' });
     await review.waitFor();
     assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), false, 'Google handoff must be available for every rating');
     assert.match(await review.inputValue(), /Mangal Traders/);
+    assert.equal(await page.getByRole('heading', { name: 'Your review is ready' }).evaluate(el => el === document.activeElement), true);
+    for (const width of [320, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: width < 400 ? 844 : 1000 });
+      await noOverflow(page);
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    if (rating === 5) await page.screenshot({ style: 'nextjs-portal { display: none; }', path: `${screenshots}/customer-generated-5stars.png`, fullPage: true });
     if (rating === 1) {
       await review.fill('');
       assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), true);
       await review.fill('My own edited review.');
       await page.getByRole('button', { name: 'Copy only' }).click();
       await page.getByRole('status').filter({ hasText: 'Review copied' }).waitFor();
-      await page.screenshot({ path: `${screenshots}/customer-review.png`, fullPage: true });
+      assert.equal(await page.evaluate(() => navigator.clipboard.readText()), 'My own edited review.');
+      await page.screenshot({ style: "nextjs-portal { display: none; }", path: `${screenshots}/customer-review.png`, fullPage: true });
     }
     await page.getByRole('button', { name: 'Change rating' }).click();
     await page.getByRole('heading', { name: 'How was your experience?' }).waitFor();
     await noOverflow(page);
   }
-  await page.screenshot({ path: `${screenshots}/customer-details.png`, fullPage: true });
+  await page.screenshot({ style: "nextjs-portal { display: none; }", path: `${screenshots}/customer-details.png`, fullPage: true });
   for (const entryRoute of ['r', 'n']) {
     await page.goto(`${base}/${entryRoute}/ui-invalid-token`);
     await page.locator('.customerError[role=alert]').waitFor();
@@ -81,15 +96,75 @@ try {
   await page.goto(`${base}/n/mangal-counter-demo`);
   await page.getByRole('heading', { name: 'Mangal Traders', exact: true }).waitFor();
   await noOverflow(page);
+  // Exercise recovery states separately from the real API happy path above.
+  await page.route('**/api/v1/public/reviews/generate', async route => {
+    await route.fulfill({ status: 503, json: { success: false, error: { message: 'Could not prepare your review. Please retry.' } } });
+  });
+  await page.getByRole('button', { name: '2 stars', exact: true }).click();
+  await page.locator('.customerError[role=alert]').waitFor();
+  await page.unroute('**/api/v1/public/reviews/generate');
+  await page.getByRole('button', { name: 'Retry review' }).click();
+  await page.getByRole('textbox', { name: 'Generated review' }).waitFor();
+  assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), false);
+
+  // If both clipboard methods fail, customers retain an explicit manual path.
+  await page.evaluate(() => {
+    window.__originalClipboardWrite = navigator.clipboard.writeText.bind(navigator.clipboard);
+    window.__originalExecCommand = document.execCommand.bind(document);
+    navigator.clipboard.writeText = async () => { throw new Error('Clipboard denied for test'); };
+    document.execCommand = () => false;
+  });
+  await page.getByRole('button', { name: 'Copy & open Google review' }).click();
+  await page.getByRole('button', { name: 'Select review text' }).click();
+  const selection = await page.getByRole('textbox', { name: 'Generated review' }).evaluate(el => ({
+    length: el.value.length, selected: el.selectionEnd - el.selectionStart, focused: el === document.activeElement,
+  }));
+  assert.equal(selection.selected, selection.length);
+  assert.equal(selection.focused, true);
+  assert.ok(await page.getByRole('link', { name: 'Open Google without copying' }).getAttribute('href'));
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = window.__originalClipboardWrite;
+    document.execCommand = window.__originalExecCommand;
+  });
+  await page.getByRole('button', { name: 'Copy only' }).click();
+  await page.getByRole('status').filter({ hasText: 'Review copied' }).waitFor();
+  assert.equal(await page.locator('.customerError[role=alert]').count(), 0);
+
+  // Verify the Google handoff without posting anything or visiting Google.
+  let handedOff = false;
+  await page.route('https://search.google.com/**', async route => {
+    handedOff = true;
+    await route.fulfill({ status: 200, contentType: 'text/html', body: '<h1>Google handoff intercepted by test</h1>' });
+  });
+  await page.getByRole('button', { name: 'Copy & open Google review' }).click();
+  await page.getByRole('heading', { name: 'Google handoff intercepted by test' }).waitFor();
+  assert.equal(handedOff, true);
+  await page.unroute('https://search.google.com/**');
+
+  // A missing business link should explain the disabled primary action.
+  await page.route('**/api/v1/public/sessions', async route => {
+    const response = await route.fetch();
+    const json = await response.json();
+    json.data.location.googleReviewUrl = '';
+    await route.fulfill({ response, json });
+  });
+  await page.goto(`${base}/r/mangal-counter-demo`);
+  await page.getByRole('button', { name: '3 stars', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Generated review' }).waitFor();
+  assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), true);
+  await page.getByRole('status').filter({ hasText: "hasn't added a Google review link" }).waitFor();
+  assert.equal(await page.getByRole('button', { name: 'Copy only' }).isDisabled(), false);
+  await page.unroute('**/api/v1/public/sessions');
+
   for (const route of ['login', 'signup']) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`${base}/${route}`);
     await page.locator('form').waitFor();
-    await page.screenshot({ path: `${screenshots}/${route}.png`, fullPage: true });
+    await page.screenshot({ style: "nextjs-portal { display: none; }", path: `${screenshots}/${route}.png`, fullPage: true });
     await page.setViewportSize({ width: 320, height: 700 });
     await noOverflow(page);
   }
-  console.log('Customer NFC/QR entry routes, keyboard focus, sticky action, empty-draft controls and public auth layouts passed.');
+  console.log('Customer NFC/QR routes, responsive layouts, touch targets, focus, editable drafts, clipboard and public auth layouts passed.');
 
   if (process.env.REVIEW_REPOSITORY === 'postgres') {
     const email = `ui-${randomUUID()}@example.com`;
@@ -102,7 +177,7 @@ try {
     await page.getByLabel('Password', { exact: true }).fill(password);
     await page.getByRole('button', { name: 'Start 7-day free trial' }).click();
     await page.getByRole('heading', { name: 'Tell us about your business' }).waitFor();
-    await page.screenshot({ path: `${screenshots}/onboarding.png`, fullPage: true });
+    await page.screenshot({ style: "nextjs-portal { display: none; }", path: `${screenshots}/onboarding.png`, fullPage: true });
     await page.getByRole('button', { name: 'Continue to location' }).click();
     await page.getByLabel('Location label').fill('Studio Test Location');
     await page.getByLabel('Google Place ID', { exact: true }).fill('ChIJ-ui-test-place');
@@ -138,7 +213,7 @@ try {
         assert.equal(new URL(writtenUrl).pathname, customerPath, 'NFC card copy action should target the new /n/ review route');
         assert.equal(await page.getByRole('button', { name: 'Copy QR URL' }).count() > 0, true, 'Legacy QR fallback must remain available');
       }
-      if (route === '/dashboard') await page.screenshot({ path: `${screenshots}/dashboard.png`, fullPage: true });
+      if (route === '/dashboard') await page.screenshot({ style: "nextjs-portal { display: none; }", path: `${screenshots}/dashboard.png`, fullPage: true });
       await page.setViewportSize({ width: 390, height: 844 });
       await noOverflow(page);
       assert.equal(await page.locator('.merchantMobileNav a').count(), 6);
@@ -148,7 +223,7 @@ try {
     await page.getByRole('heading', { name: 'Your subscription', exact: true }).waitFor();
     await noOverflow(page);
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.screenshot({ path: `${screenshots}/billing.png`, fullPage: true });
+    await page.screenshot({ style: "nextjs-portal { display: none; }", path: `${screenshots}/billing.png`, fullPage: true });
     await page.goto(`${base}/dashboard`);
     await page.getByRole('button', { name: 'Sign out' }).click();
     await page.getByLabel('Work email').fill(email);
