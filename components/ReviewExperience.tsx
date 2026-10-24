@@ -285,44 +285,50 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
       <div className={styles.shell}>
         <header className={styles.topbar}>
           <Image className={styles.brandLogo} src="/brand/raaylo-logo.png"
-            alt="Raaylo" width={1774} height={887} sizes="260px" priority />
-          <p className={styles.tagline}>Every experience has a voice.</p>
+            alt="Raaylo" width={1774} height={887} sizes="180px" priority />
+          <p className={styles.tagline}>A little feedback.<br />A big difference.</p>
         </header>
 
         <section className={styles.card} aria-label="Customer review">
           <header className={styles.business}>
-            <span className={styles.businessLabel}>Your experience at</span>
-            <h1>{location?.name || (error ? "Review unavailable" : "Getting ready…")}</h1>
-            {location?.subtitle && qrToken !== "mangal-counter-demo" ? <p>{location.subtitle}</p> : null}
+            <span className={styles.businessIcon}><UiIcon name="pin" /></span>
+            <div className={styles.businessDetails}>
+              <span className={styles.businessLabel}>You're reviewing</span>
+              <h1>{location?.name || (error ? "Review unavailable" : "Getting ready…")}</h1>
+              {location?.subtitle && qrToken !== "mangal-counter-demo" ? <p>{location.subtitle}</p> : null}
+            </div>
           </header>
 
           {!isReady ? (
             <div className={styles.compose}>
-              <h2 ref={composeHeadingRef} tabIndex={-1}>How was your experience?</h2>
-              <p className={styles.intro}>Choose your stars. We’ll help you put<br />your experience into words.</p>
+              <h2 ref={composeHeadingRef} tabIndex={-1}>How was your{" "}<em>experience?</em></h2>
+              <p className={styles.intro}>A little feedback goes a long way.<br />Choose a rating to start your review.</p>
 
-              <div className={styles.ratingGrid} role="group" aria-label="Select rating" aria-describedby="rating-help" aria-busy={isGenerating}
-                onMouseLeave={() => setHoverRating(0)}>
-                {([1, 2, 3, 4, 5] as Rating[]).map((value) => (
-                  <button key={value} type="button"
-                    className={`${styles.ratingButton} ${previewRating >= value ? styles.filledStar : ""} ${rating === value ? styles.selectedStar : ""}`}
-                    onClick={() => selectRating(value)}
-                    onMouseEnter={() => { if (!isGenerating) setHoverRating(value); }}
-                    onFocus={() => { if (!isGenerating) setHoverRating(value); }}
-                    onBlur={() => setHoverRating(0)}
-                    aria-label={`${value} star${value === 1 ? "" : "s"}`}
-                    aria-pressed={rating === value}
-                    disabled={!location || isGenerating}>
-                    <UiIcon name="star" /><span>{value}</span>
-                  </button>
-                ))}
-              </div>
-              <div className={styles.ratingScale} aria-hidden="true"><span>Very poor</span><span>Excellent</span></div>
-              <div className={styles.ratingHint} id="rating-help" role="status">
-                {isGenerating ? <><span className={styles.spinner} aria-hidden="true" /> Preparing your review…</> :
-                  !location ? (error ? "Please try loading the review again." : "Loading business details…") :
-                  previewRating ? <><strong>{ratingLabels[previewRating]}</strong><span>·</span>{rating ? "Tap a star to try again" : "Tap to choose"}</> :
-                  <>Tap a star to get started <UiIcon name="arrow" /></>}
+              <div className={styles.ratingPanel}>
+                <div className={styles.ratingPanelTop}><span>Your rating</span><span>1–5 stars</span></div>
+                <div className={styles.ratingGrid} role="group" aria-label="Select rating" aria-describedby="rating-help" aria-busy={isGenerating}
+                  onMouseLeave={() => setHoverRating(0)}>
+                  {([1, 2, 3, 4, 5] as Rating[]).map((value) => (
+                    <button key={value} type="button"
+                      className={`${styles.ratingButton} ${previewRating >= value ? styles.filledStar : ""} ${rating === value ? styles.selectedStar : ""}`}
+                      onClick={() => selectRating(value)}
+                      onMouseEnter={() => { if (!isGenerating) setHoverRating(value); }}
+                      onFocus={() => { if (!isGenerating) setHoverRating(value); }}
+                      onBlur={() => setHoverRating(0)}
+                      aria-label={`${value} star${value === 1 ? "" : "s"}`}
+                      aria-pressed={rating === value}
+                      disabled={!location || isGenerating}>
+                      <UiIcon name="star" /><span>{value}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.ratingScale} aria-hidden="true"><span>Very poor</span><span>Excellent</span></div>
+                <div className={styles.ratingHint} id="rating-help" role="status">
+                  {isGenerating ? <><span className={styles.spinner} aria-hidden="true" /> Preparing your review…</> :
+                    !location ? (error ? "Please try loading the review again." : "Loading business details…") :
+                    previewRating ? <><strong>{ratingLabels[previewRating]}</strong><span>·</span>{rating ? "Tap a star to try again" : "Tap to choose"}</> :
+                    <>Tap a star to get started <UiIcon name="arrow" /></>}
+                </div>
               </div>
               {error ? <p className={`customerError ${styles.error}`} role="alert">{error}</p> : null}
               {error && !location ? (
@@ -336,7 +342,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
               ) : null}
               <div className={styles.reassurance}>
                 <span className={styles.reassuranceIcon}><UiIcon name="edit" /></span>
-                <div><strong>You have the final say.</strong><p>Edit your draft before sharing. Every rating is welcome.</p></div>
+                <div><strong>Your words. Your choice.</strong><p>We’ll prepare a draft you can make your own.<br />Every rating is welcome.</p></div>
               </div>
             </div>
           ) : (
@@ -350,7 +356,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                 </div>
                 <button type="button" className={styles.changeRating} disabled={busy} onClick={changeRating}>Change rating</button>
               </div>
-              <h2 ref={reviewHeadingRef} tabIndex={-1}>Your review is ready</h2>
+              <h2 ref={reviewHeadingRef} tabIndex={-1}>Your review is{" "}<em>ready</em></h2>
               <p className={styles.reviewIntro}>Read it, make it yours, then share.</p>
 
               <div className={styles.editor}>
@@ -397,7 +403,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
         </section>
         <footer className={styles.footer}>
           <span><UiIcon name="check" /> Nothing is posted without you.</span>
-          <span>Honest feedback, made simple.</span>
+          <span className={styles.footerSignature}>Made for honest conversations.</span>
         </footer>
       </div>
     </main>
