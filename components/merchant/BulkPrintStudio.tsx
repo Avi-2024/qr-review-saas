@@ -349,13 +349,19 @@ export default function BulkPrintStudio({
           <div className={styles.tipItem}>
             <span>🎨</span>
             <span>
-              Options: Enable <strong className={styles.tipHighlight}>Background Graphics: ON</strong>
+              Options: <strong className={styles.tipHighlight}>Background Graphics: ON</strong>
+            </span>
+          </div>
+          <div className={styles.tipItem}>
+            <span>⚙️</span>
+            <span>
+              Scale: <strong className={styles.tipHighlight}>100% (Default)</strong> — Do NOT use &quot;Fit to paper&quot;
             </span>
           </div>
           <div className={styles.tipItem}>
             <span>📏</span>
             <span>
-              Stand Fit: <strong className={styles.tipHighlight}>Calibrated 10 cm × 15 cm Clear Acrylic Stand</strong>
+              Stand Fit: <strong className={styles.tipHighlight}>Exact 10 cm × 15 cm Clear Acrylic Stand</strong>
             </span>
           </div>
         </div>

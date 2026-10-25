@@ -401,14 +401,20 @@
 }
 
 .standeeCard {
-  width: 295px;
+  width: 320px;
+  min-height: 480px;
+  aspect-ratio: 10 / 15;
   border-radius: 1.1rem;
-  padding: 1.6rem 1.25rem 1.35rem;
+  padding: 1.5rem 1.25rem 1.35rem;
   text-align: center;
   position: relative;
   box-sizing: border-box;
   overflow: hidden;
   user-select: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
 }
 
 /* 1. Theme Crystal White (Standard Eco Print - Ink Saver) */
@@ -918,25 +924,33 @@
 
   /* Exact 10 cm × 15 cm Physical Acrylic Stand Calibration */
   .standeeCard {
-    width: 98mm !important;
-    max-width: 98mm !important;
-    height: 138mm !important;
-    min-height: 138mm !important;
-    max-height: 138mm !important;
+    width: 100mm !important;
+    max-width: 100mm !important;
+    height: 150mm !important;
+    min-height: 150mm !important;
+    max-height: 150mm !important;
     border-radius: 4mm !important;
-    padding: 4.5mm 3.5mm 3.5mm !important;
+    padding: 6mm 5mm 5mm !important;
     box-sizing: border-box !important;
     text-align: center !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     box-shadow: none !important;
-    border: 1.2px solid #cbd5e1 !important;
+    border: 1.5px solid #cbd5e1 !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
     align-items: center !important;
+  }
+
+  /* When stacked 2-high on A4 Portrait, slightly reduce to 142mm to prevent page spill */
+  .a4DuoRow .standeeCard {
+    height: 142mm !important;
+    min-height: 142mm !important;
+    max-height: 142mm !important;
+    padding: 5mm 4mm 4mm !important;
   }
 
   .brandRow {
@@ -990,10 +1004,15 @@
   }
 
   .qrImage {
-    width: 48mm !important;
-    height: 48mm !important;
+    width: 52mm !important;
+    height: 52mm !important;
     display: block !important;
     margin: 0 auto !important;
+  }
+
+  .a4DuoRow .qrImage {
+    width: 48mm !important;
+    height: 48mm !important;
   }
 
   .footerAiNote {
