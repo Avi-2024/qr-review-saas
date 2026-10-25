@@ -420,7 +420,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                 <h2 ref={composeHeadingRef} tabIndex={-1}>
                   How was your experience?
                 </h2>
-                <p className="heroSubtitle">Tap a star to rate your visit</p>
+                <p className="heroSubtitle">{location?.subtitle || "Tap a star to rate your visit"}</p>
 
                 <div
                   className="ratingGrid"
