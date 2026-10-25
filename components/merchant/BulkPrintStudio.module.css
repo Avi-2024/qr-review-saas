@@ -613,10 +613,10 @@
 }
 
 /* --------------------------------------------------------------------------
-   PRINT STYLESHEET (The Core Engine for High-DPI PDF & Paper Printing)
+   PRINT STYLESHEET (High-DPI PDF & Paper Printing - Exact 1:1 match with Screen ss-1)
    -------------------------------------------------------------------------- */
 @media print {
-  /* Pure white page reset */
+  /* Reset global backgrounds for pure white paper printing */
   html,
   body,
   .workbench {
@@ -651,63 +651,62 @@
     gap: 0 !important;
   }
 
-  /* Page Sheet: Exactly 1 sheet per printed page, never splits */
-  .pageA4,
-  .pageA6,
-  .pageSheet {
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    break-after: page !important;
-    page-break-after: always !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+  /* A4 Page: Fills printable sheet cleanly with no blank bottom gap */
+  .pageA4 {
     width: 100% !important;
     max-width: 100% !important;
-    min-height: 0 !important;
-    height: auto !important;
-    overflow: hidden !important;
+    height: 275mm !important;
+    min-height: 275mm !important;
+    max-height: 278mm !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
     display: flex !important;
     flex-direction: column !important;
+    justify-content: space-between !important;
     align-items: center !important;
-    justify-content: center !important;
-  }
-
-  .pageA4:last-child,
-  .pageA6:last-child,
-  .pageSheet:last-child {
-    break-after: auto !important;
-    page-break-after: auto !important;
-  }
-
-  /* A4 Duo Sheet Container: Compact & centered to guarantee zero spillover */
-  .a4DuoGrid {
-    gap: 5mm !important;
-    padding: 2mm 0 !important;
-    margin: 0 auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
+    page-break-after: always !important;
+    break-after: page !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    box-sizing: border-box !important;
+  }
+
+  .pageA4:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  .a4DuoGrid {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    flex: 1 !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   .a4DuoRow {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    flex: 1 !important;
+    width: 100% !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
   .cutGuideDivider {
     color: #64748b !important;
-    margin: 2mm auto !important;
-    width: 90% !important;
-    max-width: 110mm !important;
+    margin: 3mm auto !important;
+    width: 80% !important;
+    max-width: 140mm !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
@@ -717,8 +716,9 @@
   }
 
   .cutIcon {
-    font-size: 2.5mm !important;
-    letter-spacing: 0.08em !important;
+    font-size: 11px !important;
+    letter-spacing: 0.1em !important;
+    color: #64748b !important;
   }
 
   .standeeCardWrapper {
@@ -730,90 +730,91 @@
     align-items: center !important;
   }
 
-  /* 4" x 6" Acrylic Stand Precision Sizing: fits perfectly into 100 × 150 mm acrylic frame */
+  /* Exact 1:1 Card Size matching ss-1 */
   .standeeCard {
+    width: 295px !important;
+    border-radius: 1.1rem !important;
+    padding: 1.5rem 1.25rem 1.35rem !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     box-shadow: none !important;
     border: 1.5px solid #cbd5e1 !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    width: 96mm !important;
-    max-width: 96mm !important;
-    padding: 3.5mm 3.5mm 3mm !important;
-    border-radius: 3.5mm !important;
-    box-sizing: border-box !important;
-    text-align: center !important;
   }
 
   .brandRow {
-    gap: 2mm !important;
-    margin-bottom: 1mm !important;
+    gap: 0.55rem !important;
+    margin-bottom: 0.4rem !important;
   }
 
   .googleGIcon {
-    width: 5.5mm !important;
-    height: 5.5mm !important;
+    width: 26px !important;
+    height: 26px !important;
   }
 
   .headerTitle {
-    font-size: 3.8mm !important;
-    line-height: 1.15 !important;
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
     margin: 0 !important;
   }
 
   .starsContainer {
-    gap: 1mm !important;
-    margin-bottom: 1mm !important;
+    gap: 4px !important;
+    margin-bottom: 0.45rem !important;
   }
 
   .starIcon {
-    width: 4.5mm !important;
-    height: 4.5mm !important;
+    width: 21px !important;
+    height: 21px !important;
     fill: #fbbc04 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
   .merchantName {
-    font-size: 3.2mm !important;
-    margin: 0 0 1mm !important;
+    font-size: 0.9375rem !important;
+    margin: 0 0 0.35rem !important;
   }
 
   .subtext {
-    font-size: 2.6mm !important;
-    margin: 0 0 1.5mm !important;
-    line-height: 1.2 !important;
+    font-size: 0.8125rem !important;
+    margin: 0 0 0.85rem !important;
+    line-height: 1.3 !important;
   }
 
   .qrCard {
-    padding: 2mm !important;
-    border-radius: 2.5mm !important;
+    padding: 0.85rem !important;
+    border-radius: 0.9rem !important;
     margin: 0 auto !important;
     background: #ffffff !important;
   }
 
   .qrImage {
-    width: 40mm !important;
-    height: 40mm !important;
+    width: 172px !important;
+    height: 172px !important;
     display: block !important;
     margin: 0 auto !important;
   }
 
   .footerAiNote {
-    font-size: 2.7mm !important;
-    margin-top: 1.8mm !important;
-    gap: 1.2mm !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    margin-top: 0.85rem !important;
+    gap: 0.35rem !important;
   }
 
   .sparkleAi {
-    font-size: 3mm !important;
+    font-size: 0.875rem !important;
   }
 
   .googleColorBar {
-    width: 18mm !important;
-    height: 1mm !important;
-    margin: 1.2mm auto 0 !important;
+    width: 68px !important;
+    height: 3.5px !important;
+    margin: 0.55rem auto 0 !important;
   }
 
   .colorBarBlue {
@@ -841,40 +842,50 @@
   }
 
   .footerSubNote {
-    font-size: 2.1mm !important;
-    margin-top: 0.8mm !important;
+    font-size: 0.625rem !important;
+    margin-top: 0.25rem !important;
   }
 
   .cropEdgeLabel {
     color: #64748b !important;
-    font-size: 2mm !important;
-    margin-bottom: 1mm !important;
+    font-size: 0.625rem !important;
+    margin-bottom: 4px !important;
   }
 
-  /* Single 4" × 6" Direct Layout: Fills the stand card proportionally */
+  /* Single 4" × 6" Direct Layout */
+  .pageA6 {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 145mm !important;
+    min-height: 145mm !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .pageA6:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
   .pageA6 .standeeCard {
-    width: 96mm !important;
-    max-width: 96mm !important;
-    padding: 6mm 5mm 5mm !important;
+    width: 310px !important;
+    padding: 1.8rem 1.4rem !important;
   }
 
   .pageA6 .qrImage {
-    width: 48mm !important;
-    height: 48mm !important;
-  }
-
-  .pageA6 .headerTitle {
-    font-size: 4.5mm !important;
-  }
-
-  .pageA6 .starIcon {
-    width: 5.5mm !important;
-    height: 5.5mm !important;
-  }
-
-  .pageA6 .subtext {
-    font-size: 3mm !important;
-    margin-bottom: 2.5mm !important;
+    width: 180px !important;
+    height: 180px !important;
   }
 
   /* Themes in Print */
