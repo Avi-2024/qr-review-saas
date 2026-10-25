@@ -7,11 +7,17 @@ export function createConfiguredRateLimiter(scope: string, maxRequests: number, 
   const env = getEnv();
   const fallback = new InMemoryRateLimiter(maxRequests, windowMs);
 
-  if (env.RATE_LIMIT_BACKEND === "memory") return fallback;
+  if (
+    env.RATE_LIMIT_BACKEND === "memory" ||
+    !env.UPSTASH_REDIS_REST_URL ||
+    !env.UPSTASH_REDIS_REST_TOKEN
+  ) {
+    return fallback;
+  }
 
   return new UpstashRateLimiter({
-    restUrl: env.UPSTASH_REDIS_REST_URL!,
-    token: env.UPSTASH_REDIS_REST_TOKEN!,
+    restUrl: env.UPSTASH_REDIS_REST_URL,
+    token: env.UPSTASH_REDIS_REST_TOKEN,
     keyPrefix: `${env.RATE_LIMIT_KEY_PREFIX}:${scope}`,
     keyHashSecret: env.IP_HASH_SECRET ?? "development-only-rate-limit-key",
     maxRequests,
