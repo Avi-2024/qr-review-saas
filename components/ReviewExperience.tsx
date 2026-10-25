@@ -292,7 +292,9 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
     if (!location || generationLockRef.current) return;
     triggerHaptic();
     setRating(value);
-    void createDraft(value, 0);
+    const initialSeed = Math.floor(Math.random() * 500) + 1;
+    setVariation(initialSeed);
+    void createDraft(value, initialSeed);
   }
 
   function changeRating() {

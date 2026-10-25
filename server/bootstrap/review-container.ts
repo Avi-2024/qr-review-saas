@@ -5,6 +5,7 @@ import { createConfiguredRateLimiter } from "@/server/infrastructure/rate-limit/
 import type { RateLimiter } from "@/server/infrastructure/rate-limit/rate-limiter";
 import { MemoryReviewRepository } from "@/server/infrastructure/repositories/memory-review-repository";
 import { PostgresReviewRepository } from "@/server/infrastructure/repositories/postgres-review-repository";
+import { GrokReviewGenerator } from "@/server/infrastructure/review-generators/grok-review-generator";
 import { LocalReviewGenerator } from "@/server/infrastructure/review-generators/local-review-generator";
 
 const globalForReview = globalThis as typeof globalThis & {
@@ -23,9 +24,13 @@ export function getReviewService() {
     ? new PostgresReviewRepository(getPool())
     : new MemoryReviewRepository();
 
+  const grokApiKey = env.GROK_API_KEY || env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.XAI_API_KEY;
+  const localGen = new LocalReviewGenerator();
+  const generator = grokApiKey ? new GrokReviewGenerator(grokApiKey, localGen) : localGen;
+
   globalForReview.__reviewService = new ReviewService(
     repository,
-    new LocalReviewGenerator(),
+    generator,
     env.REVIEW_SESSION_TTL_MINUTES,
   );
 

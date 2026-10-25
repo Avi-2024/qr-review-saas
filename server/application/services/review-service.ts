@@ -95,6 +95,13 @@ export class ReviewService {
             .filter(Boolean)
         : [];
 
+      // Derive stable session offset so different customer scans get distinct reviews
+      let sessionOffset = 0;
+      for (let i = 0; i < session.id.length; i++) {
+        sessionOffset = (sessionOffset * 31 + session.id.charCodeAt(i)) & 0x7fff;
+      }
+      const effectiveVariation = Math.abs(input.variation + sessionOffset);
+
       const generated = await this.generator.generate({
         businessName: location.name,
         businessType: location.businessType,
@@ -102,7 +109,7 @@ export class ReviewService {
         topics,
         keywords: parsedKeywords,
         note: input.note,
-        variation: input.variation,
+        variation: effectiveVariation,
       });
 
       const draft = await this.repository.saveGeneratedDraft({
