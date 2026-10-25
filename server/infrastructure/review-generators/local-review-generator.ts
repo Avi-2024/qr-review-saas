@@ -34,7 +34,9 @@ export class LocalReviewGenerator implements ReviewGenerator {
     const sentences: string[] = [this.opening(businessName, preposition, rating, Math.abs(variation * 7 + 3))];
 
     // Weave in merchant's product/service SEO keywords naturally for high ratings
-    if (keywords && keywords.length > 0 && rating >= 4) {
+    // ~70% of variations weave in specific keywords, while ~30% keep general praise for natural Google review distribution
+    const shouldIncludeKeyword = (Math.abs(variation) % 10) < 7;
+    if (keywords && keywords.length > 0 && rating >= 4 && shouldIncludeKeyword) {
       const idx = Math.abs(variation) % keywords.length;
       const primaryKw = keywords[idx];
       const secondaryKw = keywords.length > 1 ? keywords[(idx + 1) % keywords.length] : null;

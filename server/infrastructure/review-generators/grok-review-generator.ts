@@ -9,6 +9,18 @@ export class GrokReviewGenerator implements ReviewGenerator {
 
   async generate(input: GenerateReviewInput): Promise<GenerateReviewOutput> {
     try {
+      const shouldIncludeKeyword = (Math.abs(input.variation) % 10) < 7; // ~70% organic keywords, 30% general praise
+      let keywordInstruction = "";
+      if (input.keywords && input.keywords.length > 0 && input.rating >= 4 && shouldIncludeKeyword) {
+        const kws = input.keywords;
+        const idx1 = Math.abs(input.variation * 3 + 1) % kws.length;
+        const idx2 = (idx1 + 1 + Math.abs(input.variation)) % kws.length;
+        const selected = kws.length > 1 ? `"${kws[idx1]}" or "${kws[idx2]}"` : `"${kws[idx1]}"`;
+        keywordInstruction = `5. Naturally mention 1 of these specific products or services: ${selected}. Make it sound like a genuine customer purchase or experience.`;
+      } else if (input.keywords && input.keywords.length > 0) {
+        keywordInstruction = "5. Focus on the overall experience, polite staff, honesty, and quality service without forcing specific product keywords.";
+      }
+
       const systemPrompt = [
         "You are a real, genuine customer writing a short, authentic Google Maps review.",
         "Rules:",
@@ -16,9 +28,7 @@ export class GrokReviewGenerator implements ReviewGenerator {
         "2. Tone: Friendly, conversational, human. NEVER use generic AI cliches like 'testament to', 'delighted to share', 'plethora of', 'beacon of excellence'.",
         "3. Output ONLY the raw review text. Do NOT add quotation marks, greetings, headers, or explanations.",
         `4. The customer rated the experience ${input.rating} out of 5 stars.`,
-        input.keywords && input.keywords.length > 0
-          ? `5. Naturally weave in 1 or 2 of these services/products: ${input.keywords.join(", ")}.`
-          : "",
+        keywordInstruction,
         input.topics && input.topics.length > 0
           ? `6. Key highlights: ${input.topics.map((t) => t.label).join(", ")}.`
           : "",
