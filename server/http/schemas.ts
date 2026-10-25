@@ -14,7 +14,7 @@ export const generateReviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   topicIds: z.array(z.string().trim().min(1).max(100)).max(3).default([]),
   note: z.string().trim().max(180).optional(),
-  variation: z.number().int().min(0).max(20).default(0),
+  variation: z.number().int().min(0).max(100_000).default(0),
 });
 
 export const reviewEventSchema = z.object({
