@@ -6,6 +6,7 @@ import type {
   MerchantOrganizationProfile,
   MerchantQrCode,
   MerchantTopicConfig,
+  StandeeItem,
   TrendPoint,
 } from "@/server/merchant/domain/merchant";
 
@@ -38,4 +39,10 @@ export interface MerchantRepository {
   getQrCode(organizationId: string, qrCodeId: string): Promise<MerchantQrCode | null>;
   createQrCode(organizationId: string, input: { locationId: string; publicToken: string; name: string; sourceType: string; reference?: string | null }): Promise<MerchantQrCode>;
   updateQrCodeStatus(organizationId: string, qrCodeId: string, isActive: boolean): Promise<MerchantQrCode | null>;
+
+  listStandees(organizationId: string): Promise<StandeeItem[]>;
+  getStandeeByToken(publicToken: string): Promise<StandeeItem | null>;
+  createStandeeBatch(organizationId: string, input: { count: number; prefix?: string; batchName?: string }): Promise<StandeeItem[]>;
+  assignStandee(organizationId: string, input: { standeeId?: string; standeeCode?: string; locationId: string; notes?: string }): Promise<StandeeItem>;
+  unbindStandee(organizationId: string, standeeId: string): Promise<StandeeItem>;
 }

@@ -20,7 +20,39 @@ export async function POST(request: Request) {
     const { identity } = await requireMerchantApiIdentity();
     const body = merchantLocationCreateSchema.parse(await request.json());
     await getBillingService().assertLocationCapacity(identity.organizationId);
-    return created({ location: await getMerchantService().createLocation(identity, body) });
+    const location = await getMerchantService().createLocation(identity, body);
+    if (body.standeeId || body.standeeCode) {
+      try {
+        await getMerchantService().assignStandee(identity, {
+          standeeId: body.standeeId,
+          standeeCode: body.standeeCode,
+          locationId: location.id,
+          notes: `Assigned during onboarding for ${location.name}`,
+        });
+      } catch (assignError) {
+        // Fallback to digital QR if standee binding encounters an issue
+        try {
+          await getMerchantService().createQrCode(identity, {
+            locationId: location.id,
+            name: `${location.name} QR`,
+            sourceType: "general",
+          });
+        } catch {
+          // Continue even if touchpoint was already created
+        }
+      }
+    } else {
+      try {
+        await getMerchantService().createQrCode(identity, {
+          locationId: location.id,
+          name: `${location.name} QR`,
+          sourceType: "general",
+        });
+      } catch {
+        // Continue even if initial touchpoint was already created
+      }
+    }
+    return created({ location });
   } catch (error) {
     return handleRouteError(error);
   }

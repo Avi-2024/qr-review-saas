@@ -144,7 +144,7 @@ export class ReviewService {
 
   async recordSessionEvent(input: {
     sessionId: string;
-    type: "RATING_SELECTED" | "TOPIC_SELECTED" | "GENERATE_CLICKED";
+    type: "RATING_SELECTED" | "TOPIC_SELECTED" | "GENERATE_CLICKED" | "GOOGLE_REVIEW_OPENED";
     clientEventId: string;
     metadata?: Record<string, unknown>;
   }) {

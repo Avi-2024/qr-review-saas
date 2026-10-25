@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { activityPercentage, funnelLabel } from "@/lib/merchant-display";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";

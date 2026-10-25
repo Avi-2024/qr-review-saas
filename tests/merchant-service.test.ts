@@ -30,6 +30,11 @@ function repository(overrides: Partial<MerchantRepository> = {}) {
     getQrCode: vi.fn(),
     createQrCode: vi.fn(),
     updateQrCodeStatus: vi.fn(),
+    listStandees: vi.fn().mockResolvedValue([]),
+    getStandeeByToken: vi.fn().mockResolvedValue(null),
+    createStandeeBatch: vi.fn().mockResolvedValue([]),
+    assignStandee: vi.fn(),
+    unbindStandee: vi.fn(),
     ...overrides,
   } as unknown as MerchantRepository;
 }
@@ -224,5 +229,52 @@ describe("MerchantService", () => {
     const result = await service.dashboard(owner, 365);
     expect(result.days).toBe(90);
     expect(summary).toHaveBeenCalledWith("org-1", 90);
+  });
+
+  it("lists standees for the organization", async () => {
+    const listStandees = vi.fn().mockResolvedValue([
+      { id: "s-1", standeeCode: "ST-001", publicToken: "st-001", status: "unassigned" },
+    ]);
+    const service = new MerchantService(repository({ listStandees }), 24);
+
+    const result = await service.listStandees(owner);
+    expect(result).toHaveLength(1);
+    expect(listStandees).toHaveBeenCalledWith("org-1");
+  });
+
+  it("creates a standee batch when user has write role", async () => {
+    const createStandeeBatch = vi.fn().mockResolvedValue([
+      { id: "s-1", standeeCode: "ST-001" },
+      { id: "s-2", standeeCode: "ST-002" },
+    ]);
+    const service = new MerchantService(repository({ createStandeeBatch }), 24);
+
+    const result = await service.createStandeeBatch(owner, { count: 2, prefix: "ST-", batchName: "Test Batch" });
+    expect(result).toHaveLength(2);
+    expect(createStandeeBatch).toHaveBeenCalledWith("org-1", { count: 2, prefix: "ST-", batchName: "Test Batch" });
+  });
+
+  it("blocks viewer role from creating standees batch", async () => {
+    const service = new MerchantService(repository(), 24);
+    await expect(service.createStandeeBatch(viewer, { count: 10 }))
+      .rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("assigns a standee to a location", async () => {
+    const assignStandee = vi.fn().mockResolvedValue({ id: "s-1", status: "assigned", locationId: "loc-1" });
+    const service = new MerchantService(repository({ assignStandee }), 24);
+
+    const result = await service.assignStandee(owner, { standeeId: "s-1", locationId: "loc-1" });
+    expect(result.status).toBe("assigned");
+    expect(assignStandee).toHaveBeenCalledWith("org-1", { standeeId: "s-1", locationId: "loc-1" });
+  });
+
+  it("unbinds a standee from a location", async () => {
+    const unbindStandee = vi.fn().mockResolvedValue({ id: "s-1", status: "unassigned", locationId: null });
+    const service = new MerchantService(repository({ unbindStandee }), 24);
+
+    const result = await service.unbindStandee(owner, "s-1");
+    expect(result.status).toBe("unassigned");
+    expect(unbindStandee).toHaveBeenCalledWith("org-1", "s-1");
   });
 });

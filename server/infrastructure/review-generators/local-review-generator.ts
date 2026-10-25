@@ -45,19 +45,59 @@ export class LocalReviewGenerator implements ReviewGenerator {
 
   private opening(name: string, prep: string, rating: number, variation: number) {
     const subject = `${prep} ${name}`;
-    const alternates: Record<number, [string, string]> = {
-      1: [`My overall experience ${subject} was very poor.`, `My experience ${subject} was disappointing overall.`],
-      2: [`My overall experience ${subject} was below expectations.`, `My experience ${subject} could have been better.`],
-      3: [`My overall experience ${subject} was average.`, `My experience ${subject} was mixed overall.`],
-      4: [`My overall experience ${subject} was good.`, `My experience ${subject} was good overall.`],
-      5: [`My overall experience ${subject} was excellent.`, `My experience ${subject} was very positive overall.`],
+    const alternates: Record<number, string[]> = {
+      1: [
+        `My experience ${subject} was disappointing overall.`,
+        `My overall experience ${subject} was below expectations.`,
+        `My experience ${subject} was quite poor today.`,
+      ],
+      2: [
+        `My experience ${subject} could have been better.`,
+        `My overall experience ${subject} was below what I had hoped.`,
+        `My experience ${subject} fell short of expectations.`,
+      ],
+      3: [
+        `My experience ${subject} was okay overall.`,
+        `My overall experience ${subject} was fairly average.`,
+        `My experience ${subject} was decent, with room for improvement.`,
+      ],
+      4: [
+        `I had a very good experience ${subject}. Everything went smoothly.`,
+        `My experience ${subject} was positive and well handled throughout.`,
+        `My overall experience ${subject} was great from start to finish.`,
+      ],
+      5: [
+        `Had a wonderful experience ${subject}! Everything was handled with great care.`,
+        `My experience ${subject} was truly excellent from start to finish.`,
+        `My overall experience ${subject} was outstanding and seamless.`,
+      ],
     };
-    return alternates[rating][variation % 2];
+    const list = alternates[rating];
+    return list[variation % list.length];
   }
 
   private closing(rating: number, variation: number) {
-    if (rating >= 4) return variation % 2 ? "Overall, I was pleased with my experience." : "Overall, I was satisfied with the experience.";
-    if (rating === 3) return variation % 2 ? "There is still room for improvement." : "Overall, it was an average experience.";
-    return variation % 2 ? "I hope the overall experience improves." : "There is clear room for improvement.";
+    if (rating >= 4) {
+      const closings = [
+        "Very pleased with the entire process.",
+        "Glad to have had such a smooth experience.",
+        "I was completely satisfied with the service.",
+      ];
+      return closings[variation % closings.length];
+    }
+    if (rating === 3) {
+      const closings = [
+        "A few things could be streamlined.",
+        "Fairly standard experience overall.",
+        "Hope to see some minor improvements next time.",
+      ];
+      return closings[variation % closings.length];
+    }
+    const closings = [
+      "There is clear room for improvement.",
+      "Hope management addresses the response time.",
+      "I hope the overall experience improves.",
+    ];
+    return closings[variation % closings.length];
   }
 }

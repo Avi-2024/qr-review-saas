@@ -8,6 +8,7 @@ import type {
   MerchantOrganizationProfile,
   MerchantQrCode,
   MerchantTopicConfig,
+  StandeeItem,
   TrendPoint,
 } from "@/server/merchant/domain/merchant";
 
@@ -32,6 +33,14 @@ const QR_SELECT = `
 const TOPIC_SELECT = `
   SELECT id, label, icon, sort_order AS "sortOrder", is_active AS "isActive"
   FROM review_topics`;
+
+const STANDEE_SELECT = `
+  SELECT s.id, s.organization_id AS "organizationId", s.standee_code AS "standeeCode",
+         s.public_token AS "publicToken", s.batch_name AS "batchName", s.location_id AS "locationId",
+         COALESCE(l.name, '') AS "locationName", s.qr_code_id AS "qrCodeId", s.status,
+         s.assigned_at AS "assignedAt", s.notes, s.created_at AS "createdAt", s.updated_at AS "updatedAt"
+  FROM standee_inventory s
+  LEFT JOIN locations l ON l.id = s.location_id`;
 
 async function rollbackQuietly(client: PoolClient) {
   await client.query("ROLLBACK").catch(() => undefined);
@@ -547,5 +556,193 @@ export class PostgresMerchantRepository implements MerchantRepository {
       [qrCodeId, organizationId, isActive],
     );
     return result.rows[0] ?? null;
+  }
+
+  async listStandees(organizationId: string): Promise<StandeeItem[]> {
+    const result = await this.pool.query<StandeeItem>(
+      `${STANDEE_SELECT} WHERE s.organization_id = $1 ORDER BY s.created_at DESC, s.standee_code ASC`,
+      [organizationId],
+    );
+    return result.rows;
+  }
+
+  async getStandeeByToken(publicToken: string): Promise<StandeeItem | null> {
+    const result = await this.pool.query<StandeeItem>(
+      `${STANDEE_SELECT} WHERE LOWER(s.public_token) = LOWER($1) LIMIT 1`,
+      [publicToken.trim()],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async createStandeeBatch(
+    organizationId: string,
+    input: { count: number; prefix?: string; batchName?: string },
+  ): Promise<StandeeItem[]> {
+    const count = Math.min(250, Math.max(1, input.count));
+    const prefix = (input.prefix || "ST-").trim().toUpperCase();
+    const batchName = (input.batchName || "Retail Batch").trim();
+
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Find highest existing numerical suffix for this prefix
+      let nextIndex = 1;
+      const allPrefix = await client.query<{ standee_code: string }>(
+        `SELECT standee_code FROM standee_inventory WHERE organization_id = $1 AND standee_code LIKE $2`,
+        [organizationId, `${prefix}%`],
+      );
+      for (const row of allPrefix.rows) {
+        const numPart = parseInt(row.standee_code.replace(prefix, ""), 10);
+        if (!isNaN(numPart) && numPart >= nextIndex) {
+          nextIndex = numPart + 1;
+        }
+      }
+
+      const created: StandeeItem[] = [];
+      for (let i = 0; i < count; i += 1) {
+        const currentNum = nextIndex + i;
+        const standeeCode = `${prefix}${String(currentNum).padStart(3, "0")}`;
+        const publicToken = standeeCode.toLowerCase();
+
+        const inserted = await client.query<StandeeItem>(
+          `INSERT INTO standee_inventory (organization_id, standee_code, public_token, batch_name, status)
+           VALUES ($1, $2, $3, $4, 'unassigned')
+           ON CONFLICT (public_token) DO UPDATE SET updated_at = NOW()
+           RETURNING id, organization_id AS "organizationId", standee_code AS "standeeCode",
+                     public_token AS "publicToken", batch_name AS "batchName", location_id AS "locationId",
+                     ''::text AS "locationName", qr_code_id AS "qrCodeId", status, assigned_at AS "assignedAt",
+                     notes, created_at AS "createdAt", updated_at AS "updatedAt"`,
+          [organizationId, standeeCode, publicToken, batchName],
+        );
+        if (inserted.rows[0]) created.push(inserted.rows[0]);
+      }
+
+      await client.query("COMMIT");
+      return created;
+    } catch (err) {
+      await rollbackQuietly(client);
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async assignStandee(
+    organizationId: string,
+    input: { standeeId?: string; standeeCode?: string; locationId: string; notes?: string },
+  ): Promise<StandeeItem> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Verify location
+      const locRes = await client.query<{ id: string; name: string; is_active: boolean }>(
+        `SELECT id, name, is_active FROM locations WHERE id = $1 AND organization_id = $2`,
+        [input.locationId, organizationId],
+      );
+      const location = locRes.rows[0];
+      if (!location) throw new Error("Location not found.");
+      if (!location.is_active) throw new Error("Location is paused/inactive. Please activate it first.");
+
+      // Find standee
+      let standeeRes;
+      if (input.standeeId) {
+        standeeRes = await client.query<{ id: string; standee_code: string; public_token: string }>(
+          `SELECT id, standee_code, public_token FROM standee_inventory WHERE id = $1 AND organization_id = $2 FOR UPDATE`,
+          [input.standeeId, organizationId],
+        );
+      } else if (input.standeeCode) {
+        standeeRes = await client.query<{ id: string; standee_code: string; public_token: string }>(
+          `SELECT id, standee_code, public_token FROM standee_inventory WHERE LOWER(standee_code) = LOWER($1) AND organization_id = $2 FOR UPDATE`,
+          [input.standeeCode.trim(), organizationId],
+        );
+      } else {
+        throw new Error("Either standeeId or standeeCode must be provided.");
+      }
+
+      const standee = standeeRes.rows[0];
+      if (!standee) throw new Error("Standee not found in inventory.");
+
+      // Create or activate qr_codes entry
+      const qrRes = await client.query<{ id: string }>(
+        `INSERT INTO qr_codes (location_id, public_token, name, source_type, reference, is_active)
+         VALUES ($1, $2, $3, 'standee', $4, TRUE)
+         ON CONFLICT (public_token) DO UPDATE
+           SET location_id = EXCLUDED.location_id,
+               name = EXCLUDED.name,
+               is_active = TRUE,
+               updated_at = NOW()
+         RETURNING id`,
+        [location.id, standee.public_token, `Counter Standee ${standee.standee_code}`, standee.standee_code],
+      );
+      const qrId = qrRes.rows[0].id;
+
+      // Update standee_inventory
+      const updated = await client.query<StandeeItem>(
+        `UPDATE standee_inventory
+         SET location_id = $1,
+             qr_code_id = $2,
+             status = 'assigned',
+             assigned_at = NOW(),
+             notes = COALESCE($3, notes),
+             updated_at = NOW()
+         WHERE id = $4
+         RETURNING id, organization_id AS "organizationId", standee_code AS "standeeCode",
+                   public_token AS "publicToken", batch_name AS "batchName", location_id AS "locationId",
+                   $5::text AS "locationName", qr_code_id AS "qrCodeId", status, assigned_at AS "assignedAt",
+                   notes, created_at AS "createdAt", updated_at AS "updatedAt"`,
+        [location.id, qrId, input.notes ?? null, standee.id, location.name],
+      );
+
+      await client.query("COMMIT");
+      return updated.rows[0];
+    } catch (err) {
+      await rollbackQuietly(client);
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async unbindStandee(organizationId: string, standeeId: string): Promise<StandeeItem> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const existing = await client.query<{ id: string; qr_code_id: string | null }>(
+        `SELECT id, qr_code_id FROM standee_inventory WHERE id = $1 AND organization_id = $2 FOR UPDATE`,
+        [standeeId, organizationId],
+      );
+      const item = existing.rows[0];
+      if (!item) throw new Error("Standee not found.");
+
+      if (item.qr_code_id) {
+        await client.query(`UPDATE qr_codes SET is_active = FALSE WHERE id = $1`, [item.qr_code_id]);
+      }
+
+      const updated = await client.query<StandeeItem>(
+        `UPDATE standee_inventory
+         SET location_id = NULL,
+             qr_code_id = NULL,
+             status = 'unassigned',
+             assigned_at = NULL,
+             updated_at = NOW()
+         WHERE id = $1
+         RETURNING id, organization_id AS "organizationId", standee_code AS "standeeCode",
+                   public_token AS "publicToken", batch_name AS "batchName", location_id AS "locationId",
+                   NULL::text AS "locationName", qr_code_id AS "qrCodeId", status, assigned_at AS "assignedAt",
+                   notes, created_at AS "createdAt", updated_at AS "updatedAt"`,
+        [standeeId],
+      );
+
+      await client.query("COMMIT");
+      return updated.rows[0];
+    } catch (err) {
+      await rollbackQuietly(client);
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 }

@@ -146,11 +146,37 @@ export function recordSessionEvent(
   event:
     | { type: "RATING_SELECTED"; rating: number }
     | { type: "TOPIC_SELECTED"; topicId: string; selected: boolean }
-    | { type: "GENERATE_CLICKED" },
+    | { type: "GENERATE_CLICKED" }
+    | { type: "GOOGLE_REVIEW_OPENED" },
 ) {
   return apiRequest<{ recorded: boolean }>(`/api/v1/public/sessions/${sessionId}/events`, {
     method: "POST",
     keepalive: true,
     body: JSON.stringify({ eventId: crypto.randomUUID(), ...event }),
   });
+}
+
+export function recordSessionEventOnExit(
+  sessionId: string,
+  event:
+    | { type: "RATING_SELECTED"; rating: number }
+    | { type: "GOOGLE_REVIEW_OPENED" },
+) {
+  const url = `/api/v1/public/sessions/${sessionId}/events`;
+  const payload = JSON.stringify({ eventId: crypto.randomUUID(), ...event });
+
+  if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+    const sent = navigator.sendBeacon(
+      url,
+      new Blob([payload], { type: "application/json" }),
+    );
+    if (sent) return;
+  }
+
+  void fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: payload,
+    keepalive: true,
+  }).catch(() => undefined);
 }

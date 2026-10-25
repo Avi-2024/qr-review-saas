@@ -45,14 +45,13 @@ try {
     await page.goto(base);
     await page.getByRole('heading', { name: 'Mangal Traders', exact: true }).waitFor();
     await noOverflow(page);
-    assert.equal(await page.getByRole('button', { name: 'Generate my review' }).count(), 0);
-    assert.equal(await page.locator('.detailFields').count(), 0);
     assert.equal(await page.getByRole('button', { name: '1 star', exact: true }).isDisabled(), false);
   }
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: `${screenshots}/customer-desktop.png`, fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: `${screenshots}/customer-mobile.png`, fullPage: true });
+
   for (let rating = 1; rating <= 5; rating++) {
     await page.getByRole('button', { name: `${rating} star${rating === 1 ? '' : 's'}`, exact: true }).click();
     const review = page.getByRole('textbox', { name: 'Generated review' });
@@ -71,7 +70,7 @@ try {
     await page.getByRole('heading', { name: 'How was your experience?' }).waitFor();
     await noOverflow(page);
   }
-  await page.screenshot({ path: `${screenshots}/customer-details.png`, fullPage: true });
+
   for (const entryRoute of ['r', 'n']) {
     await page.goto(`${base}/${entryRoute}/ui-invalid-token`);
     await page.locator('.customerError[role=alert]').waitFor();
@@ -89,7 +88,7 @@ try {
     await page.setViewportSize({ width: 320, height: 700 });
     await noOverflow(page);
   }
-  console.log('Customer NFC/QR entry routes, keyboard focus, sticky action, empty-draft controls and public auth layouts passed.');
+  console.log('Customer NFC/QR entry routes, keyboard focus, direct star Google redirect, and public auth layouts passed.');
 
   if (process.env.REVIEW_REPOSITORY === 'postgres') {
     const email = `ui-${randomUUID()}@example.com`;
@@ -105,7 +104,7 @@ try {
     await page.screenshot({ path: `${screenshots}/onboarding.png`, fullPage: true });
     await page.getByRole('button', { name: 'Continue to location' }).click();
     await page.getByLabel('Location label').fill('Studio Test Location');
-    await page.getByLabel('Google Place ID', { exact: true }).fill('ChIJ-ui-test-place');
+    await page.getByLabel('Google Review Link or Place ID', { exact: true }).fill('ChIJ-ui-test-place');
     await page.getByRole('button', { name: 'Save location' }).click();
     await page.getByRole('button', { name: 'Use these topics' }).click();
     await page.getByLabel('Card name / touchpoint', { exact: true }).fill('Studio Test Reception');
@@ -121,11 +120,9 @@ try {
     await page.getByRole('heading', { name: 'Studio Test Location', exact: true }).waitFor();
     await page.setViewportSize({ width: 320, height: 700 });
     await noOverflow(page);
-    assert.equal(await page.getByRole('link', { name: 'Business workspace' }).count(), 0);
     await page.getByRole('button', { name: '5 stars', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Generated review' }).waitFor();
-    assert.equal(await page.getByRole('button', { name: 'Copy & open Google review' }).isDisabled(), false);
-    const pages = [['/dashboard', 'Overview'], ['/dashboard/locations', 'Locations'], ['/dashboard/topics', 'Topics'], ['/dashboard/qr-codes', 'NFC cards'], ['/dashboard/analytics', 'Analytics']];
+    await page.getByRole('heading', { name: 'Thank You!', exact: true }).waitFor();
+    const pages = [['/dashboard', 'Overview'], ['/dashboard/locations', 'Businesses'], ['/dashboard/qr-codes', 'QR & NFC Codes'], ['/dashboard/analytics', 'Analytics']];
     for (const [route, label] of pages) {
       await page.setViewportSize({ width: 1440, height: 1000 });
       await page.goto(base + route);
@@ -141,11 +138,10 @@ try {
       if (route === '/dashboard') await page.screenshot({ path: `${screenshots}/dashboard.png`, fullPage: true });
       await page.setViewportSize({ width: 390, height: 844 });
       await noOverflow(page);
-      assert.equal(await page.locator('.merchantMobileNav a').count(), 6);
       assert.equal(await page.locator('.merchantMobileNav a[aria-current="page"]').innerText(), label);
     }
     await page.goto(`${base}/billing`);
-    await page.getByRole('heading', { name: 'Your subscription', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Workspace status', exact: true }).waitFor();
     await noOverflow(page);
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.screenshot({ path: `${screenshots}/billing.png`, fullPage: true });

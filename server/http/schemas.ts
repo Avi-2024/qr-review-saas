@@ -38,4 +38,8 @@ export const sessionEventSchema = z.discriminatedUnion("type", [
     eventId,
     type: z.literal("GENERATE_CLICKED"),
   }),
+  z.object({
+    eventId,
+    type: z.literal("GOOGLE_REVIEW_OPENED"),
+  }),
 ]);

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import TopicManager from "@/components/merchant/TopicManager";
 import { getBusinessPreset } from "@/lib/business-presets";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";

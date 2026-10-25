@@ -2,6 +2,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import pg from "pg";
 
+for (const envFile of [".env.local", ".env"]) {
+  try {
+    process.loadEnvFile?.(path.join(process.cwd(), envFile));
+  } catch {
+    // Ignore if file doesn't exist
+  }
+}
+
 const { Pool } = pg;
 const connectionString = process.env.DATABASE_URL;
 
@@ -12,7 +20,12 @@ if (!connectionString) {
 
 const pool = new Pool({
   connectionString,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+  ssl:
+    process.env.NODE_ENV === "production" ||
+    connectionString.includes("render.com") ||
+    connectionString.includes("sslmode=require")
+      ? { rejectUnauthorized: false }
+      : undefined,
 });
 
 const migrationsDir = path.join(process.cwd(), "database/migrations");

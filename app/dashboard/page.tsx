@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { activityPercentage, funnelLabel } from "@/lib/merchant-display";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";
@@ -53,8 +55,8 @@ export default async function DashboardPage() {
       </section>
 
       <section className="merchantGrid2">
-        <article className="merchantCard merchantSectionCard"><div className="merchantSectionHead"><div><span className="merchantEyebrow">FOOTPRINT</span><h2>{data.summary.locations} active location{data.summary.locations === 1 ? "" : "s"}</h2><p>{data.summary.qrCodes} active review touchpoint{data.summary.qrCodes === 1 ? "" : "s"} currently collecting customer activity.</p></div><Link href="/dashboard/locations" className="merchantPill">Manage locations</Link></div></article>
-        <article className="merchantCard merchantSectionCard"><div className="merchantSectionHead"><div><span className="merchantEyebrow">NEXT ACTION</span><h2>Place NFC cards where intent is highest</h2><p>Program a unique card link per counter or desk. Customers can tap their phones or scan the QR backup to open the same review flow.</p></div><Link href="/dashboard/qr-codes" className="merchantPill">Manage NFC cards</Link></div></article>
+        <article className="merchantCard merchantSectionCard"><div className="merchantSectionHead"><div><span className="merchantEyebrow">FOOTPRINT</span><h2>{data.summary.locations} active location{data.summary.locations === 1 ? "" : "s"}</h2><p>{data.summary.qrCodes} active review touchpoint{data.summary.qrCodes === 1 ? "" : "s"} currently collecting customer activity.</p></div><Link href="/dashboard/locations" className="merchantPill">Manage businesses</Link></div></article>
+        <article className="merchantCard merchantSectionCard"><div className="merchantSectionHead"><div><span className="merchantEyebrow">NEXT ACTION</span><h2>Place QR codes where intent is highest</h2><p>Program a unique card link per counter or desk. Customers can tap their phones or scan the QR backup to open the same review flow.</p></div><Link href="/dashboard/qr-codes" className="merchantPill">Manage QR codes</Link></div></article>
       </section>
     </>
   );

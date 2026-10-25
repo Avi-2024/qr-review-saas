@@ -38,7 +38,12 @@
 .merchantNav { gap: 7px; margin-top: 16px; }
 .merchantNav a { padding: 10px 12px; min-height: 45px; color: #b6c4a1; font-size: 15px; font-weight: 500; border-radius: 9px; }
 .merchantNav a:hover { color: #fff; background: #383f2e; }
-.merchantNav a[aria-current="page"] { background: #d6f277; color: #303b1d; }
+.merchantNav a[aria-current="page"] {
+  background: #283622;
+  color: #d9f99d;
+  border: 1px solid rgba(217, 249, 157, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
 .merchantNavIcon { width: 24px; height: 24px; border-radius: 0; background: transparent; flex-shrink: 0; }
 .merchantNavIcon svg { width: 18px; height: 18px; }
 .merchantNavDot { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: #607736; }
@@ -47,11 +52,11 @@
 .merchantAccount span { font-size: 13px; line-height: 1.6; color: #aebc9a; overflow-wrap: anywhere; }
 .merchantLogout { min-height: 42px; color: #bdcba7; font-size: 14px; border-color: #475438; }
 .merchantMain { padding: 38px clamp(24px, 3vw, 48px) 55px; max-width: 1600px; width: 100%; }
-.merchantTopbar { margin-bottom: 30px; }
-.merchantTopbar h1 { font: 600 34px/1.15 var(--heading-font); letter-spacing: -.025em; margin: 9px 0 12px; }
-.merchantTopbar p { font-size: 15px; line-height: 1.7; color: var(--muted); max-width: 720px; }
-.merchantEyebrow { font-size: 13px; letter-spacing: .13em; font-weight: 600; color: #617559; }
-.merchantPill { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 8px 12px; border-radius: 7px; font-size: 14px; font-weight: 500; color: #476139; text-decoration: none; border-color: #dce5d5; }
+.merchantTopbar { margin-bottom: 24px; }
+.merchantTopbar h1 { font: 700 28px/1.2 var(--heading-font); letter-spacing: -.025em; margin: 6px 0 8px; color: #0f172a; }
+.merchantTopbar p { font-size: 14px; line-height: 1.6; color: #64748b; max-width: 720px; }
+.merchantEyebrow { font-size: 11px; letter-spacing: .08em; font-weight: 700; color: #059669; text-transform: uppercase; }
+.merchantPill { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 6px 14px; border-radius: 9999px; font-size: 12.5px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; text-decoration: none; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
 .merchantCard { border-color: #e0e6d9; border-radius: 15px; box-shadow: 0 4px 14px rgb(40 67 33 / 3%); }
 .merchantKpis { gap: 16px; }
 .merchantKpi { padding: 23px; }

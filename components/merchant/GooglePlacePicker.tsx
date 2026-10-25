@@ -36,11 +36,13 @@ export default function GooglePlacePicker({
   enabled,
   value,
   onChange,
+  onSelectDetails,
   disabled = false,
 }: {
   enabled: boolean;
   value: string;
   onChange: (placeId: string) => void;
+  onSelectDetails?: (details: { placeId: string; mainText: string; secondaryText: string }) => void;
   disabled?: boolean;
 }) {
   const inputId = useId();
@@ -127,6 +129,11 @@ export default function GooglePlacePicker({
         formattedAddress: prediction.secondaryText,
       });
       onChange(verifiedPlaceId);
+      onSelectDetails?.({
+        placeId: verifiedPlaceId,
+        mainText: prediction.mainText,
+        secondaryText: prediction.secondaryText,
+      });
       setPredictions([]);
       setQuery(prediction.fullText);
     } catch (cause) {
@@ -167,13 +174,28 @@ export default function GooglePlacePicker({
   if (manualMode || !enabled) {
     return (
       <div className="onboardingManualPlace">
-        {!enabled ? <div className="onboardingPlacesMessage">Google business search is not configured in this environment. Manual Place ID still works.</div> : null}
+        {!enabled ? (
+          <div className="onboardingPlacesMessage">
+            Search API is offline. Paste your Google Review link or Place ID directly.
+          </div>
+        ) : null}
         <div className="merchantField">
-          <label htmlFor={inputId}>Google Place ID</label>
-          <input id={inputId} value={value} onChange={(event)=>onChange(event.target.value)} placeholder="ChIJ..." required disabled={disabled} />
-          <small>Used only to open Google’s official review composer for this location.</small>
+          <label htmlFor={inputId}>Google Review Link or Place ID</label>
+          <input
+            id={inputId}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder="Paste review link (https://search.google.com/...) or Place ID"
+            required
+            disabled={disabled}
+          />
+          <small>Enter your direct Google Review URL (e.g. https://search.google.com/local/writereview?placeid=...) or Google Place ID.</small>
         </div>
-        {enabled ? <button type="button" className="onboardingManualLink" onClick={enableSearchMode} disabled={disabled}>← Search Google Maps instead</button> : null}
+        {enabled ? (
+          <button type="button" className="onboardingManualLink" onClick={enableSearchMode} disabled={disabled}>
+            ← Search Google Maps instead
+          </button>
+        ) : null}
       </div>
     );
   }
@@ -188,7 +210,7 @@ export default function GooglePlacePicker({
               <input
                 id={inputId}
                 value={query}
-                onChange={(event)=>{ setQuery(event.target.value); setMessage(""); }}
+                onChange={(event) => { setQuery(event.target.value); setMessage(""); }}
                 placeholder="Business name + city or area"
                 autoComplete="off"
                 aria-autocomplete="list"
@@ -197,7 +219,7 @@ export default function GooglePlacePicker({
               />
               {status === "searching" ? <span>Searching…</span> : null}
             </div>
-            <small>Choose the exact branch where this QR will be used.</small>
+            <small>Choose the exact branch where this QR code will be used.</small>
           </div>
 
           {predictions.length ? (
@@ -206,7 +228,7 @@ export default function GooglePlacePicker({
                 <button
                   type="button"
                   key={prediction.placeId}
-                  onClick={()=>void selectPlace(prediction)}
+                  onClick={() => void selectPlace(prediction)}
                   disabled={status === "selecting" || disabled}
                   role="option"
                   aria-selected="false"
@@ -232,13 +254,15 @@ export default function GooglePlacePicker({
             <span className="merchantEyebrow">GOOGLE LOCATION SELECTED</span>
             <strong>{selectedPlace.displayName}</strong>
             {selectedPlace.formattedAddress ? <p>{selectedPlace.formattedAddress}</p> : null}
-            <small>Google Maps · Place ID verified</small>
+            <small>Google Maps · Verified Destination</small>
           </div>
           <button type="button" onClick={changeSelectedPlace} disabled={disabled}>Change</button>
         </div>
       )}
 
-      <button type="button" className="onboardingManualLink" onClick={enableManualMode} disabled={disabled}>Can’t find your business? Enter Place ID manually</button>
+      <button type="button" className="onboardingManualLink" onClick={enableManualMode} disabled={disabled}>
+        Can’t find your business? Paste Google Review link or Place ID manually
+      </button>
     </div>
   );
 }

@@ -79,3 +79,21 @@ export interface TrendPoint {
   generated: number;
   googleOpens: number;
 }
+
+export type StandeeStatus = "unassigned" | "assigned" | "damaged" | "retired";
+
+export interface StandeeItem {
+  id: string;
+  organizationId: string;
+  standeeCode: string;
+  publicToken: string;
+  batchName: string;
+  locationId: string | null;
+  locationName?: string | null;
+  qrCodeId: string | null;
+  status: StandeeStatus;
+  assignedAt: Date | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

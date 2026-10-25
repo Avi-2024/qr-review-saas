@@ -35,6 +35,22 @@ function stageAfter(stage: MerchantOnboardingStage, target: MerchantOnboardingSt
   return ONBOARDING_ORDER.indexOf(stage) > ONBOARDING_ORDER.indexOf(target);
 }
 
+function parseGoogleReviewInput(input: string): { placeId: string; reviewUrl: string } {
+  const trimmed = input.trim();
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    const placeIdMatch = trimmed.match(/[?&]placeid=([^&]+)/i);
+    const placeId = placeIdMatch ? decodeURIComponent(placeIdMatch[1]) : trimmed.slice(0, 255);
+    return {
+      placeId,
+      reviewUrl: trimmed,
+    };
+  }
+  return {
+    placeId: trimmed,
+    reviewUrl: `https://search.google.com/local/writereview?placeid=${encodeURIComponent(trimmed)}`,
+  };
+}
+
 export class MerchantService {
   constructor(
     private readonly repository: MerchantRepository,
@@ -107,14 +123,14 @@ export class MerchantService {
     }
 
     const publicId = await this.resolveLocationPublicId(input.publicId, input.name);
-    const googlePlaceId = input.googlePlaceId.trim();
+    const { placeId, reviewUrl } = parseGoogleReviewInput(input.googlePlaceId);
     try {
       const created = await this.repository.createOnboardingLocation(identity.organizationId, {
         publicId,
         name: input.name.trim(),
         subtitle: input.subtitle?.trim() || "Share your experience in a few taps.",
-        googlePlaceId,
-        googleReviewUrl: `https://search.google.com/local/writereview?placeid=${encodeURIComponent(googlePlaceId)}`,
+        googlePlaceId: placeId,
+        googleReviewUrl: reviewUrl,
         isActive: true,
       });
       if (created) return created;
@@ -228,15 +244,15 @@ export class MerchantService {
   async createLocation(identity: MerchantIdentity, input: { name: string; subtitle?: string; googlePlaceId: string; publicId?: string }) {
     this.assertCanWrite(identity);
     const publicId = await this.resolveLocationPublicId(input.publicId, input.name);
-    const googlePlaceId = input.googlePlaceId.trim();
+    const { placeId, reviewUrl } = parseGoogleReviewInput(input.googlePlaceId);
 
     try {
       return await this.repository.createLocation(identity.organizationId, {
         publicId,
         name: input.name.trim(),
         subtitle: input.subtitle?.trim() || "Share your experience in a few taps.",
-        googlePlaceId,
-        googleReviewUrl: `https://search.google.com/local/writereview?placeid=${encodeURIComponent(googlePlaceId)}`,
+        googlePlaceId: placeId,
+        googleReviewUrl: reviewUrl,
         isActive: true,
       });
     } catch (error) {
@@ -253,9 +269,9 @@ export class MerchantService {
     if (input.name !== undefined) patch.name = input.name.trim();
     if (input.subtitle !== undefined) patch.subtitle = input.subtitle.trim();
     if (input.googlePlaceId !== undefined) {
-      const placeId = input.googlePlaceId.trim();
+      const { placeId, reviewUrl } = parseGoogleReviewInput(input.googlePlaceId);
       patch.googlePlaceId = placeId;
-      patch.googleReviewUrl = `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`;
+      patch.googleReviewUrl = reviewUrl;
     }
     if (input.isActive !== undefined) patch.isActive = input.isActive;
 
@@ -357,6 +373,35 @@ export class MerchantService {
     }
 
     throw new ConflictError("Could not allocate a unique public location identifier. Please try again.", "LOCATION_PUBLIC_ID_CONFLICT");
+  }
+
+  async listStandees(identity: MerchantIdentity) {
+    return this.repository.listStandees(identity.organizationId);
+  }
+
+  async getStandeeByToken(publicToken: string) {
+    return this.repository.getStandeeByToken(publicToken);
+  }
+
+  async createStandeeBatch(
+    identity: MerchantIdentity,
+    input: { count: number; prefix?: string; batchName?: string },
+  ) {
+    this.assertCanWrite(identity);
+    return this.repository.createStandeeBatch(identity.organizationId, input);
+  }
+
+  async assignStandee(
+    identity: MerchantIdentity,
+    input: { standeeId?: string; standeeCode?: string; locationId: string; notes?: string },
+  ) {
+    this.assertCanWrite(identity);
+    return this.repository.assignStandee(identity.organizationId, input);
+  }
+
+  async unbindStandee(identity: MerchantIdentity, standeeId: string) {
+    this.assertCanWrite(identity);
+    return this.repository.unbindStandee(identity.organizationId, standeeId);
   }
 
   private assertCanWrite(identity: MerchantIdentity) {

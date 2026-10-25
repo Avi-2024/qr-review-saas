@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { BillingService } from "@/server/billing/application/services/billing-service";
 import type { BillingRepository } from "@/server/billing/application/ports/billing-repository";
 import type {
@@ -80,6 +80,14 @@ class FakeBillingRepository implements BillingRepository {
 }
 
 describe("BillingService", () => {
+  beforeAll(() => {
+    process.env.ENFORCE_BILLING_LIMITS = "true";
+  });
+
+  afterAll(() => {
+    delete process.env.ENFORCE_BILLING_LIMITS;
+  });
+
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);

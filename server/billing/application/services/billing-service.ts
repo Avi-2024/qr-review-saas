@@ -10,7 +10,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const PAST_DUE_GRACE_MS = 3 * DAY_MS;
 
 export class BillingService {
-  constructor(private readonly repository: BillingRepository) {}
+  constructor(
+    private readonly repository: BillingRepository,
+    private readonly enforceLimits: boolean = process.env.ENFORCE_BILLING_LIMITS === "true",
+  ) {}
 
   listPlans() {
     return this.repository.listPlans();
@@ -22,7 +25,7 @@ export class BillingService {
       throw new NotFoundError("Subscription not found for this organization.", "SUBSCRIPTION_NOT_FOUND");
     }
 
-    if (subscription.status === "trialing" && subscription.trialEndsAt.getTime() <= now.getTime()) {
+    if (this.enforceLimits && subscription.status === "trialing" && subscription.trialEndsAt.getTime() <= now.getTime()) {
       subscription = await this.repository.updateSubscriptionStatus(organizationId, "expired") ?? {
         ...subscription,
         status: "expired",
@@ -35,13 +38,13 @@ export class BillingService {
     ]);
     if (!plan) throw new NotFoundError("Subscription plan not found.", "BILLING_PLAN_NOT_FOUND");
 
-    const canUse = this.canUseSubscription(subscription, now);
+    const canUse = !this.enforceLimits || this.canUseSubscription(subscription, now);
     const daysRemaining = subscription.status === "trialing"
       ? Math.max(0, Math.ceil((subscription.trialEndsAt.getTime() - now.getTime()) / DAY_MS))
       : 0;
 
     return {
-      status: subscription.status,
+      status: this.enforceLimits ? subscription.status : "active",
       plan,
       billingInterval: subscription.billingInterval,
       trialStartedAt: subscription.trialStartedAt,
@@ -52,7 +55,7 @@ export class BillingService {
       provider: subscription.provider,
       providerStatus: subscription.providerStatus,
       providerSubscriptionId: subscription.providerSubscriptionId,
-      daysRemaining,
+      daysRemaining: this.enforceLimits ? daysRemaining : 365,
       canWrite: canUse,
       canCollectReviews: canUse,
       needsUpgrade: !canUse,
@@ -73,6 +76,7 @@ export class BillingService {
   }
 
   async assertCanCollectReviewsForQrToken(qrToken: string) {
+    if (!this.enforceLimits) return;
     const organizationId = await this.repository.getOrganizationIdForQrToken(qrToken);
     if (!organizationId) {
       throw new NotFoundError("QR code not found or inactive.", "QR_NOT_FOUND");
@@ -82,7 +86,7 @@ export class BillingService {
 
   async assertLocationCapacity(organizationId: string) {
     const snapshot = await this.assertCanWrite(organizationId);
-    if (snapshot.usage.locations >= snapshot.plan.maxLocations) {
+    if (this.enforceLimits && snapshot.usage.locations >= snapshot.plan.maxLocations) {
       throw new ConflictError(
         `Your ${snapshot.plan.name} plan allows up to ${snapshot.plan.maxLocations} location${snapshot.plan.maxLocations === 1 ? "" : "s"}. Upgrade to add another location.`,
         "PLAN_LOCATION_LIMIT_REACHED",
@@ -93,7 +97,7 @@ export class BillingService {
 
   async assertQrCapacity(organizationId: string) {
     const snapshot = await this.assertCanWrite(organizationId);
-    if (snapshot.usage.qrCodes >= snapshot.plan.maxQrCodes) {
+    if (this.enforceLimits && snapshot.usage.qrCodes >= snapshot.plan.maxQrCodes) {
       throw new ConflictError(
         `Your ${snapshot.plan.name} plan allows up to ${snapshot.plan.maxQrCodes} QR codes. Upgrade to add another QR code.`,
         "PLAN_QR_LIMIT_REACHED",

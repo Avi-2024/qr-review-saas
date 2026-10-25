@@ -11,26 +11,38 @@ export default async function LoginPage() {
   return (
     <main className="merchantLogin">
       <section className="merchantLoginVisual">
-        <Link className="merchantLogo" href="/"><span className="merchantLogoMark"><UiIcon name="qr" /></span> QR Review</Link>
+        <Link className="merchantLogo" href="/">
+          <span className="merchantLogoMark"><UiIcon name="qr" /></span> QR Review
+        </Link>
         <div>
-          <span className="merchantEyebrow">YOUR REPUTATION, IN FOCUS</span>
-          <h1>Small moments.<br /><em>Lasting connections.</em></h1>
-          <p>A thoughtful workspace for your locations, customer feedback, and the QR touchpoints that bring it all together.</p>
+          <span className="merchantEyebrow">ADMINISTRATION CONTROL PANEL</span>
+          <h1>Centralized control.<br /><em>Every merchant review in one place.</em></h1>
+          <p>
+            Administer client businesses, connect their Google review destinations, customize feedback topics, and generate high-converting QR touchpoints.
+          </p>
         </div>
         <div className="merchantLoginPoints">
-          <div className="merchantLoginPoint"><strong>One view</strong><span>Locations, QR assets and review activity together.</span></div>
-          <div className="merchantLoginPoint"><strong>Real funnel</strong><span>Track scans through Google review handoff.</span></div>
-          <div className="merchantLoginPoint"><strong>Your workspace</strong><span>A focused view for you and your team.</span></div>
+          <div className="merchantLoginPoint">
+            <strong>Register Merchants</strong>
+            <span>Add client businesses directly and bind their Google Places ID.</span>
+          </div>
+          <div className="merchantLoginPoint">
+            <strong>QR &amp; NFC Assets</strong>
+            <span>Generate, customize, and print QR codes for counters and tables.</span>
+          </div>
+          <div className="merchantLoginPoint">
+            <strong>Centralized Analytics</strong>
+            <span>Track customer review conversion across all client locations.</span>
+          </div>
         </div>
       </section>
       <section className="merchantLoginPanel">
         <div className="merchantLoginCard">
           <Link href="/" className="authBrand"><UiIcon name="qr" /> QR Review</Link>
-          <span className="merchantEyebrow">WELCOME BACK</span>
-          <h2>Welcome back.</h2>
-          <p>Sign in to your business workspace.</p>
+          <span className="merchantEyebrow">SUPER ADMIN PORTAL</span>
+          <h2>Admin Sign In</h2>
+          <p>Sign in with your master administrator credentials.</p>
           <LoginForm />
-          <p className="merchantAuthSwitch">New to QR Review? <Link href="/signup">Start a 7-day free trial</Link></p>
         </div>
       </section>
     </main>

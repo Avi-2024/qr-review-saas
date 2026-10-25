@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { redirect } from "next/navigation";
 import OnboardingWizard from "@/components/merchant/OnboardingWizard";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";

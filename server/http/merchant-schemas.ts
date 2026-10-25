@@ -15,14 +15,16 @@ export const merchantSignupSchema = z.object({
 export const merchantLocationCreateSchema = z.object({
   name: z.string().trim().min(2).max(120),
   subtitle: z.string().trim().max(180).optional(),
-  googlePlaceId: z.string().trim().min(5).max(200),
+  googlePlaceId: z.string().trim().min(5).max(500),
   publicId: z.string().trim().min(2).max(80).optional(),
+  standeeId: z.string().uuid().optional(),
+  standeeCode: z.string().trim().min(2).max(40).optional(),
 });
 
 export const merchantLocationUpdateSchema = z.object({
   name: z.string().trim().min(2).max(120).optional(),
   subtitle: z.string().trim().max(180).optional(),
-  googlePlaceId: z.string().trim().min(5).max(200).optional(),
+  googlePlaceId: z.string().trim().min(5).max(500).optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -35,6 +37,23 @@ export const merchantQrCreateSchema = z.object({
 
 export const merchantQrStatusSchema = z.object({
   isActive: z.boolean(),
+});
+
+export const standeeBatchCreateSchema = z.object({
+  count: z.number().int().min(1).max(250).default(20),
+  prefix: z.string().trim().min(2).max(10).default("ST-"),
+  batchName: z.string().trim().min(2).max(100).default("Retail Batch"),
+});
+
+export const standeeAssignSchema = z.object({
+  standeeId: z.string().uuid().optional(),
+  standeeCode: z.string().trim().min(2).max(40).optional(),
+  locationId: z.string().uuid(),
+  notes: z.string().trim().max(500).optional(),
+});
+
+export const standeeUnbindSchema = z.object({
+  standeeId: z.string().uuid(),
 });
 
 export const merchantOnboardingBusinessSchema = z.object({
@@ -60,7 +79,7 @@ export const merchantGooglePlacesAutocompleteSchema = z.object({
 });
 
 export const merchantGooglePlacesDetailsSchema = z.object({
-  placeId: z.string().trim().min(5).max(255),
+  placeId: z.string().trim().min(5).max(500),
   sessionToken: z.string().uuid(),
 });
 

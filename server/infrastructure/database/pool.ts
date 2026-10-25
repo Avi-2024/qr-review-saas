@@ -15,8 +15,13 @@ export function getPool(): Pool {
     connectionString: DATABASE_URL,
     max: 10,
     idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 5_000,
-    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+    connectionTimeoutMillis: 15_000,
+    ssl:
+      process.env.NODE_ENV === "production" ||
+      DATABASE_URL.includes("render.com") ||
+      DATABASE_URL.includes("sslmode=require")
+        ? { rejectUnauthorized: false }
+        : undefined,
   });
 
   return pool;

@@ -48,7 +48,7 @@ export class PostgresReviewRepository implements ReviewRepository {
   async getLocationByPublicId(publicId: string) {
     const result = await this.pool.query<LocationRow>(
       `SELECT l.id, l.public_id, l.name, l.subtitle, l.google_place_id, l.google_review_url,
-              COALESCE(l.business_type_override, o.business_type, 'other') AS business_type
+              COALESCE(to_jsonb(l)->>'business_type_override', to_jsonb(o)->>'business_type', 'other') AS business_type
        FROM locations l LEFT JOIN organizations o ON o.id = l.organization_id
        WHERE l.public_id = $1 AND l.is_active = TRUE
        LIMIT 1`,
@@ -60,7 +60,7 @@ export class PostgresReviewRepository implements ReviewRepository {
   async getLocationById(id: string) {
     const result = await this.pool.query<LocationRow>(
       `SELECT l.id, l.public_id, l.name, l.subtitle, l.google_place_id, l.google_review_url,
-              COALESCE(l.business_type_override, o.business_type, 'other') AS business_type
+              COALESCE(to_jsonb(l)->>'business_type_override', to_jsonb(o)->>'business_type', 'other') AS business_type
        FROM locations l LEFT JOIN organizations o ON o.id = l.organization_id
        WHERE l.id = $1 AND l.is_active = TRUE
        LIMIT 1`,
