@@ -20,6 +20,7 @@ type OnboardingState = {
     publicId: string;
     name: string;
     subtitle: string;
+    keywords?: string;
     googlePlaceId: string;
     googleReviewUrl: string;
     isActive: boolean;

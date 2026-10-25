@@ -23,6 +23,7 @@ export interface LocationConfig {
   publicId: string;
   name: string;
   subtitle: string;
+  keywords?: string;
   googlePlaceId: string;
   googleReviewUrl: string;
   /** Resolved business sector for this location (optional for legacy demo/test fixtures). */

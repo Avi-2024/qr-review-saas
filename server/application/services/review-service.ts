@@ -88,11 +88,19 @@ export class ReviewService {
     }
 
     try {
+      const parsedKeywords = location.keywords
+        ? location.keywords
+            .split(/[,;\n]+/)
+            .map((k) => k.trim())
+            .filter(Boolean)
+        : [];
+
       const generated = await this.generator.generate({
         businessName: location.name,
         businessType: location.businessType,
         rating: input.rating,
         topics,
+        keywords: parsedKeywords,
         note: input.note,
         variation: input.variation,
       });

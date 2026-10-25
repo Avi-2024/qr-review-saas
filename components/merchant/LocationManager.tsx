@@ -66,6 +66,7 @@ export default function LocationManager({
   // Form input states
   const [name, setName] = useState("");
   const [subtitle, setSubtitle] = useState("");
+  const [keywords, setKeywords] = useState("");
   const [googlePlaceId, setGooglePlaceId] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -154,6 +155,7 @@ export default function LocationManager({
       const payload: Record<string, unknown> = {
         name: name.trim(),
         subtitle: subtitle.trim() || undefined,
+        keywords: keywords.trim() || undefined,
         googlePlaceId,
       };
       if (useStandee && selectedStandeeId) {
@@ -172,6 +174,7 @@ export default function LocationManager({
 
       setName("");
       setSubtitle("");
+      setKeywords("");
       setGooglePlaceId("");
       setIsRegisterModalOpen(false);
       router.refresh();
@@ -337,6 +340,28 @@ export default function LocationManager({
                               {location.subtitle || "No branch specified"}
                             </span>
                             <span className={styles.merchantSlug}>/{location.publicId}</span>
+                            {location.keywords ? (
+                              <span
+                                style={{
+                                  fontSize: "0.6875rem",
+                                  color: "#059669",
+                                  background: "#ecfdf5",
+                                  border: "1px solid #a7f3d0",
+                                  borderRadius: "4px",
+                                  padding: "2px 6px",
+                                  display: "inline-block",
+                                  marginTop: "3px",
+                                  maxWidth: "240px",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                  fontWeight: 500,
+                                }}
+                                title={`SEO Keywords: ${location.keywords}`}
+                              >
+                                🎯 SEO: {location.keywords}
+                              </span>
+                            ) : null}
                             {assignedStandee ? (
                               <span
                                 className={styles.standeePillBadge}
@@ -549,6 +574,20 @@ export default function LocationManager({
                         onChange={(e) => setSubtitle(e.target.value)}
                         placeholder="e.g. Indore Main Market / Connaught Place"
                       />
+                    </div>
+                    <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
+                      <label htmlFor="merchant-keywords">
+                        Product &amp; Service Keywords <span style={{ fontSize: "0.75rem", color: "#059669", fontWeight: "normal" }}>— (Google Maps SEO Ranking)</span>
+                      </label>
+                      <input
+                        id="merchant-keywords"
+                        value={keywords}
+                        onChange={(e) => setKeywords(e.target.value)}
+                        placeholder="e.g. Keratin Treatment, Hydra Facial, Haircut, Bridal Makeup (comma-separated)"
+                      />
+                      <small style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "4px", display: "block" }}>
+                        AI naturally mentions these services in customer reviews so this business ranks #1 on Google Maps.
+                      </small>
                     </div>
                   </div>
 

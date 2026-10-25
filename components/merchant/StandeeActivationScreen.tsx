@@ -27,6 +27,7 @@ export default function StandeeActivationScreen({
   // New Merchant Form
   const [businessName, setBusinessName] = useState("");
   const [subtitle, setSubtitle] = useState("Share your experience in a few taps.");
+  const [keywords, setKeywords] = useState("");
   const [googlePlaceId, setGooglePlaceId] = useState("");
 
   // Existing Merchant Pick
@@ -76,6 +77,7 @@ export default function StandeeActivationScreen({
         body: JSON.stringify({
           name: businessName.trim(),
           subtitle: subtitle.trim() || undefined,
+          keywords: keywords.trim() || undefined,
           googlePlaceId,
           standeeId: standee.id,
           standeeCode: standee.standeeCode,
@@ -222,6 +224,22 @@ export default function StandeeActivationScreen({
                       placeholder="e.g. Share your experience in a few taps."
                       disabled={loading}
                     />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      Product &amp; Service Keywords <span style={{ fontSize: "0.75rem", color: "#059669", fontWeight: "normal" }}>— (Google Maps SEO)</span>
+                    </label>
+                    <input
+                      className={styles.formInput}
+                      value={keywords}
+                      onChange={(e) => setKeywords(e.target.value)}
+                      placeholder="e.g. Root Canal, Teeth Whitening, Braces, Implants"
+                      disabled={loading}
+                    />
+                    <small style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "4px", display: "block" }}>
+                      AI will naturally weave these into reviews to boost this business ranking on Google Maps.
+                    </small>
                   </div>
 
                   <button

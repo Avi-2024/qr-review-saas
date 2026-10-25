@@ -28,14 +28,32 @@ function joinNatural(values: string[]) {
 
 export class LocalReviewGenerator implements ReviewGenerator {
   async generate(input: GenerateReviewInput): Promise<GenerateReviewOutput> {
-    const { businessName, businessType, rating, topics, note, variation } = input;
+    const { businessName, businessType, rating, topics, keywords, note, variation } = input;
     const sector = businessType && KNOWN_SECTORS.has(businessType) ? businessType : "other";
     const preposition = AT_SECTORS.has(sector) ? "at" : "with";
     const sentences: string[] = [this.opening(businessName, preposition, rating, variation)];
 
+    // Weave in merchant's product/service SEO keywords naturally for high ratings
+    if (keywords && keywords.length > 0 && rating >= 4) {
+      const idx = Math.abs(variation) % keywords.length;
+      const primaryKw = keywords[idx];
+      const secondaryKw = keywords.length > 1 ? keywords[(idx + 1) % keywords.length] : null;
+
+      const keywordPhrases = [
+        secondaryKw && variation % 2 === 0
+          ? `Really enjoyed the ${primaryKw} and ${secondaryKw}—everything was top notch.`
+          : `Really impressed with the ${primaryKw}—excellent quality and attention to detail.`,
+        secondaryKw && variation % 3 === 0
+          ? `Their ${primaryKw} and ${secondaryKw} are truly exceptional.`
+          : `Opted for their ${primaryKw} and was completely satisfied with the quality.`,
+        `The ${primaryKw} was handled professionally and exceeded expectations.`,
+      ];
+      sentences.push(keywordPhrases[Math.abs(variation) % keywordPhrases.length]);
+    }
+
     if (topics.length) {
       const labels = topics.map((topic) => topic.label.toLowerCase());
-      sentences.push(`The main parts of my experience were ${joinNatural(labels)}.`);
+      sentences.push(`The main highlights were ${joinNatural(labels)}.`);
     }
     if (note?.trim()) sentences.push(polish(note));
     sentences.push(this.closing(rating, variation));

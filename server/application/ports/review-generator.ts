@@ -5,6 +5,7 @@ export interface GenerateReviewInput {
   businessType?: string;
   rating: Rating;
   topics: ReviewTopic[];
+  keywords?: string[];
   note?: string;
   variation: number;
 }

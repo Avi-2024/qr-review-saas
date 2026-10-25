@@ -16,6 +16,7 @@ const MANGAL_TRADERS: LocationConfig = {
   publicId: "mangal-traders",
   name: "Mangal Traders",
   subtitle: "Fast feedback. No login required.",
+  keywords: "Quality Products, Customer Support, Fast Service",
   googlePlaceId: "ChIJIxP2kbaJgzkR6h4dYXKWCcI",
   googleReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJIxP2kbaJgzkR6h4dYXKWCcI",
   businessType: "retail",

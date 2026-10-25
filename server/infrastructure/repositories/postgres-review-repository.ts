@@ -16,6 +16,7 @@ interface LocationRow {
   public_id: string;
   name: string;
   subtitle: string;
+  keywords?: string | null;
   google_place_id: string;
   google_review_url: string;
   business_type: string | null;
@@ -48,6 +49,7 @@ export class PostgresReviewRepository implements ReviewRepository {
   async getLocationByPublicId(publicId: string) {
     const result = await this.pool.query<LocationRow>(
       `SELECT l.id, l.public_id, l.name, l.subtitle, l.google_place_id, l.google_review_url,
+              COALESCE(to_jsonb(l)->>'keywords', '') AS keywords,
               COALESCE(to_jsonb(l)->>'business_type_override', to_jsonb(o)->>'business_type', 'other') AS business_type
        FROM locations l LEFT JOIN organizations o ON o.id = l.organization_id
        WHERE l.public_id = $1 AND l.is_active = TRUE
@@ -60,6 +62,7 @@ export class PostgresReviewRepository implements ReviewRepository {
   async getLocationById(id: string) {
     const result = await this.pool.query<LocationRow>(
       `SELECT l.id, l.public_id, l.name, l.subtitle, l.google_place_id, l.google_review_url,
+              COALESCE(to_jsonb(l)->>'keywords', '') AS keywords,
               COALESCE(to_jsonb(l)->>'business_type_override', to_jsonb(o)->>'business_type', 'other') AS business_type
        FROM locations l LEFT JOIN organizations o ON o.id = l.organization_id
        WHERE l.id = $1 AND l.is_active = TRUE
@@ -331,6 +334,7 @@ export class PostgresReviewRepository implements ReviewRepository {
       publicId: row.public_id,
       name: row.name,
       subtitle: row.subtitle,
+      keywords: row.keywords ?? "",
       googlePlaceId: row.google_place_id,
       googleReviewUrl: row.google_review_url,
       businessType: row.business_type ?? "other",

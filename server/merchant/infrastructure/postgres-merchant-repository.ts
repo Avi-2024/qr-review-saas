@@ -20,7 +20,9 @@ const ORGANIZATION_SELECT = `
   FROM organizations`;
 
 const LOCATION_SELECT = `
-  SELECT id, public_id AS "publicId", name, subtitle, google_place_id AS "googlePlaceId",
+  SELECT id, public_id AS "publicId", name, subtitle,
+         COALESCE(to_jsonb(locations)->>'keywords', '') AS keywords,
+         google_place_id AS "googlePlaceId",
          google_review_url AS "googleReviewUrl", is_active AS "isActive", created_at AS "createdAt"
   FROM locations`;
 
@@ -166,11 +168,11 @@ export class PostgresMerchantRepository implements MerchantRepository {
       }
 
       const result = await client.query<MerchantLocation>(
-        `INSERT INTO locations (organization_id, public_id, name, subtitle, google_place_id, google_review_url, is_active)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)
-         RETURNING id, public_id AS "publicId", name, subtitle, google_place_id AS "googlePlaceId",
+        `INSERT INTO locations (organization_id, public_id, name, subtitle, keywords, google_place_id, google_review_url, is_active)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         RETURNING id, public_id AS "publicId", name, subtitle, keywords, google_place_id AS "googlePlaceId",
                    google_review_url AS "googleReviewUrl", is_active AS "isActive", created_at AS "createdAt"`,
-        [organizationId, input.publicId, input.name, input.subtitle, input.googlePlaceId, input.googleReviewUrl, input.isActive],
+        [organizationId, input.publicId, input.name, input.subtitle, input.keywords ?? "", input.googlePlaceId, input.googleReviewUrl, input.isActive],
       );
 
       await client.query(
@@ -462,11 +464,11 @@ export class PostgresMerchantRepository implements MerchantRepository {
 
   async createLocation(organizationId: string, input: Omit<MerchantLocation, "id" | "createdAt">): Promise<MerchantLocation> {
     const result = await this.pool.query<MerchantLocation>(
-      `INSERT INTO locations (organization_id, public_id, name, subtitle, google_place_id, google_review_url, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
-       RETURNING id, public_id AS "publicId", name, subtitle, google_place_id AS "googlePlaceId",
+      `INSERT INTO locations (organization_id, public_id, name, subtitle, keywords, google_place_id, google_review_url, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       RETURNING id, public_id AS "publicId", name, subtitle, keywords, google_place_id AS "googlePlaceId",
                  google_review_url AS "googleReviewUrl", is_active AS "isActive", created_at AS "createdAt"`,
-      [organizationId, input.publicId, input.name, input.subtitle, input.googlePlaceId, input.googleReviewUrl, input.isActive],
+      [organizationId, input.publicId, input.name, input.subtitle, input.keywords ?? "", input.googlePlaceId, input.googleReviewUrl, input.isActive],
     );
     return result.rows[0];
   }
@@ -487,11 +489,11 @@ export class PostgresMerchantRepository implements MerchantRepository {
 
       const next = { ...existing, ...input };
       const result = await client.query<MerchantLocation>(
-        `UPDATE locations SET public_id=$3,name=$4,subtitle=$5,google_place_id=$6,google_review_url=$7,is_active=$8,updated_at=NOW()
+        `UPDATE locations SET public_id=$3,name=$4,subtitle=$5,keywords=$6,google_place_id=$7,google_review_url=$8,is_active=$9,updated_at=NOW()
          WHERE id=$1 AND organization_id=$2
-         RETURNING id, public_id AS "publicId", name, subtitle, google_place_id AS "googlePlaceId",
+         RETURNING id, public_id AS "publicId", name, subtitle, keywords, google_place_id AS "googlePlaceId",
                    google_review_url AS "googleReviewUrl", is_active AS "isActive", created_at AS "createdAt"`,
-        [locationId, organizationId, next.publicId, next.name, next.subtitle, next.googlePlaceId, next.googleReviewUrl, next.isActive],
+        [locationId, organizationId, next.publicId, next.name, next.subtitle, next.keywords ?? "", next.googlePlaceId, next.googleReviewUrl, next.isActive],
       );
 
       if (existing.isActive && next.isActive === false) {

@@ -15,6 +15,7 @@ export const merchantSignupSchema = z.object({
 export const merchantLocationCreateSchema = z.object({
   name: z.string().trim().min(2).max(120),
   subtitle: z.string().trim().max(180).optional(),
+  keywords: z.string().trim().max(1000).optional(),
   googlePlaceId: z.string().trim().min(5).max(500),
   publicId: z.string().trim().min(2).max(80).optional(),
   standeeId: z.string().uuid().optional(),
@@ -24,6 +25,7 @@ export const merchantLocationCreateSchema = z.object({
 export const merchantLocationUpdateSchema = z.object({
   name: z.string().trim().min(2).max(120).optional(),
   subtitle: z.string().trim().max(180).optional(),
+  keywords: z.string().trim().max(1000).optional(),
   googlePlaceId: z.string().trim().min(5).max(500).optional(),
   isActive: z.boolean().optional(),
 });

@@ -60,4 +60,20 @@ describe("LocalReviewGenerator", () => {
     expect(result.text.toLowerCase()).not.toContain("visit to");
     expect(result.text.toLowerCase()).not.toContain("store");
   });
+
+  it("weaves merchant product and service SEO keywords into positive reviews", async () => {
+    const generator = new LocalReviewGenerator();
+
+    const result = await generator.generate({
+      businessName: "Glow Salon",
+      businessType: "salon-beauty",
+      rating: 5,
+      topics: [],
+      keywords: ["Keratin Treatment", "Hydra Facial", "Bridal Makeup"],
+      variation: 0,
+    });
+
+    expect(result.text).toContain("Glow Salon");
+    expect(result.text).toMatch(/Keratin Treatment|Hydra Facial/);
+  });
 });

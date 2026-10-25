@@ -114,7 +114,7 @@ export class MerchantService {
     return profile;
   }
 
-  async createOnboardingLocation(identity: MerchantIdentity, input: { name: string; subtitle?: string; googlePlaceId: string; publicId?: string }) {
+  async createOnboardingLocation(identity: MerchantIdentity, input: { name: string; subtitle?: string; keywords?: string; googlePlaceId: string; publicId?: string }) {
     this.assertCanWrite(identity);
     const before = await this.onboardingState(identity);
     if (before.organization.onboardingStage !== "location") {
@@ -129,6 +129,7 @@ export class MerchantService {
         publicId,
         name: input.name.trim(),
         subtitle: input.subtitle?.trim() || "Share your experience in a few taps.",
+        keywords: input.keywords?.trim() || "",
         googlePlaceId: placeId,
         googleReviewUrl: reviewUrl,
         isActive: true,
@@ -241,7 +242,7 @@ export class MerchantService {
     return this.repository.listLocations(identity.organizationId);
   }
 
-  async createLocation(identity: MerchantIdentity, input: { name: string; subtitle?: string; googlePlaceId: string; publicId?: string }) {
+  async createLocation(identity: MerchantIdentity, input: { name: string; subtitle?: string; keywords?: string; googlePlaceId: string; publicId?: string }) {
     this.assertCanWrite(identity);
     const publicId = await this.resolveLocationPublicId(input.publicId, input.name);
     const { placeId, reviewUrl } = parseGoogleReviewInput(input.googlePlaceId);
@@ -251,6 +252,7 @@ export class MerchantService {
         publicId,
         name: input.name.trim(),
         subtitle: input.subtitle?.trim() || "Share your experience in a few taps.",
+        keywords: input.keywords?.trim() || "",
         googlePlaceId: placeId,
         googleReviewUrl: reviewUrl,
         isActive: true,
@@ -263,11 +265,12 @@ export class MerchantService {
     }
   }
 
-  async updateLocation(identity: MerchantIdentity, locationId: string, input: { name?: string; subtitle?: string; googlePlaceId?: string; isActive?: boolean }) {
+  async updateLocation(identity: MerchantIdentity, locationId: string, input: { name?: string; subtitle?: string; keywords?: string; googlePlaceId?: string; isActive?: boolean }) {
     this.assertCanWrite(identity);
     const patch: Partial<Omit<MerchantLocation, "id" | "createdAt">> = {};
     if (input.name !== undefined) patch.name = input.name.trim();
     if (input.subtitle !== undefined) patch.subtitle = input.subtitle.trim();
+    if (input.keywords !== undefined) patch.keywords = input.keywords.trim();
     if (input.googlePlaceId !== undefined) {
       const { placeId, reviewUrl } = parseGoogleReviewInput(input.googlePlaceId);
       patch.googlePlaceId = placeId;
