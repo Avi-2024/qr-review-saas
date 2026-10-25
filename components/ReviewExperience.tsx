@@ -292,7 +292,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
     if (!location || generationLockRef.current) return;
     triggerHaptic();
     setRating(value);
-    const initialSeed = Math.floor(Math.random() * 500) + 1;
+    const initialSeed = Math.floor(Math.random() * 20);
     setVariation(initialSeed);
     void createDraft(value, initialSeed);
   }
@@ -600,7 +600,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                   type="button"
                   className={isGenerating ? "isRegenerating" : ""}
                   disabled={isOpeningGoogle || isGenerating}
-                  onClick={() => void createDraft(rating as Rating, variation + 1)}
+                  onClick={() => void createDraft(rating as Rating, (variation + 1) % 20)}
                 >
                   <UiIcon name="sparkle" /> {isGenerating ? "Writing…" : "↻ Try another"}
                 </button>
