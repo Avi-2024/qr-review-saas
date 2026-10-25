@@ -115,6 +115,8 @@ function StandeeCard({
   );
 }
 
+export type PrintLayout = "a4_parallel" | "a4_duo" | "a4_quad" | "a6_single";
+
 export default function BulkPrintStudio({
   standees,
   initialFilter = "unassigned",
@@ -123,7 +125,7 @@ export default function BulkPrintStudio({
   initialFilter?: "unassigned" | "all" | "assigned";
 }) {
   const [filter, setFilter] = useState<"unassigned" | "all" | "assigned">(initialFilter);
-  const [layout, setLayout] = useState<"a4_duo" | "a6_single">("a4_duo");
+  const [layout, setLayout] = useState<PrintLayout>("a4_parallel");
   const [theme, setTheme] = useState<"crystal" | "obsidian" | "navy">("crystal");
 
   // Keep full-screen focus and remove dashboard navigation dock while in print studio
@@ -158,10 +160,10 @@ export default function BulkPrintStudio({
     if (layout === "a6_single") {
       return filteredStandees.map((st) => [st]);
     }
-    // a4_duo: 2 per page
+    const perPage = layout === "a4_quad" ? 4 : 2;
     const chunks: PrintableStandee[][] = [];
-    for (let i = 0; i < filteredStandees.length; i += 2) {
-      chunks.push(filteredStandees.slice(i, i + 2));
+    for (let i = 0; i < filteredStandees.length; i += perPage) {
+      chunks.push(filteredStandees.slice(i, i + perPage));
     }
     return chunks;
   }, [filteredStandees, layout]);
@@ -191,7 +193,15 @@ export default function BulkPrintStudio({
                 <span className={styles.barBadge}>Print Ready</span>
               </div>
               <div className={styles.barSub}>
-                {filteredStandees.length} Standees • {pages.length} {layout === "a4_duo" ? "A4 Sheets" : "10 × 15 cm Pages"}
+                {filteredStandees.length} Standees • {pages.length} {
+                  layout === "a4_parallel"
+                    ? "A4 Landscape Sheets"
+                    : layout === "a4_quad"
+                    ? "A4 4-Pack Sheets"
+                    : layout === "a4_duo"
+                    ? "A4 Portrait Sheets"
+                    : "10 × 15 cm Pages"
+                }
               </div>
             </div>
           </div>
@@ -218,10 +228,12 @@ export default function BulkPrintStudio({
               <select
                 className={styles.controlSelect}
                 value={layout}
-                onChange={(e) => setLayout(e.target.value as "a4_duo" | "a6_single")}
+                onChange={(e) => setLayout(e.target.value as PrintLayout)}
               >
-                <option value="a4_duo">A4 Sheet (2 Cards per Sheet - 10 × 15 cm Stand Fit)</option>
-                <option value="a6_single">10 × 15 cm Direct (1 Card per Page - Exact Stand Size)</option>
+                <option value="a4_parallel">A4 Parallel (2 Cards Side-by-Side • Landscape)</option>
+                <option value="a4_quad">A4 4-Pack (4 Cards per Sheet • 2×2 Parallel Grid)</option>
+                <option value="a4_duo">A4 Vertical (2 Cards Stacked Upar-Neeche • Portrait)</option>
+                <option value="a6_single">10 × 15 cm Direct (1 Card per Page • Exact Stand Size)</option>
               </select>
             </div>
 
@@ -252,7 +264,30 @@ export default function BulkPrintStudio({
       </header>
 
       {/* Dynamic @page sizing rule based on selected layout */}
-      {layout === "a4_duo" ? (
+      {layout === "a4_parallel" ? (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              @media print {
+                @page {
+                  size: A4 landscape;
+                  margin: 4mm;
+                }
+                .${styles.pageHeaderInfo},
+                .${styles.pageFooterInfo},
+                .${styles.stickyBar},
+                .${styles.tipBanner} {
+                  display: none !important;
+                  visibility: hidden !important;
+                  height: 0 !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
+                }
+              }
+            `,
+          }}
+        />
+      ) : layout === "a4_duo" || layout === "a4_quad" ? (
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -357,6 +392,126 @@ export default function BulkPrintStudio({
 
                   <div className={styles.pageFooterInfo}>
                     <span>300 DPI Vector QR • Pre-Printed Batch: {standee.batchName}</span>
+                  </div>
+                </section>
+              );
+            }
+
+            // Layout A4 Parallel: 2 Standees Side-by-Side (Landscape)
+            if (layout === "a4_parallel") {
+              return (
+                <section
+                  key={`page-par-${pageIdx}`}
+                  className={`${styles.pageSheet} ${styles.pageA4Landscape}`}
+                  aria-label={`Sheet ${pageNumber} of ${pages.length}`}
+                >
+                  <div className={styles.pageHeaderInfo}>
+                    <span>10 × 15 cm Acrylic Stand Insert Sheet (A4 Parallel Side-by-Side)</span>
+                    <span>Sheet {pageNumber} of {pages.length}</span>
+                  </div>
+
+                  <div className={styles.a4ParallelGrid}>
+                    {/* Left Standee */}
+                    {pageStandees[0] ? (
+                      <div className={styles.a4ParallelCol}>
+                        <StandeeCard
+                          standee={pageStandees[0]}
+                          themeClass={themeClass}
+                        />
+                      </div>
+                    ) : null}
+
+                    {/* Vertical Cut Guide Divider between Card 1 and Card 2 */}
+                    {pageStandees.length > 1 ? (
+                      <div className={styles.cutGuideVertical} aria-hidden="true">
+                        <span className={styles.cutLineVertical} />
+                        <span className={styles.cutIconVertical}>✂ CUT (10 CM) ✂</span>
+                        <span className={styles.cutLineVertical} />
+                      </div>
+                    ) : null}
+
+                    {/* Right Standee */}
+                    {pageStandees[1] ? (
+                      <div className={styles.a4ParallelCol}>
+                        <StandeeCard
+                          standee={pageStandees[1]}
+                          themeClass={themeClass}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className={styles.pageFooterInfo}>
+                    <span>Pre-Printed Acrylic Standees • 2 Cards Side-by-Side Landscape • Exact 10 cm × 15 cm stand fit</span>
+                    <span>Print on 250-350 GSM Glossy Cardstock</span>
+                  </div>
+                </section>
+              );
+            }
+
+            // Layout A4 Quad: 4 Standees per sheet (2x2 Parallel Grid)
+            if (layout === "a4_quad") {
+              return (
+                <section
+                  key={`page-quad-${pageIdx}`}
+                  className={`${styles.pageSheet} ${styles.pageA4}`}
+                  aria-label={`Sheet ${pageNumber} of ${pages.length}`}
+                >
+                  <div className={styles.pageHeaderInfo}>
+                    <span>10 × 15 cm Acrylic Stand Insert Sheet (A4 4-Pack Grid)</span>
+                    <span>Sheet {pageNumber} of {pages.length}</span>
+                  </div>
+
+                  <div className={styles.a4QuadGrid}>
+                    {/* Top Row: Standees 0 & 1 */}
+                    <div className={styles.a4QuadRow}>
+                      {pageStandees[0] ? (
+                        <StandeeCard standee={pageStandees[0]} themeClass={themeClass} />
+                      ) : null}
+                      {pageStandees[1] ? (
+                        <>
+                          <div className={styles.cutGuideVertical} aria-hidden="true">
+                            <span className={styles.cutLineVertical} />
+                            <span className={styles.cutIconVertical}>✂ 10 CM ✂</span>
+                            <span className={styles.cutLineVertical} />
+                          </div>
+                          <StandeeCard standee={pageStandees[1]} themeClass={themeClass} />
+                        </>
+                      ) : null}
+                    </div>
+
+                    {/* Horizontal Cut Guide between Top and Bottom Rows */}
+                    {pageStandees.length > 2 ? (
+                      <div className={styles.cutGuideDivider} aria-hidden="true">
+                        <span className={styles.cutLine} />
+                        <span className={styles.cutIcon}>✂ CUT HERE (15 CM INSERT) ✂</span>
+                        <span className={styles.cutLine} />
+                      </div>
+                    ) : null}
+
+                    {/* Bottom Row: Standees 2 & 3 */}
+                    {pageStandees.length > 2 ? (
+                      <div className={styles.a4QuadRow}>
+                        {pageStandees[2] ? (
+                          <StandeeCard standee={pageStandees[2]} themeClass={themeClass} />
+                        ) : null}
+                        {pageStandees[3] ? (
+                          <>
+                            <div className={styles.cutGuideVertical} aria-hidden="true">
+                              <span className={styles.cutLineVertical} />
+                              <span className={styles.cutIconVertical}>✂ 10 CM ✂</span>
+                              <span className={styles.cutLineVertical} />
+                            </div>
+                            <StandeeCard standee={pageStandees[3]} themeClass={themeClass} />
+                          </>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className={styles.pageFooterInfo}>
+                    <span>Pre-Printed Acrylic Standees 4-Pack • Cut into 4 exact 10 × 15 cm inserts</span>
+                    <span>Print on 250-350 GSM Glossy Cardstock</span>
                   </div>
                 </section>
               );

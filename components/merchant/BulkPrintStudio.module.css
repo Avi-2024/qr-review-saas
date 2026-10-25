@@ -230,6 +230,16 @@
   justify-content: space-between;
 }
 
+/* Screen Size for A4 Landscape: 297mm x 210mm (scaled for display: 1040px x 735px) */
+.pageA4Landscape {
+  width: 1040px;
+  min-height: 735px;
+  padding: 30px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
 /* Screen Size for A6: 105mm x 148mm (scaled for display: 397px x 560px) */
 .pageA6 {
   width: 440px;
@@ -257,7 +267,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   A4 SHEET GRID: 2 STANDESS PER PAGE
+   A4 SHEET GRID: 2 STANDESS PER PAGE (Vertical / Duo)
    -------------------------------------------------------------------------- */
 .a4DuoGrid {
   display: flex;
@@ -272,6 +282,76 @@
   align-items: center;
   justify-content: center;
   position: relative;
+}
+
+/* --------------------------------------------------------------------------
+   A4 PARALLEL GRID: 2 STANDESS SIDE-BY-SIDE (Landscape)
+   -------------------------------------------------------------------------- */
+.a4ParallelGrid {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  flex: 1;
+  gap: 24px;
+}
+
+.a4ParallelCol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  position: relative;
+}
+
+/* Vertical cut guide between parallel cards */
+.cutGuideVertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  height: 80%;
+  padding: 0 4px;
+}
+
+.cutLineVertical {
+  flex: 1;
+  border-left: 1.5px dashed #cbd5e1;
+  width: 0;
+}
+
+.cutIconVertical {
+  font-size: 0.6875rem;
+  color: #64748b;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 4px 0;
+}
+
+/* --------------------------------------------------------------------------
+   A4 QUAD GRID: 4 STANDESS (2x2 Parallel Grid)
+   -------------------------------------------------------------------------- */
+.a4QuadGrid {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex: 1;
+  gap: 16px;
+}
+
+.a4QuadRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  flex: 1;
+  gap: 16px;
 }
 
 /* Cut guide between cards */
@@ -679,6 +759,34 @@
     break-after: auto !important;
   }
 
+  /* A4 Landscape Page: 297mm x 210mm (Parallel 2 Cards Side-by-Side) */
+  .pageA4Landscape {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 198mm !important;
+    min-height: 198mm !important;
+    max-height: 202mm !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    box-sizing: border-box !important;
+  }
+
+  .pageA4Landscape:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
   .a4DuoGrid {
     display: flex !important;
     flex-direction: column !important;
@@ -698,6 +806,82 @@
     justify-content: center !important;
     flex: 1 !important;
     width: 100% !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Parallel Grid: 2 Cards Side-by-Side */
+  .a4ParallelGrid {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    flex: 1 !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .a4ParallelCol {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 !important;
+    height: 100% !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .cutGuideVertical {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2mm !important;
+    height: 80% !important;
+    max-height: 140mm !important;
+    color: #64748b !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .cutLineVertical {
+    flex: 1 !important;
+    border-left: 1.5px dashed #94a3b8 !important;
+    width: 0 !important;
+  }
+
+  .cutIconVertical {
+    font-size: 9px !important;
+    letter-spacing: 0.1em !important;
+    color: #64748b !important;
+    writing-mode: vertical-rl !important;
+    text-orientation: mixed !important;
+  }
+
+  /* 4-Card Grid on A4 Portrait */
+  .a4QuadGrid {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    flex: 1 !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .a4QuadRow {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    width: 100% !important;
+    flex: 1 !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
