@@ -59,7 +59,7 @@ function StandeeCard({
     <div className={styles.standeeCardWrapper}>
       {/* Printer/Operator crop margin identifier (outside customer card face) */}
       <span className={styles.cropEdgeLabel} aria-hidden="true">
-        ✂ CROP GUIDE • {standee.standeeCode} • {standee.batchName}
+        ✂ 10 × 15 CM CROP GUIDE • {standee.standeeCode} • {standee.batchName}
       </span>
 
       {/* The Actual Customer Standee Face */}
@@ -191,7 +191,7 @@ export default function BulkPrintStudio({
                 <span className={styles.barBadge}>Print Ready</span>
               </div>
               <div className={styles.barSub}>
-                {filteredStandees.length} Standees • {pages.length} {layout === "a4_duo" ? "A4 Sheets" : "4\"×6\" Pages"}
+                {filteredStandees.length} Standees • {pages.length} {layout === "a4_duo" ? "A4 Sheets" : "10 × 15 cm Pages"}
               </div>
             </div>
           </div>
@@ -220,8 +220,8 @@ export default function BulkPrintStudio({
                 value={layout}
                 onChange={(e) => setLayout(e.target.value as "a4_duo" | "a6_single")}
               >
-                <option value="a4_duo">A4 Sheet (2 Cards / Page - Fit 4"×6" Stand)</option>
-                <option value="a6_single">4" × 6" Direct (1 Card / Page - Exact 4"×6" Stand)</option>
+                <option value="a4_duo">A4 Sheet (2 Cards per Sheet - 10 × 15 cm Stand Fit)</option>
+                <option value="a6_single">10 × 15 cm Direct (1 Card per Page - Exact Stand Size)</option>
               </select>
             </div>
 
@@ -259,7 +259,7 @@ export default function BulkPrintStudio({
               @media print {
                 @page {
                   size: A4 portrait;
-                  margin: 6mm;
+                  margin: 4mm;
                 }
                 .${styles.pageHeaderInfo},
                 .${styles.pageFooterInfo},
@@ -281,8 +281,8 @@ export default function BulkPrintStudio({
             __html: `
               @media print {
                 @page {
-                  size: 102mm 152mm;
-                  margin: 4mm;
+                  size: 100mm 150mm;
+                  margin: 3mm;
                 }
                 .${styles.pageHeaderInfo},
                 .${styles.pageFooterInfo},
@@ -320,7 +320,7 @@ export default function BulkPrintStudio({
           <div className={styles.tipItem}>
             <span>📏</span>
             <span>
-              Paper: <strong className={styles.tipHighlight}>{layout === "a4_duo" ? "A4 (2 Cards per Sheet)" : "4\" × 6\" (100 × 150 mm)"}</strong>
+              Stand Fit: <strong className={styles.tipHighlight}>Calibrated 10 cm × 15 cm Clear Acrylic Stand</strong>
             </span>
           </div>
         </div>
@@ -346,8 +346,8 @@ export default function BulkPrintStudio({
                   aria-label={`Page ${pageNumber} of ${pages.length}`}
                 >
                   <div className={styles.pageHeaderInfo}>
-                    <span>4" × 6" Acrylic Stand Insert • {standee.standeeCode}</span>
-                    <span>Sheet {pageNumber} / {pages.length}</span>
+                    <span>10 × 15 cm Acrylic Stand Insert • {standee.standeeCode}</span>
+                    <span>Card {pageNumber} of {pages.length}</span>
                   </div>
 
                   <StandeeCard
@@ -370,7 +370,7 @@ export default function BulkPrintStudio({
                 aria-label={`Sheet ${pageNumber} of ${pages.length}`}
               >
                 <div className={styles.pageHeaderInfo}>
-                  <span>A4 Dual 4" × 6" Acrylic Insert Sheet</span>
+                  <span>10 × 15 cm Acrylic Stand Insert Sheet (A4 Dual)</span>
                   <span>Sheet {pageNumber} of {pages.length}</span>
                 </div>
 
@@ -389,7 +389,7 @@ export default function BulkPrintStudio({
                   {pageStandees.length > 1 ? (
                     <div className={styles.cutGuideDivider} aria-hidden="true">
                       <span className={styles.cutLine} />
-                      <span className={styles.cutIcon}>✂ CUT HERE ✂</span>
+                      <span className={styles.cutIcon}>✂ CUT HERE (15 CM INSERT) ✂</span>
                       <span className={styles.cutLine} />
                     </div>
                   ) : null}
@@ -406,7 +406,7 @@ export default function BulkPrintStudio({
                 </div>
 
                 <div className={styles.pageFooterInfo}>
-                  <span>Pre-Printed Acrylic Standees Stock • Fit for 4" × 6" (100 × 150 mm) counter stands</span>
+                  <span>Pre-Printed Acrylic Standees • Exact 10 cm × 15 cm counter stand fit</span>
                   <span>Print on 250-350 GSM Glossy Cardstock</span>
                 </div>
               </section>
