@@ -126,6 +126,14 @@ export default function BulkPrintStudio({
   const [layout, setLayout] = useState<"a4_duo" | "a6_single">("a4_duo");
   const [theme, setTheme] = useState<"crystal" | "obsidian" | "navy">("crystal");
 
+  // Keep full-screen focus and remove dashboard navigation dock while in print studio
+  useEffect(() => {
+    document.body.classList.add("print-studio-active");
+    return () => {
+      document.body.classList.remove("print-studio-active");
+    };
+  }, []);
+
   // Keyboard shortcut Ctrl+P / Cmd+P listener
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -183,7 +191,7 @@ export default function BulkPrintStudio({
                 <span className={styles.barBadge}>Print Ready</span>
               </div>
               <div className={styles.barSub}>
-                {filteredStandees.length} Standees • {pages.length} {layout === "a4_duo" ? "A4 Sheets" : "A6 Pages"}
+                {filteredStandees.length} Standees • {pages.length} {layout === "a4_duo" ? "A4 Sheets" : "4\"×6\" Pages"}
               </div>
             </div>
           </div>
@@ -212,8 +220,8 @@ export default function BulkPrintStudio({
                 value={layout}
                 onChange={(e) => setLayout(e.target.value as "a4_duo" | "a6_single")}
               >
-                <option value="a4_duo">A4 Sheet (2 Cards / Page with Cut Marks)</option>
-                <option value="a6_single">A6 Direct (1 Card / Page)</option>
+                <option value="a4_duo">A4 Sheet (2 Cards / Page - Fit 4"×6" Stand)</option>
+                <option value="a6_single">4" × 6" Direct (1 Card / Page - Exact 4"×6" Stand)</option>
               </select>
             </div>
 
@@ -243,6 +251,35 @@ export default function BulkPrintStudio({
         </div>
       </header>
 
+      {/* Dynamic @page sizing rule based on selected layout */}
+      {layout === "a4_duo" ? (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              @media print {
+                @page {
+                  size: A4 portrait;
+                  margin: 6mm 8mm;
+                }
+              }
+            `,
+          }}
+        />
+      ) : (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              @media print {
+                @page {
+                  size: 102mm 152mm;
+                  margin: 4mm;
+                }
+              }
+            `,
+          }}
+        />
+      )}
+
       {/* ------------------------------------------------------------------
           PRINT SHOP HELPER BANNER (Screen Only)
           ------------------------------------------------------------------ */}
@@ -263,7 +300,7 @@ export default function BulkPrintStudio({
           <div className={styles.tipItem}>
             <span>📏</span>
             <span>
-              Paper: <strong className={styles.tipHighlight}>A4 (Borderless / Default Margins)</strong>
+              Paper: <strong className={styles.tipHighlight}>{layout === "a4_duo" ? "A4 (2 Cards per Sheet)" : "4\" × 6\" (100 × 150 mm)"}</strong>
             </span>
           </div>
         </div>
@@ -289,7 +326,7 @@ export default function BulkPrintStudio({
                   aria-label={`Page ${pageNumber} of ${pages.length}`}
                 >
                   <div className={styles.pageHeaderInfo}>
-                    <span>A6 Laser Insert • {standee.standeeCode}</span>
+                    <span>4" × 6" Acrylic Stand Insert • {standee.standeeCode}</span>
                     <span>Sheet {pageNumber} / {pages.length}</span>
                   </div>
 
@@ -313,7 +350,7 @@ export default function BulkPrintStudio({
                 aria-label={`Sheet ${pageNumber} of ${pages.length}`}
               >
                 <div className={styles.pageHeaderInfo}>
-                  <span>A4 Dual Acrylic Insert Sheet</span>
+                  <span>A4 Dual 4" × 6" Acrylic Insert Sheet</span>
                   <span>Sheet {pageNumber} of {pages.length}</span>
                 </div>
 
@@ -349,7 +386,7 @@ export default function BulkPrintStudio({
                 </div>
 
                 <div className={styles.pageFooterInfo}>
-                  <span>Pre-Printed Acrylic Standees Stock • Fit for 105 × 148 mm standard counter stands</span>
+                  <span>Pre-Printed Acrylic Standees Stock • Fit for 4" × 6" (100 × 150 mm) counter stands</span>
                   <span>Print on 250-350 GSM Glossy Cardstock</span>
                 </div>
               </section>
