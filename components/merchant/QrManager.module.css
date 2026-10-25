@@ -524,3 +524,75 @@
   color: #64748b;
   font-size: 0.9375rem;
 }
+
+
+/* --------------------------------------------------------------------------
+   MOBILE UI/UX OPTIMIZATIONS FOR QR MANAGER
+   -------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .kpiStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+  .kpiCard {
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
+  }
+  .kpiValue {
+    font-size: 20px !important;
+  }
+  .kpiLabel {
+    font-size: 10.5px !important;
+  }
+  .kpiSub {
+    display: none !important;
+  }
+  .kpiIconWrap {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 16px !important;
+    border-radius: 8px !important;
+  }
+  .controlHeader {
+    padding: 12px 14px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .tabGroup {
+    width: 100% !important;
+    display: flex !important;
+  }
+  .tabBtn {
+    flex: 1 !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+  .actionBtnGroup {
+    width: 100% !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .bulkPrintBtn,
+  .batchGenerateBtn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .inventoryCardHeader {
+    padding: 14px 16px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .modalCard {
+    width: 100% !important;
+    max-height: 90vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 20px 18px !important;
+  }
+  .modalOverlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+}

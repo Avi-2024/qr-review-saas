@@ -36,7 +36,14 @@ export function handleRouteError(error: unknown) {
 
   console.error("Unhandled route error", error);
   return Response.json(
-    { success: false, error: { code: "INTERNAL_ERROR", message: "Something went wrong." } },
+    {
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: error instanceof Error ? error.message : "Something went wrong.",
+        stack: process.env.NODE_ENV !== "production" ? (error instanceof Error ? error.stack : undefined) : undefined,
+      },
+    },
     { status: 500 },
   );
 }
