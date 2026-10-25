@@ -616,12 +616,7 @@
    PRINT STYLESHEET (The Core Engine for High-DPI PDF & Paper Printing)
    -------------------------------------------------------------------------- */
 @media print {
-  @page {
-    size: auto;
-    margin: 6mm;
-  }
-
-  /* Reset global backgrounds for pure white paper printing */
+  /* Pure white page reset */
   html,
   body,
   .workbench {
@@ -634,37 +629,19 @@
     min-height: auto !important;
   }
 
-  /* Hide screen elements and dashboard layout navigation/sidebar */
+  /* Hide screen chrome strictly */
   .stickyBar,
   .tipBanner,
   .pageHeaderInfo,
   .pageFooterInfo,
   .backBtn,
-  .primaryPrintBtn,
-  :global(.merchantMobileNav),
-  :global(.merchantSidebar),
-  :global(.merchantNav),
-  :global(.merchantTopbar),
-  :global(.merchantSidebarFoot),
-  :global(.merchantSidebarHead),
-  :global(.merchantLogout) {
+  .primaryPrintBtn {
     display: none !important;
     visibility: hidden !important;
-  }
-
-  :global(.merchantShell) {
-    display: block !important;
-    grid-template-columns: 100% !important;
+    height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
-  }
-
-  :global(.merchantMain) {
-    padding: 0 !important;
-    margin: 0 !important;
-    max-width: 100% !important;
-    width: 100% !important;
+    overflow: hidden !important;
   }
 
   .sheetStage {
@@ -674,7 +651,9 @@
     gap: 0 !important;
   }
 
-  /* High precision page break - Zero overflow */
+  /* Page Sheet: Exactly 1 sheet per printed page, never splits */
+  .pageA4,
+  .pageA6,
   .pageSheet {
     box-shadow: none !important;
     border: none !important;
@@ -683,25 +662,37 @@
     margin: 0 !important;
     break-after: page !important;
     page-break-after: always !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
     width: 100% !important;
-    min-height: auto !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
     height: auto !important;
     overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
+  .pageA4:last-child,
+  .pageA6:last-child,
   .pageSheet:last-child {
     break-after: auto !important;
     page-break-after: auto !important;
   }
 
+  /* A4 Duo Sheet Container: Compact & centered to guarantee zero spillover */
   .a4DuoGrid {
-    gap: 6mm !important;
-    padding: 3mm 0 !important;
+    gap: 5mm !important;
+    padding: 2mm 0 !important;
     margin: 0 auto !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .a4DuoRow {
@@ -716,22 +707,30 @@
     color: #64748b !important;
     margin: 2mm auto !important;
     width: 90% !important;
-    max-width: 120mm !important;
+    max-width: 110mm !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
   .cutLine {
-    border-bottom: 1px dashed #94a3b8 !important;
+    border-bottom: 1.5px dashed #94a3b8 !important;
+  }
+
+  .cutIcon {
+    font-size: 2.5mm !important;
+    letter-spacing: 0.08em !important;
   }
 
   .standeeCardWrapper {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
   }
 
-  /* 4" x 6" (100mm x 150mm) stand insert precision sizing */
+  /* 4" x 6" Acrylic Stand Precision Sizing: fits perfectly into 100 × 150 mm acrylic frame */
   .standeeCard {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -739,93 +738,82 @@
     border: 1.5px solid #cbd5e1 !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    width: 98mm !important;
-    max-width: 98mm !important;
-    padding: 4.5mm 4mm 4mm !important;
-    border-radius: 4mm !important;
+    width: 96mm !important;
+    max-width: 96mm !important;
+    padding: 3.5mm 3.5mm 3mm !important;
+    border-radius: 3.5mm !important;
     box-sizing: border-box !important;
+    text-align: center !important;
   }
 
-  .qrCard {
-    padding: 2.5mm !important;
-    border-radius: 3mm !important;
-    margin: 0 auto !important;
-  }
-
-  .qrImage {
-    width: 44mm !important;
-    height: 44mm !important;
+  .brandRow {
+    gap: 2mm !important;
+    margin-bottom: 1mm !important;
   }
 
   .googleGIcon {
-    width: 6.5mm !important;
-    height: 6.5mm !important;
+    width: 5.5mm !important;
+    height: 5.5mm !important;
   }
 
   .headerTitle {
-    font-size: 4.2mm !important;
+    font-size: 3.8mm !important;
     line-height: 1.15 !important;
+    margin: 0 !important;
+  }
+
+  .starsContainer {
+    gap: 1mm !important;
+    margin-bottom: 1mm !important;
   }
 
   .starIcon {
-    width: 5mm !important;
-    height: 5mm !important;
-  }
-
-  .subtext {
-    font-size: 2.9mm !important;
-    margin: 0 0 2mm !important;
-  }
-
-  .footerAiNote {
-    font-size: 2.9mm !important;
-    margin-top: 2.5mm !important;
-  }
-
-  .footerSubNote {
-    font-size: 2.3mm !important;
-    margin-top: 1mm !important;
-  }
-
-  .googleColorBar {
-    width: 20mm !important;
-    height: 1mm !important;
-    margin: 1.5mm auto 0 !important;
-  }
-
-  /* Single 4x6 layout direct overrides */
-  .pageA6 .standeeCard {
-    width: 96mm !important;
-    max-width: 96mm !important;
-    padding: 6mm 5mm 5mm !important;
-  }
-
-  .pageA6 .qrImage {
-    width: 50mm !important;
-    height: 50mm !important;
-  }
-
-  /* Theme Obsidian/Navy print adjustments */
-  .themeObsidian {
-    background: #09090b !important;
-    color: #ffffff !important;
-  }
-
-  .themeNavy {
-    background: #0f172a !important;
-    color: #ffffff !important;
-  }
-
-  .themeCrystal {
-    background: #ffffff !important;
-    color: #0f172a !important;
-    border: 1.5px solid #cbd5e1 !important;
-  }
-
-  .starIcon {
+    width: 4.5mm !important;
+    height: 4.5mm !important;
     fill: #fbbc04 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  .merchantName {
+    font-size: 3.2mm !important;
+    margin: 0 0 1mm !important;
+  }
+
+  .subtext {
+    font-size: 2.6mm !important;
+    margin: 0 0 1.5mm !important;
+    line-height: 1.2 !important;
+  }
+
+  .qrCard {
+    padding: 2mm !important;
+    border-radius: 2.5mm !important;
+    margin: 0 auto !important;
+    background: #ffffff !important;
+  }
+
+  .qrImage {
+    width: 40mm !important;
+    height: 40mm !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+
+  .footerAiNote {
+    font-size: 2.7mm !important;
+    margin-top: 1.8mm !important;
+    gap: 1.2mm !important;
+  }
+
+  .sparkleAi {
+    font-size: 3mm !important;
+  }
+
+  .googleColorBar {
+    width: 18mm !important;
+    height: 1mm !important;
+    margin: 1.2mm auto 0 !important;
   }
 
   .colorBarBlue {
@@ -852,9 +840,57 @@
     print-color-adjust: exact !important;
   }
 
+  .footerSubNote {
+    font-size: 2.1mm !important;
+    margin-top: 0.8mm !important;
+  }
+
   .cropEdgeLabel {
     color: #64748b !important;
-    font-size: 2.2mm !important;
-    margin-bottom: 1.5mm !important;
+    font-size: 2mm !important;
+    margin-bottom: 1mm !important;
+  }
+
+  /* Single 4" × 6" Direct Layout: Fills the stand card proportionally */
+  .pageA6 .standeeCard {
+    width: 96mm !important;
+    max-width: 96mm !important;
+    padding: 6mm 5mm 5mm !important;
+  }
+
+  .pageA6 .qrImage {
+    width: 48mm !important;
+    height: 48mm !important;
+  }
+
+  .pageA6 .headerTitle {
+    font-size: 4.5mm !important;
+  }
+
+  .pageA6 .starIcon {
+    width: 5.5mm !important;
+    height: 5.5mm !important;
+  }
+
+  .pageA6 .subtext {
+    font-size: 3mm !important;
+    margin-bottom: 2.5mm !important;
+  }
+
+  /* Themes in Print */
+  .themeObsidian {
+    background: #09090b !important;
+    color: #ffffff !important;
+  }
+
+  .themeNavy {
+    background: #0f172a !important;
+    color: #ffffff !important;
+  }
+
+  .themeCrystal {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1.5px solid #cbd5e1 !important;
   }
 }

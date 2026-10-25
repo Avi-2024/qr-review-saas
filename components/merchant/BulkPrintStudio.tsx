@@ -259,7 +259,17 @@ export default function BulkPrintStudio({
               @media print {
                 @page {
                   size: A4 portrait;
-                  margin: 6mm 8mm;
+                  margin: 6mm;
+                }
+                .${styles.pageHeaderInfo},
+                .${styles.pageFooterInfo},
+                .${styles.stickyBar},
+                .${styles.tipBanner} {
+                  display: none !important;
+                  visibility: hidden !important;
+                  height: 0 !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
                 }
               }
             `,
@@ -273,6 +283,16 @@ export default function BulkPrintStudio({
                 @page {
                   size: 102mm 152mm;
                   margin: 4mm;
+                }
+                .${styles.pageHeaderInfo},
+                .${styles.pageFooterInfo},
+                .${styles.stickyBar},
+                .${styles.tipBanner} {
+                  display: none !important;
+                  visibility: hidden !important;
+                  height: 0 !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
                 }
               }
             `,
