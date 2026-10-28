@@ -301,19 +301,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
     setRating(value);
     setError("");
 
-    // 1 and 2 stars: Show instant Thank You screen (strictly no Google redirect)
-    if (value <= 2) {
-      void ensureSession()
-        .then((sessionId) => {
-          void recordSessionEvent(sessionId, { type: "RATING_SELECTED", rating: value });
-        })
-        .catch(() => undefined);
-
-      setScreen("feedback");
-      return;
-    }
-
-    // 3, 4, 5 stars: Continue to AI draft & Google Review flow
+    // Generate AI review draft for all ratings (1 to 5 stars)
     const initialSeed = Math.floor(Math.random() * 20);
     setVariation(initialSeed);
     void createDraft(value, initialSeed);
@@ -369,7 +357,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
   }
 
   async function handleGoogle() {
-    if (!review.trim() || !location?.googleReviewUrl || isOpeningGoogle) return;
+    if (!review.trim() || isOpeningGoogle) return;
     triggerHaptic();
     setError("");
     const success = await copyText(review);
@@ -378,13 +366,19 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
 
     if (draftId) {
       void recordReviewEvent(draftId, "REVIEW_COPIED").catch(() => undefined);
-      recordReviewEventOnExit(draftId, "GOOGLE_REVIEW_OPENED");
+      if (rating >= 3) {
+        recordReviewEventOnExit(draftId, "GOOGLE_REVIEW_OPENED");
+      }
     }
 
-    try {
-      window.open(location.googleReviewUrl, "_blank", "noopener,noreferrer");
-    } catch {
-      /* Handled by fallback link on thank you screen */
+    // Only open Google if rating is 3, 4, or 5 stars!
+    // For 1 and 2 stars, do NOT open Google page.
+    if (rating >= 3 && location?.googleReviewUrl) {
+      try {
+        window.open(location.googleReviewUrl, "_blank", "noopener,noreferrer");
+      } catch {
+        /* Handled by fallback link on thank you screen */
+      }
     }
 
     setScreen("feedback");
@@ -667,7 +661,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                 type="button"
                 className={`primaryAction googleAction ${isOpeningGoogle ? "isOpening" : ""}`}
                 onClick={() => void handleGoogle()}
-                disabled={!review.trim() || !location?.googleReviewUrl || isOpeningGoogle}
+                disabled={!review.trim() || isOpeningGoogle}
               >
                 <span className="googleGWrapper">
                   <GoogleColorIcon />
@@ -706,7 +700,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                 </button>
               </div>
 
-              {copyFailed && location?.googleReviewUrl ? (
+              {copyFailed && rating >= 3 && location?.googleReviewUrl ? (
                 <a
                   className="retryAction minimalManualGoogle"
                   href={location.googleReviewUrl}
