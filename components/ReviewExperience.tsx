@@ -104,12 +104,6 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
   const [error, setError] = useState("");
   const [copyFailed, setCopyFailed] = useState(false);
 
-  // Private feedback shield (for 1-2 star ratings)
-  const [privateFeedback, setPrivateFeedback] = useState("");
-  const [privateContact, setPrivateContact] = useState("");
-  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
-
   const tokenRef = useRef(qrToken);
   const sessionVersionRef = useRef(0);
   const intentRef = useRef(0);
@@ -163,10 +157,6 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
       setIsGenerating(false);
       setIsOpeningGoogle(false);
       setHandoffMessage("");
-      setPrivateFeedback("");
-      setPrivateContact("");
-      setIsSubmittingFeedback(false);
-      setFeedbackSubmitted(false);
     }
     const version = sessionVersionRef.current;
     void ensureSession().catch((cause) => {
@@ -311,7 +301,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
     setRating(value);
     setError("");
 
-    // Smart Shield: 1 and 2 stars are kept private and never sent to Google
+    // 1 and 2 stars: Show instant Thank You screen (strictly no Google redirect)
     if (value <= 2) {
       void ensureSession()
         .then((sessionId) => {
@@ -319,10 +309,6 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
         })
         .catch(() => undefined);
 
-      setPrivateFeedback("");
-      setPrivateContact("");
-      setIsSubmittingFeedback(false);
-      setFeedbackSubmitted(false);
       setScreen("feedback");
       return;
     }
@@ -347,35 +333,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
     setCopyFailed(false);
     setHandoffMessage("");
     setError("");
-    setPrivateFeedback("");
-    setPrivateContact("");
-    setIsSubmittingFeedback(false);
-    setFeedbackSubmitted(false);
     setScreen("compose");
-  }
-
-  async function handleSubmitFeedback(skip = false) {
-    if (isSubmittingFeedback) return;
-    triggerHaptic();
-    setIsSubmittingFeedback(true);
-    setError("");
-
-    try {
-      const sessionId = await ensureSession();
-      if (!skip && (privateFeedback.trim() || privateContact.trim())) {
-        await recordSessionEvent(sessionId, {
-          type: "FEEDBACK_SUBMITTED",
-          rating: (rating || 1) as Rating,
-          feedback: privateFeedback.trim() || undefined,
-          contact: privateContact.trim() || undefined,
-        });
-      }
-    } catch {
-      /* Analytics/event failure must not block the customer confirmation */
-    } finally {
-      setIsSubmittingFeedback(false);
-      setFeedbackSubmitted(true);
-    }
   }
 
   function editReview(text: string) {
@@ -471,30 +429,13 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
               <div className="merchantTitles">
                 <h1>{location?.name || (error ? "Review unavailable" : "Getting ready…")}</h1>
                 <p className="merchantSubtitle">
-                  {screen === "feedback" ? (
-                    <>
-                      <span className="verifiedDot supportDot">●</span> Customer Care &amp; Support
-                    </>
-                  ) : (
-                    <>
-                      <span className="verifiedDot">●</span> Google Verified Business
-                    </>
-                  )}
+                  <span className="verifiedDot">●</span> Google Verified Business
                 </p>
               </div>
             </div>
-            {screen === "feedback" ? (
-              <div className="headerShieldBadge" title="Private Feedback">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  <path d="m9 12 2 2 4-4" />
-                </svg>
-              </div>
-            ) : (
-              <div className="headerGoogleBadge" title="Official Google Reviews">
-                <GoogleColorIcon />
-              </div>
-            )}
+            <div className="headerGoogleBadge" title="Official Google Reviews">
+              <GoogleColorIcon />
+            </div>
           </header>
 
           {screen === "compose" ? (
@@ -585,151 +526,53 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
             </div>
           ) : screen === "feedback" ? (
             <div className="contentPane feedbackPane minimalFeedbackPane">
-              {feedbackSubmitted ? (
-                <div className="feedbackSuccessCard">
-                  <div className="feedbackSuccessBadge" aria-hidden="true">
-                    <UiIcon name="check" />
-                  </div>
-                  <h2 ref={feedbackHeadingRef} tabIndex={-1}>
-                    Thank you for your honesty!
-                  </h2>
-                  <p className="feedbackSuccessMessage">
-                    Your response has been delivered directly to the store management. We appreciate you taking the time to help us improve.
-                  </p>
+              <div className="feedbackSuccessCard">
+                <div className="feedbackSuccessBadge" aria-hidden="true">
+                  <UiIcon name="check" />
+                </div>
+                <h2 ref={feedbackHeadingRef} tabIndex={-1}>
+                  Thank you for your review!
+                </h2>
+                <p className="feedbackSuccessMessage">
+                  We appreciate your feedback and look forward to serving you better next time.
+                </p>
 
-                  <div className="feedbackPromiseBox">
-                    <div className="promiseIcon" aria-hidden="true">🛡️</div>
-                    <div className="promiseText">
-                      <strong>Direct Management Action</strong>
-                      <span>We treat every complaint with priority and strive to give you a 5-star experience on your next visit.</span>
+                <div className="feedbackRatingPill thankYouRatingPill">
+                  <div className="ratingPillLeft">
+                    <div className="ratingPillStars" aria-hidden="true">
+                      {[1, 2, 3, 4, 5].map((val) => (
+                        <span
+                          key={val}
+                          className={`pillStarIcon ${val <= rating ? "filled" : "empty"}`}
+                        >
+                          <UiIcon name="star" />
+                        </span>
+                      ))}
                     </div>
+                    <span className="pillSentimentText">
+                      {rating === 1 ? "1 Star" : "2 Stars"}
+                    </span>
                   </div>
-
                   <button
                     type="button"
-                    className="primaryAction doneFeedbackBtn"
+                    className="pillChangeBtn"
                     onClick={changeRating}
                   >
-                    <span>Done</span>
-                    <span className="actionArrow">
-                      <UiIcon name="check" />
-                    </span>
+                    Change rating
                   </button>
                 </div>
-              ) : (
-                <div className="feedbackFormWrapper">
-                  <div className="privateShieldBanner">
-                    <span className="privateShieldBadgeIcon" aria-hidden="true">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
-                    </span>
-                    <span className="privateShieldText">Direct to store management • Not published online</span>
-                  </div>
 
-                  <div className="privateFeedbackHero">
-                    <h2 ref={feedbackHeadingRef} tabIndex={-1}>
-                      Thank you for your honesty
-                    </h2>
-                    <p className="heroSubtitle">
-                      We&apos;re truly sorry your visit fell short today. We take your experience seriously and want to make this right.
-                    </p>
-                  </div>
-
-                  <div className="feedbackRatingPill">
-                    <div className="ratingPillLeft">
-                      <div className="ratingPillStars" aria-hidden="true">
-                        {[1, 2, 3, 4, 5].map((val) => (
-                          <span
-                            key={val}
-                            className={`pillStarIcon ${val <= rating ? "filled" : "empty"}`}
-                          >
-                            <UiIcon name="star" />
-                          </span>
-                        ))}
-                      </div>
-                      <span className="pillSentimentText">
-                        {rating === 1 ? "1 Star • Disappointing" : "2 Stars • Could be better"}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      className="pillChangeBtn"
-                      onClick={changeRating}
-                    >
-                      Change rating
-                    </button>
-                  </div>
-
-                  <div className="privateFormGroup">
-                    <label htmlFor="privateFeedbackInput" className="privateFormLabel">
-                      <span>How can we make things right?</span>
-                      <small>(Optional)</small>
-                    </label>
-                    <textarea
-                      id="privateFeedbackInput"
-                      className="feedbackTextarea"
-                      rows={3}
-                      maxLength={1000}
-                      placeholder="Tell the manager directly what went wrong or what we could have done better..."
-                      value={privateFeedback}
-                      onChange={(e) => setPrivateFeedback(e.target.value)}
-                      disabled={isSubmittingFeedback}
-                    />
-
-                    <label htmlFor="privateContactInput" className="privateFormLabel">
-                      <span>Phone or email</span>
-                      <small>(Optional follow-up)</small>
-                    </label>
-                    <input
-                      id="privateContactInput"
-                      type="text"
-                      className="feedbackContactInput"
-                      placeholder="e.g. +91 98765 43210 or name@example.com"
-                      maxLength={120}
-                      value={privateContact}
-                      onChange={(e) => setPrivateContact(e.target.value)}
-                      disabled={isSubmittingFeedback}
-                    />
-
-                    {error ? (
-                      <p className="customerError" role="alert">
-                        {error}
-                      </p>
-                    ) : null}
-
-                    <button
-                      type="button"
-                      className="primaryAction privateSubmitBtn"
-                      onClick={() => void handleSubmitFeedback(false)}
-                      disabled={isSubmittingFeedback}
-                    >
-                      <span className="privateBtnLock">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                      </span>
-                      <span className="privateSubmitBtnText">
-                        {isSubmittingFeedback ? "Sending to manager…" : "Send Private Feedback"}
-                      </span>
-                      <span className="actionArrow">
-                        <UiIcon name="arrow" />
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="skipFeedbackBtn"
-                      onClick={() => void handleSubmitFeedback(true)}
-                      disabled={isSubmittingFeedback}
-                    >
-                      Skip &amp; finish
-                    </button>
-                  </div>
-                </div>
-              )}
+                <button
+                  type="button"
+                  className="primaryAction doneFeedbackBtn"
+                  onClick={changeRating}
+                >
+                  <span>Done</span>
+                  <span className="actionArrow">
+                    <UiIcon name="check" />
+                  </span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className="contentPane reviewPane customerReviewPane minimalReviewPane">

@@ -1741,6 +1741,12 @@ body {
   line-height: 1.4;
 }
 
+.thankYouRatingPill {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 20px;
+}
+
 .doneFeedbackBtn {
   background: #059669;
   color: #ffffff;
