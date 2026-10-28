@@ -101,4 +101,21 @@ describe("ReviewService", () => {
       variation: 0,
     })).rejects.toMatchObject({ code: "SESSION_EXPIRED", statusCode: 409 });
   });
+
+  it("records private feedback event for negative ratings without error", async () => {
+    const service = createService();
+    const session = await service.startSession({
+      qrToken: "mangal-counter-demo",
+      clientSessionId: randomUUID(),
+    });
+
+    await expect(
+      service.recordSessionEvent({
+        sessionId: session.session.id,
+        type: "FEEDBACK_SUBMITTED",
+        clientEventId: randomUUID(),
+        metadata: { rating: 2, feedback: "Service was slow", contact: "+919876543210" },
+      }),
+    ).resolves.toBeUndefined();
+  });
 });

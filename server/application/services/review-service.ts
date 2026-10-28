@@ -159,13 +159,18 @@ export class ReviewService {
 
   async recordSessionEvent(input: {
     sessionId: string;
-    type: "RATING_SELECTED" | "TOPIC_SELECTED" | "GENERATE_CLICKED" | "GOOGLE_REVIEW_OPENED";
+    type:
+      | "RATING_SELECTED"
+      | "TOPIC_SELECTED"
+      | "GENERATE_CLICKED"
+      | "GOOGLE_REVIEW_OPENED"
+      | "FEEDBACK_SUBMITTED";
     clientEventId: string;
     metadata?: Record<string, unknown>;
   }) {
     const session = await this.requireActiveSession(input.sessionId);
 
-    if (input.type === "RATING_SELECTED") {
+    if (input.type === "RATING_SELECTED" || input.type === "FEEDBACK_SUBMITTED") {
       const rating = Number(input.metadata?.rating);
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
         throw new ValidationError("Invalid rating event.");

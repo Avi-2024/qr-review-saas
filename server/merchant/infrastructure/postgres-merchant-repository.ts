@@ -588,11 +588,12 @@ export class PostgresMerchantRepository implements MerchantRepository {
     try {
       await client.query("BEGIN");
 
-      // Find highest existing numerical suffix for this prefix
+      // Find highest existing numerical suffix globally across all organizations
+      // This ensures numbers are globally sequential (ST-001, ST-002... ST-021...) and never collide across admins/agents
       let nextIndex = 1;
       const allPrefix = await client.query<{ standee_code: string }>(
-        `SELECT standee_code FROM standee_inventory WHERE organization_id = $1 AND standee_code LIKE $2`,
-        [organizationId, `${prefix}%`],
+        `SELECT standee_code FROM standee_inventory WHERE standee_code LIKE $1`,
+        [`${prefix}%`],
       );
       for (const row of allPrefix.rows) {
         const numPart = parseInt(row.standee_code.replace(prefix, ""), 10);
@@ -602,22 +603,26 @@ export class PostgresMerchantRepository implements MerchantRepository {
       }
 
       const created: StandeeItem[] = [];
-      for (let i = 0; i < count; i += 1) {
-        const currentNum = nextIndex + i;
+      let currentOffset = 0;
+      while (created.length < count && currentOffset < count + 500) {
+        const currentNum = nextIndex + currentOffset;
+        currentOffset += 1;
         const standeeCode = `${prefix}${String(currentNum).padStart(3, "0")}`;
         const publicToken = standeeCode.toLowerCase();
 
         const inserted = await client.query<StandeeItem>(
           `INSERT INTO standee_inventory (organization_id, standee_code, public_token, batch_name, status)
            VALUES ($1, $2, $3, $4, 'unassigned')
-           ON CONFLICT (public_token) DO UPDATE SET updated_at = NOW()
+           ON CONFLICT (public_token) DO NOTHING
            RETURNING id, organization_id AS "organizationId", standee_code AS "standeeCode",
                      public_token AS "publicToken", batch_name AS "batchName", location_id AS "locationId",
                      ''::text AS "locationName", qr_code_id AS "qrCodeId", status, assigned_at AS "assignedAt",
                      notes, created_at AS "createdAt", updated_at AS "updatedAt"`,
           [organizationId, standeeCode, publicToken, batchName],
         );
-        if (inserted.rows[0]) created.push(inserted.rows[0]);
+        if (inserted.rows[0]) {
+          created.push(inserted.rows[0]);
+        }
       }
 
       await client.query("COMMIT");

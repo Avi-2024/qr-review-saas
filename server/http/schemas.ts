@@ -42,4 +42,11 @@ export const sessionEventSchema = z.discriminatedUnion("type", [
     eventId,
     type: z.literal("GOOGLE_REVIEW_OPENED"),
   }),
+  z.object({
+    eventId,
+    type: z.literal("FEEDBACK_SUBMITTED"),
+    rating: z.number().int().min(1).max(5),
+    feedback: z.string().trim().max(1000).optional(),
+    contact: z.string().trim().max(200).optional(),
+  }),
 ]);

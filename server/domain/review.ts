@@ -9,7 +9,8 @@ export type ReviewEventType =
   | "REVIEW_REGENERATED"
   | "REVIEW_EDITED"
   | "REVIEW_COPIED"
-  | "GOOGLE_REVIEW_OPENED";
+  | "GOOGLE_REVIEW_OPENED"
+  | "FEEDBACK_SUBMITTED";
 
 export interface ReviewTopic {
   id: string;

@@ -702,9 +702,7 @@
    PRINT STYLESHEET (High-DPI PDF & Paper Printing - Exact 1:1 match with Screen ss-1)
    -------------------------------------------------------------------------- */
 @media print {
-  /* Reset global backgrounds for pure white paper printing */
-  html,
-  body,
+  /* Reset background for pure white paper printing */
   .workbench {
     background: #ffffff !important;
     background-image: none !important;

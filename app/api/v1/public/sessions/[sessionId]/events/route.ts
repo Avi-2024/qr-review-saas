@@ -22,7 +22,9 @@ export async function POST(
       ? { rating: body.rating }
       : body.type === "TOPIC_SELECTED"
         ? { topicId: body.topicId, selected: body.selected }
-        : undefined;
+        : body.type === "FEEDBACK_SUBMITTED"
+          ? { rating: body.rating, feedback: body.feedback, contact: body.contact }
+          : undefined;
 
     await getReviewService().recordSessionEvent({
       sessionId,

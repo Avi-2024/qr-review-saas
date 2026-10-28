@@ -147,7 +147,8 @@ export function recordSessionEvent(
     | { type: "RATING_SELECTED"; rating: number }
     | { type: "TOPIC_SELECTED"; topicId: string; selected: boolean }
     | { type: "GENERATE_CLICKED" }
-    | { type: "GOOGLE_REVIEW_OPENED" },
+    | { type: "GOOGLE_REVIEW_OPENED" }
+    | { type: "FEEDBACK_SUBMITTED"; rating: number; feedback?: string; contact?: string },
 ) {
   return apiRequest<{ recorded: boolean }>(`/api/v1/public/sessions/${sessionId}/events`, {
     method: "POST",

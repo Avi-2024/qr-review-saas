@@ -1414,6 +1414,340 @@ body {
 
 /* Accessibility */
 .minimalCustomerFlow .customerQuestion h2:focus,
-.minimalCustomerFlow .reviewReadyHeader h2:focus {
+.minimalCustomerFlow .reviewReadyHeader h2:focus,
+.minimalCustomerFlow .privateFeedbackHero h2:focus,
+.minimalCustomerFlow .feedbackSuccessCard h2:focus {
   outline: none;
+}
+
+/* ==========================================================================
+   SMART SHIELD — 1 & 2 STAR PRIVATE FEEDBACK & EMPATHY MODAL
+   ========================================================================== */
+
+.headerShieldBadge {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 10px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #d97706;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.merchantSubtitle .supportDot {
+  color: #d97706;
+}
+
+.feedbackPane {
+  animation: screenFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.privateShieldBanner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.privateShieldBadgeIcon {
+  display: grid;
+  place-items: center;
+  color: #d97706;
+}
+
+.privateShieldText {
+  letter-spacing: -0.01em;
+}
+
+.privateFeedbackHero h2 {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+
+.feedbackRatingPill {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+
+.ratingPillLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ratingPillStars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pillStarIcon {
+  display: inline-flex;
+  align-items: center;
+  color: #d1d5db;
+}
+
+.pillStarIcon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.pillStarIcon.filled {
+  color: var(--gold-warm);
+}
+
+.pillStarIcon.filled svg {
+  fill: var(--gold-warm);
+}
+
+.pillSentimentText {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.pillChangeBtn {
+  background: none;
+  border: none;
+  color: #0284c7;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  touch-action: manipulation;
+  transition: color 0.14s ease;
+}
+
+.pillChangeBtn:hover {
+  color: #0369a1;
+}
+
+.privateFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.privateFormLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: -4px;
+}
+
+.privateFormLabel small {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.feedbackTextarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  color: #1f2937;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.5;
+  resize: none;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.feedbackTextarea:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.feedbackContactInput {
+  width: 100%;
+  height: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  color: #1f2937;
+  font-family: var(--font-body);
+  font-size: 13px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.feedbackContactInput:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.privateSubmitBtn {
+  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px -2px rgba(17, 24, 39, 0.3);
+  margin-top: 4px;
+}
+
+.privateSubmitBtn:hover:not(:disabled) {
+  background: #111827;
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.4);
+  transform: translateY(-1px);
+}
+
+.privateBtnLock {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+.privateSubmitBtnText {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.skipFeedbackBtn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  margin-top: -2px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 8px;
+  touch-action: manipulation;
+  transition: color 0.15s ease;
+}
+
+.skipFeedbackBtn:hover:not(:disabled) {
+  color: #374151;
+}
+
+/* Feedback Success State */
+.feedbackSuccessCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 4px 8px;
+  animation: screenFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.feedbackSuccessBadge {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #ecfdf5;
+  border: 2px solid #a7f3d0;
+  color: #059669;
+  margin-bottom: 12px;
+  box-shadow: 0 6px 16px -2px rgba(5, 150, 105, 0.2);
+}
+
+.feedbackSuccessBadge svg {
+  width: 26px;
+  height: 26px;
+}
+
+.feedbackSuccessCard h2 {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+
+.feedbackSuccessMessage {
+  font-size: 13.5px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 0 0 16px;
+  max-width: 320px;
+}
+
+.feedbackPromiseBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 18px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.promiseIcon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.promiseText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.promiseText strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.promiseText span {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.doneFeedbackBtn {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 4px 14px -2px rgba(5, 150, 105, 0.35);
+}
+
+.doneFeedbackBtn:hover:not(:disabled) {
+  background: #047857;
+  box-shadow: 0 6px 18px rgba(5, 150, 105, 0.45);
 }
