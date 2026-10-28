@@ -375,18 +375,19 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
     const success = await copyText(review);
     setCopied(success);
     setCopyFailed(!success);
-    if (!success) {
-      setError("Copy was blocked. Copy the text manually, then open Google using the link below.");
-      return;
-    }
 
-    setIsOpeningGoogle(true);
-    setHandoffMessage("Review copied ✓ Opening Google…");
     if (draftId) {
       void recordReviewEvent(draftId, "REVIEW_COPIED").catch(() => undefined);
       recordReviewEventOnExit(draftId, "GOOGLE_REVIEW_OPENED");
     }
-    window.setTimeout(() => window.location.assign(location.googleReviewUrl), 200);
+
+    try {
+      window.open(location.googleReviewUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      /* Handled by fallback link on thank you screen */
+    }
+
+    setScreen("feedback");
   }
 
   const isDemo = qrToken === "mangal-counter-demo";
@@ -534,8 +535,27 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                   Thank you for your review!
                 </h2>
                 <p className="feedbackSuccessMessage">
-                  We appreciate your feedback and look forward to serving you better next time.
+                  {rating >= 3
+                    ? "Your review has been copied! Paste and submit it on Google to finish."
+                    : "We appreciate your feedback and look forward to serving you better next time."}
                 </p>
+
+                {rating >= 3 && location?.googleReviewUrl ? (
+                  <a
+                    href={location.googleReviewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="reopenGoogleAction"
+                  >
+                    <span className="googleGWrapper">
+                      <GoogleColorIcon />
+                    </span>
+                    <span className="reopenGoogleText">Open Google Reviews</span>
+                    <span className="actionArrow">
+                      <UiIcon name="external" />
+                    </span>
+                  </a>
+                ) : null}
 
                 <div className="feedbackRatingPill thankYouRatingPill">
                   <div className="ratingPillLeft">
@@ -550,7 +570,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                       ))}
                     </div>
                     <span className="pillSentimentText">
-                      {rating === 1 ? "1 Star" : "2 Stars"}
+                      {rating} Star{rating === 1 ? "" : "s"}
                     </span>
                   </div>
                   <button
@@ -658,7 +678,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                       <span className="buttonSpinner" aria-hidden="true" /> Opening Google…
                     </span>
                   ) : (
-                    "Copy & open Google review"
+                    "Copy & submit to Google"
                   )}
                 </span>
                 <span className="actionArrow">
