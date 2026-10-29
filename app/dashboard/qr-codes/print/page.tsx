@@ -33,11 +33,11 @@ export default async function BulkPrintPage(props: {
     standees.map(async (st) => {
       const destination = `${origin}/r/${encodeURIComponent(st.publicToken)}`;
       const qrDataUrl = await QRCode.toDataURL(destination, {
-        errorCorrectionLevel: "M",
+        errorCorrectionLevel: "H",
         margin: 1,
-        width: 480,
+        width: 600,
         color: {
-          dark: "#000000",
+          dark: "#0f172a",
           light: "#ffffff",
         },
       });

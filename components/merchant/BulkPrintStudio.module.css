@@ -417,6 +417,50 @@
   align-items: center;
 }
 
+/* Card Outer Corner Options (Round vs Sharp vs Deep Curve) */
+.cornerRounded {
+  border-radius: 1.1rem;
+}
+
+.cornerSharp {
+  border-radius: 0 !important;
+}
+
+.cornerDeep {
+  border-radius: 2rem !important;
+}
+
+/* 0. Theme Google Fluid Wave (Official Style with Organic Side Waves & Gold Pinstripe) */
+.themeWave {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  color: #0f172a;
+  position: relative;
+  overflow: hidden;
+}
+
+.themeWave .headerTitle {
+  color: #0f172a;
+}
+
+.themeWave .merchantName {
+  color: #0f172a;
+}
+
+.themeWave .subtext {
+  color: #64748b;
+}
+
+.themeWave .qrCard {
+  background: #ffffff;
+  border: 1.5px solid rgba(212, 175, 55, 0.45);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+}
+
+.themeWave .footerNote {
+  color: #94a3b8;
+}
+
 /* 1. Theme Crystal White (Standard Eco Print - Ink Saver) */
 .themeCrystal {
   background: #ffffff;
@@ -570,14 +614,135 @@
   color: #94a3b8;
 }
 
+/* Organic Google Brand Side Waves (Featured in User Reference Photo) */
+.waveLeftBlue {
+  position: absolute;
+  top: 28%;
+  left: 0;
+  width: 38px;
+  height: 155px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.waveTopRed {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 65px;
+  height: 75px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.waveBottomYellow {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 95px;
+  height: 130px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.waveBottomGreen {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 80px;
+  height: 75px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Standee Content wrapper that sits elevated above side waves */
+.standeeContent {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+/* QR Code Container with Viewfinder Corner Brackets */
+.qrContainer {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+  z-index: 3;
+}
+
+.bracket {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.bracketTl {
+  top: -3px;
+  left: -3px;
+  border-top: 2.5px solid #4285f4;
+  border-left: 2.5px solid #4285f4;
+  border-top-left-radius: 4px;
+}
+
+.bracketTr {
+  top: -3px;
+  right: -3px;
+  border-top: 2.5px solid #ea4335;
+  border-right: 2.5px solid #ea4335;
+  border-top-right-radius: 4px;
+}
+
+.bracketBl {
+  bottom: -3px;
+  left: -3px;
+  border-bottom: 2.5px solid #34a853;
+  border-left: 2.5px solid #34a853;
+  border-bottom-left-radius: 4px;
+}
+
+.bracketBr {
+  bottom: -3px;
+  right: -3px;
+  border-bottom: 2.5px solid #fbbc05;
+  border-right: 2.5px solid #fbbc05;
+  border-bottom-right-radius: 4px;
+}
+
+.themeObsidian .bracketTl,
+.themeObsidian .bracketTr,
+.themeObsidian .bracketBl,
+.themeObsidian .bracketBr {
+  border-color: #f59e0b;
+}
+
+.themeNavy .bracketTl,
+.themeNavy .bracketTr,
+.themeNavy .bracketBl,
+.themeNavy .bracketBr {
+  border-color: #38bdf8;
+}
+
 /* Clean QR Card */
 .qrCard {
+  position: relative;
   background: #ffffff;
-  padding: 0.85rem;
+  padding: 0.75rem;
   border-radius: 0.9rem;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin: 0 auto;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .themeCrystal .qrCard {
@@ -585,18 +750,100 @@
 }
 
 .themeObsidian .qrCard {
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
 .themeNavy .qrCard {
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.4);
 }
 
 .qrImage {
   display: block;
-  width: 172px;
-  height: 172px;
+  width: 168px;
+  height: 168px;
   border-radius: 0.25rem;
+}
+
+.qrCenterBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 38px;
+  height: 38px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  z-index: 5;
+}
+
+.qrCenterBadge svg {
+  width: 22px;
+  height: 22px;
+}
+
+.scanTargetPill {
+  margin-top: 7px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  z-index: 3;
+}
+
+.themeObsidian .scanTargetPill {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.themeNavy .scanTargetPill {
+  background: rgba(56, 189, 248, 0.15);
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+/* "— Your Feedback Matters —" Accent Line with Gold Dashes */
+.feedbackMattersRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  width: 100%;
+  z-index: 3;
+}
+
+.goldDash {
+  flex: 1;
+  max-width: 32px;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, #d4af37, transparent);
+}
+
+.feedbackText {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.02em;
+}
+
+.themeObsidian .feedbackText {
+  color: #fbbf24;
+}
+
+.themeNavy .feedbackText {
+  color: #93c5fd;
 }
 
 /* Elegant footer highlighting 1-Tap AI & No Typing (The Killer Selling Point) */
@@ -927,7 +1174,7 @@
     height: 150mm !important;
     min-height: 150mm !important;
     max-height: 150mm !important;
-    border-radius: 4mm !important;
+    border-radius: 4mm;
     padding: 6mm 5mm 5mm !important;
     box-sizing: border-box !important;
     text-align: center !important;
@@ -941,6 +1188,18 @@
     flex-direction: column !important;
     justify-content: space-between !important;
     align-items: center !important;
+  }
+
+  .cornerRounded {
+    border-radius: 4mm !important;
+  }
+
+  .cornerSharp {
+    border-radius: 0 !important;
+  }
+
+  .cornerDeep {
+    border-radius: 7.5mm !important;
   }
 
   /* When stacked 2-high on A4 Portrait, slightly reduce to 142mm to prevent page spill */
@@ -994,11 +1253,223 @@
     line-height: 1.25 !important;
   }
 
+  .waveLeftBlue {
+    display: block !important;
+    position: absolute !important;
+    top: 28% !important;
+    left: 0 !important;
+    width: 12mm !important;
+    height: 45mm !important;
+    z-index: 1 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .waveTopRed {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 18mm !important;
+    height: 20mm !important;
+    z-index: 1 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .waveBottomYellow {
+    display: block !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    width: 28mm !important;
+    height: 38mm !important;
+    z-index: 1 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .waveBottomGreen {
+    display: block !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    width: 24mm !important;
+    height: 22mm !important;
+    z-index: 2 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .standeeContent {
+    position: relative !important;
+    z-index: 3 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .qrContainer {
+    position: relative !important;
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    margin: 0 auto !important;
+    z-index: 3 !important;
+  }
+
+  .bracket {
+    display: block !important;
+    position: absolute !important;
+    width: 4.5mm !important;
+    height: 4.5mm !important;
+    z-index: 4 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .bracketTl {
+    top: -1.5mm !important;
+    left: -1.5mm !important;
+    border-top: 0.7mm solid #4285f4 !important;
+    border-left: 0.7mm solid #4285f4 !important;
+    border-top-left-radius: 1mm !important;
+  }
+
+  .bracketTr {
+    top: -1.5mm !important;
+    right: -1.5mm !important;
+    border-top: 0.7mm solid #ea4335 !important;
+    border-right: 0.7mm solid #ea4335 !important;
+    border-top-right-radius: 1mm !important;
+  }
+
+  .bracketBl {
+    bottom: -1.5mm !important;
+    left: -1.5mm !important;
+    border-bottom: 0.7mm solid #34a853 !important;
+    border-left: 0.7mm solid #34a853 !important;
+    border-bottom-left-radius: 1mm !important;
+  }
+
+  .bracketBr {
+    bottom: -1.5mm !important;
+    right: -1.5mm !important;
+    border-bottom: 0.7mm solid #fbbc05 !important;
+    border-right: 0.7mm solid #fbbc05 !important;
+    border-bottom-right-radius: 1mm !important;
+  }
+
+  .themeObsidian .bracketTl,
+  .themeObsidian .bracketTr,
+  .themeObsidian .bracketBl,
+  .themeObsidian .bracketBr {
+    border-color: #f59e0b !important;
+  }
+
+  .themeNavy .bracketTl,
+  .themeNavy .bracketTr,
+  .themeNavy .bracketBl,
+  .themeNavy .bracketBr {
+    border-color: #38bdf8 !important;
+  }
+
   .qrCard {
+    position: relative !important;
     padding: 2.2mm !important;
-    border-radius: 3mm !important;
+    border-radius: 2.5mm !important;
     margin: 0 auto !important;
     background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .themeWave .qrCard {
+    border: 0.4mm solid #d4af37 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .qrCenterBadge {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 10mm !important;
+    height: 10mm !important;
+    background: #ffffff !important;
+    border-radius: 50% !important;
+    border: 0.5mm solid #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.5mm !important;
+    z-index: 5 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .qrCenterBadge svg {
+    width: 6mm !important;
+    height: 6mm !important;
+  }
+
+  .scanTargetPill {
+    margin-top: 1.2mm !important;
+    font-size: 2mm !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.08em !important;
+    padding: 0.4mm 2.2mm !important;
+    border-radius: 9999px !important;
+    background: #eff6ff !important;
+    color: #2563eb !important;
+    border: 0.3mm solid #bfdbfe !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .themeObsidian .scanTargetPill {
+    background: rgba(245, 158, 11, 0.2) !important;
+    color: #fbbf24 !important;
+    border-color: #f59e0b !important;
+  }
+
+  .themeNavy .scanTargetPill {
+    background: rgba(56, 189, 248, 0.2) !important;
+    color: #7dd3fc !important;
+    border-color: #38bdf8 !important;
+  }
+
+  .feedbackMattersRow {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 1.5mm !important;
+    margin-top: 1mm !important;
+    width: 100% !important;
+    z-index: 3 !important;
+  }
+
+  .goldDash {
+    flex: 1 !important;
+    max-width: 10mm !important;
+    height: 0.4mm !important;
+    background: #d4af37 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .feedbackText {
+    font-size: 2.2mm !important;
+    font-weight: 700 !important;
+    color: #475569 !important;
+    letter-spacing: 0.03em !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .qrImage {
@@ -1114,6 +1585,16 @@
   }
 
   /* Themes in Print */
+  .themeWave {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1.5px solid #cbd5e1 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   .themeObsidian {
     background: #09090b !important;
     color: #ffffff !important;

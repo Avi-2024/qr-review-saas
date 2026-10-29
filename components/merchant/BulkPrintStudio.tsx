@@ -49,11 +49,23 @@ function GoogleStarIcon() {
 function StandeeCard({
   standee,
   themeClass,
+  theme,
+  showCurves = true,
+  cornerStyle = "rounded",
 }: {
   standee: PrintableStandee;
   themeClass: string;
+  theme: "wave" | "crystal" | "obsidian" | "navy";
+  showCurves?: boolean;
+  cornerStyle?: "rounded" | "sharp" | "deep";
 }) {
   const isAssigned = standee.status === "assigned";
+  const cornerClass =
+    cornerStyle === "sharp"
+      ? styles.cornerSharp
+      : cornerStyle === "deep"
+      ? styles.cornerDeep
+      : styles.cornerRounded;
 
   return (
     <div className={styles.standeeCardWrapper}>
@@ -63,53 +75,123 @@ function StandeeCard({
       </span>
 
       {/* The Actual Customer Standee Face */}
-      <div className={`${styles.standeeCard} ${themeClass}`}>
-        {/* Google Header Branding */}
-        <div className={styles.brandRow}>
-          <GoogleColoredIcon />
-          <h3 className={styles.headerTitle}>Review us on Google</h3>
+      <div className={`${styles.standeeCard} ${themeClass} ${cornerClass}`}>
+        {/* Organic Google Brand Side Waves (From User's Reference Photo) */}
+        {showCurves && (
+          <>
+            {/* 1. Left Google Blue Wave */}
+            <svg
+              className={styles.waveLeftBlue}
+              viewBox="0 0 38 155"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path d="M0 0C12 25 38 48 38 82C38 116 14 135 0 155V0Z" fill="#4285F4" />
+            </svg>
+
+            {/* 2. Top Right Subtle Red Wave Accent */}
+            <svg
+              className={styles.waveTopRed}
+              viewBox="0 0 65 75"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path d="M65 0H0C18 6 36 22 45 42C52 57 58 68 65 75V0Z" fill="#EA4335" fillOpacity="0.9" />
+            </svg>
+
+            {/* 3. Bottom Right Yellow Wave */}
+            <svg
+              className={styles.waveBottomYellow}
+              viewBox="0 0 95 130"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path d="M95 0C80 28 42 62 18 90C4 106 0 118 0 130H95V0Z" fill="#FBBC05" />
+            </svg>
+
+            {/* 4. Bottom Right Green Foreground Wave */}
+            <svg
+              className={styles.waveBottomGreen}
+              viewBox="0 0 80 75"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path d="M80 0C68 18 36 38 12 55C4 61 0 67 0 75H80V0Z" fill="#34A853" />
+            </svg>
+          </>
+        )}
+
+        <div className={styles.standeeContent}>
+          {/* Google Header Branding */}
+          <div className={styles.brandRow}>
+            <GoogleColoredIcon />
+            <h3 className={styles.headerTitle}>Review us on Google</h3>
+          </div>
+
+          {/* 5 Google Gold Stars */}
+          <div className={styles.starsContainer} aria-hidden="true">
+            {[...Array(5)].map((_, i) => (
+              <GoogleStarIcon key={i} />
+            ))}
+          </div>
+
+          {/* Merchant Business Name (Only if specifically assigned to a client shop) */}
+          {isAssigned && standee.locationName ? (
+            <div className={styles.merchantName}>{standee.locationName}</div>
+          ) : null}
+
+          {/* Clean, natural instruction mentioning AI without clunky boxes */}
+          <div className={styles.subtext}>Scan with camera for instant AI review</div>
+
+          {/* QR Code Container with Viewfinder Corner Brackets & Center Google Badge */}
+          <div className={styles.qrContainer}>
+            <span className={`${styles.bracket} ${styles.bracketTl}`} aria-hidden="true" />
+            <span className={`${styles.bracket} ${styles.bracketTr}`} aria-hidden="true" />
+            <span className={`${styles.bracket} ${styles.bracketBl}`} aria-hidden="true" />
+            <span className={`${styles.bracket} ${styles.bracketBr}`} aria-hidden="true" />
+
+            <div className={styles.qrCard}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={standee.qrDataUrl}
+                alt={`QR code for ${standee.standeeCode}`}
+                className={styles.qrImage}
+              />
+
+              {/* Center Google Badge Overlay */}
+              <div className={styles.qrCenterBadge} aria-hidden="true">
+                <GoogleColoredIcon />
+              </div>
+            </div>
+          </div>
+
+          {/* "— Your Feedback Matters —" Accent Line with Gold Dashes (From User Reference Photo) */}
+          <div className={styles.feedbackMattersRow}>
+            <span className={styles.goldDash} aria-hidden="true" />
+            <span className={styles.feedbackText}>Your Feedback Matters</span>
+            <span className={styles.goldDash} aria-hidden="true" />
+          </div>
+
+          {/* Clean, high-converting footer note */}
+          <div className={styles.footerAiNote}>
+            <span className={styles.sparkleAi} aria-hidden="true">✨</span>
+            <span>1-Tap AI • No typing needed</span>
+          </div>
+
+          {/* Google 4-Color Accent Line */}
+          <div className={styles.googleColorBar} aria-hidden="true">
+            <span className={styles.colorBarBlue} />
+            <span className={styles.colorBarRed} />
+            <span className={styles.colorBarYellow} />
+            <span className={styles.colorBarGreen} />
+          </div>
+
+          <div className={styles.footerSubNote}>Direct to Google Form</div>
         </div>
-
-        {/* 5 Google Gold Stars */}
-        <div className={styles.starsContainer} aria-hidden="true">
-          {[...Array(5)].map((_, i) => (
-            <GoogleStarIcon key={i} />
-          ))}
-        </div>
-
-        {/* Merchant Business Name (Only if specifically assigned to a client shop) */}
-        {isAssigned && standee.locationName ? (
-          <div className={styles.merchantName}>{standee.locationName}</div>
-        ) : null}
-
-        {/* Clean, natural instruction mentioning AI without clunky boxes */}
-        <div className={styles.subtext}>Scan with camera for instant AI review</div>
-
-        {/* QR Code */}
-        <div className={styles.qrCard}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={standee.qrDataUrl}
-            alt={`QR code for ${standee.standeeCode}`}
-            className={styles.qrImage}
-          />
-        </div>
-
-        {/* Clean, high-converting footer note */}
-        <div className={styles.footerAiNote}>
-          <span className={styles.sparkleAi} aria-hidden="true">✨</span>
-          <span>1-Tap AI • No typing needed</span>
-        </div>
-
-        {/* Google 4-Color Accent Line */}
-        <div className={styles.googleColorBar} aria-hidden="true">
-          <span className={styles.colorBarBlue} />
-          <span className={styles.colorBarRed} />
-          <span className={styles.colorBarYellow} />
-          <span className={styles.colorBarGreen} />
-        </div>
-
-        <div className={styles.footerSubNote}>Direct to Google Form</div>
       </div>
     </div>
   );
@@ -126,7 +208,9 @@ export default function BulkPrintStudio({
 }) {
   const [filter, setFilter] = useState<"unassigned" | "all" | "assigned">(initialFilter);
   const [layout, setLayout] = useState<PrintLayout>("a4_parallel");
-  const [theme, setTheme] = useState<"crystal" | "obsidian" | "navy">("crystal");
+  const [theme, setTheme] = useState<"wave" | "crystal" | "obsidian" | "navy">("wave");
+  const [showCurves, setShowCurves] = useState<boolean>(true);
+  const [cornerStyle, setCornerStyle] = useState<"rounded" | "sharp" | "deep">("rounded");
 
   // Keep full-screen focus and remove dashboard navigation dock while in print studio
   useEffect(() => {
@@ -169,7 +253,9 @@ export default function BulkPrintStudio({
   }, [filteredStandees, layout]);
 
   const themeClass =
-    theme === "crystal"
+    theme === "wave"
+      ? styles.themeWave
+      : theme === "crystal"
       ? styles.themeCrystal
       : theme === "obsidian"
       ? styles.themeObsidian
@@ -206,7 +292,7 @@ export default function BulkPrintStudio({
             </div>
           </div>
 
-          {/* Center: Controls (Filter, Layout, Theme) */}
+          {/* Center: Controls (Filter, Layout, Theme, Curves) */}
           <div className={styles.controlsGroup}>
             {/* Filter */}
             <div className={styles.controlItem}>
@@ -243,11 +329,41 @@ export default function BulkPrintStudio({
               <select
                 className={styles.controlSelect}
                 value={theme}
-                onChange={(e) => setTheme(e.target.value as "crystal" | "obsidian" | "navy")}
+                onChange={(e) => setTheme(e.target.value as "wave" | "crystal" | "obsidian" | "navy")}
               >
-                <option value="crystal">⚪ Crystal White (Ink Saver / Print Shop)</option>
-                <option value="obsidian">⚫ Obsidian Black (Gloss Dark)</option>
-                <option value="navy">🔵 Navy Blue (Corporate)</option>
+                <option value="wave">🌈 Google Fluid Wave (Side Ribbons &amp; Gold Accent)</option>
+                <option value="crystal">⚪ Apple Luxe White (Clean Minimal)</option>
+                <option value="obsidian">⚫ Obsidian Black &amp; Champagne Gold (Luxury)</option>
+                <option value="navy">🔵 Royal Navy Modern (Corporate)</option>
+              </select>
+            </div>
+
+            {/* Side Waves / Curves Toggle */}
+            <div className={styles.controlItem}>
+              <span className={styles.controlLabel}>Side Curves:</span>
+              <select
+                className={styles.controlSelect}
+                value={showCurves ? "on" : "off"}
+                onChange={(e) => setShowCurves(e.target.value === "on")}
+                aria-label="Toggle corner curves on standees"
+              >
+                <option value="on">🌊 Side Curves: ON</option>
+                <option value="off">🚫 Side Curves: OFF (Plain Edge)</option>
+              </select>
+            </div>
+
+            {/* Card Corner Style (Round vs Sharp vs Deep Curve) */}
+            <div className={styles.controlItem}>
+              <span className={styles.controlLabel}>Corner:</span>
+              <select
+                className={styles.controlSelect}
+                value={cornerStyle}
+                onChange={(e) => setCornerStyle(e.target.value as "rounded" | "sharp" | "deep")}
+                aria-label="Select corner curve style"
+              >
+                <option value="rounded">🟢 Round Corner (Curved)</option>
+                <option value="sharp">⬛ Sharp 90° (Square Cut)</option>
+                <option value="deep">⭕ Deep Round (Big Curve)</option>
               </select>
             </div>
 
@@ -287,7 +403,30 @@ export default function BulkPrintStudio({
             `,
           }}
         />
-      ) : layout === "a4_duo" || layout === "a4_quad" ? (
+      ) : layout === "a4_quad" ? (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              @media print {
+                @page {
+                  size: A4 portrait;
+                  margin: 4mm;
+                }
+                .${styles.pageHeaderInfo},
+                .${styles.pageFooterInfo},
+                .${styles.stickyBar},
+                .${styles.tipBanner} {
+                  display: none !important;
+                  visibility: hidden !important;
+                  height: 0 !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
+                }
+              }
+            `,
+          }}
+        />
+      ) : layout === "a4_duo" ? (
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -316,8 +455,8 @@ export default function BulkPrintStudio({
             __html: `
               @media print {
                 @page {
-                  size: 100mm 150mm;
-                  margin: 3mm;
+                  size: 100mm 148mm;
+                  margin: 0;
                 }
                 .${styles.pageHeaderInfo},
                 .${styles.pageFooterInfo},
@@ -336,7 +475,7 @@ export default function BulkPrintStudio({
       )}
 
       {/* ------------------------------------------------------------------
-          PRINT SHOP HELPER BANNER (Screen Only)
+          PRINT TIP BANNER (Screen Only)
           ------------------------------------------------------------------ */}
       <aside className={styles.tipBanner} aria-label="Printing instructions">
         <div className={styles.tipList}>
@@ -394,6 +533,9 @@ export default function BulkPrintStudio({
                   <StandeeCard
                     standee={standee}
                     themeClass={themeClass}
+                    theme={theme}
+                    showCurves={showCurves}
+                    cornerStyle={cornerStyle}
                   />
 
                   <div className={styles.pageFooterInfo}>
@@ -423,6 +565,9 @@ export default function BulkPrintStudio({
                         <StandeeCard
                           standee={pageStandees[0]}
                           themeClass={themeClass}
+                          theme={theme}
+                          showCurves={showCurves}
+                    cornerStyle={cornerStyle}
                         />
                       </div>
                     ) : null}
@@ -442,6 +587,9 @@ export default function BulkPrintStudio({
                         <StandeeCard
                           standee={pageStandees[1]}
                           themeClass={themeClass}
+                          theme={theme}
+                          showCurves={showCurves}
+                    cornerStyle={cornerStyle}
                         />
                       </div>
                     ) : null}
@@ -472,7 +620,13 @@ export default function BulkPrintStudio({
                     {/* Top Row: Standees 0 & 1 */}
                     <div className={styles.a4QuadRow}>
                       {pageStandees[0] ? (
-                        <StandeeCard standee={pageStandees[0]} themeClass={themeClass} />
+                        <StandeeCard
+                          standee={pageStandees[0]}
+                          themeClass={themeClass}
+                          theme={theme}
+                          showCurves={showCurves}
+                    cornerStyle={cornerStyle}
+                        />
                       ) : null}
                       {pageStandees[1] ? (
                         <>
@@ -481,7 +635,13 @@ export default function BulkPrintStudio({
                             <span className={styles.cutIconVertical}>✂ 10 CM ✂</span>
                             <span className={styles.cutLineVertical} />
                           </div>
-                          <StandeeCard standee={pageStandees[1]} themeClass={themeClass} />
+                          <StandeeCard
+                            standee={pageStandees[1]}
+                            themeClass={themeClass}
+                            theme={theme}
+                            showCurves={showCurves}
+                    cornerStyle={cornerStyle}
+                          />
                         </>
                       ) : null}
                     </div>
@@ -499,7 +659,13 @@ export default function BulkPrintStudio({
                     {pageStandees.length > 2 ? (
                       <div className={styles.a4QuadRow}>
                         {pageStandees[2] ? (
-                          <StandeeCard standee={pageStandees[2]} themeClass={themeClass} />
+                          <StandeeCard
+                            standee={pageStandees[2]}
+                            themeClass={themeClass}
+                            theme={theme}
+                            showCurves={showCurves}
+                    cornerStyle={cornerStyle}
+                          />
                         ) : null}
                         {pageStandees[3] ? (
                           <>
@@ -508,7 +674,13 @@ export default function BulkPrintStudio({
                               <span className={styles.cutIconVertical}>✂ 10 CM ✂</span>
                               <span className={styles.cutLineVertical} />
                             </div>
-                            <StandeeCard standee={pageStandees[3]} themeClass={themeClass} />
+                            <StandeeCard
+                              standee={pageStandees[3]}
+                              themeClass={themeClass}
+                              theme={theme}
+                              showCurves={showCurves}
+                    cornerStyle={cornerStyle}
+                            />
                           </>
                         ) : null}
                       </div>
@@ -542,6 +714,9 @@ export default function BulkPrintStudio({
                       <StandeeCard
                         standee={pageStandees[0]}
                         themeClass={themeClass}
+                        theme={theme}
+                        showCurves={showCurves}
+                    cornerStyle={cornerStyle}
                       />
                     </div>
                   ) : null}
@@ -561,6 +736,9 @@ export default function BulkPrintStudio({
                       <StandeeCard
                         standee={pageStandees[1]}
                         themeClass={themeClass}
+                        theme={theme}
+                        showCurves={showCurves}
+                    cornerStyle={cornerStyle}
                       />
                     </div>
                   ) : null}
