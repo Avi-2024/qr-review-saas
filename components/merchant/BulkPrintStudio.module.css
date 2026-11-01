@@ -389,6 +389,53 @@
   align-items: center;
 }
 
+/* Corner Crop Marks for Precision Straight Cutting */
+.cropMarksContainer {
+  position: absolute;
+  top: 18px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.cropCorner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: #475569;
+  border-style: solid;
+}
+
+.cropTL {
+  top: -6px;
+  left: -6px;
+  border-width: 2px 0 0 2px;
+}
+
+.cropTR {
+  top: -6px;
+  right: -6px;
+  border-width: 2px 2px 0 0;
+}
+
+.cropBL {
+  bottom: -6px;
+  left: -6px;
+  border-width: 0 0 2px 2px;
+}
+
+.cropBR {
+  bottom: -6px;
+  right: -6px;
+  border-width: 0 2px 2px 0;
+}
+
+.withCutBorder {
+  outline: 1.5px dashed #94a3b8;
+  outline-offset: 1px;
+}
+
 /* Outer crop mark helper */
 .cropEdgeLabel {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -1234,6 +1281,57 @@
     align-items: center !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+    position: relative !important;
+  }
+
+  /* Professional Printers 4-Corner Crosshair Crop Marks for Scale/Knife */
+  .cropMarksContainer {
+    position: absolute !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    display: block !important;
+    pointer-events: none !important;
+  }
+
+  .cropCorner {
+    position: absolute !important;
+    width: 4.5mm !important;
+    height: 4.5mm !important;
+    border-color: #000000 !important;
+    border-style: solid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .cropTL {
+    top: -2.5mm !important;
+    left: -2.5mm !important;
+    border-width: 1pt 0 0 1pt !important;
+  }
+
+  .cropTR {
+    top: -2.5mm !important;
+    right: -2.5mm !important;
+    border-width: 1pt 1pt 0 0 !important;
+  }
+
+  .cropBL {
+    bottom: -2.5mm !important;
+    left: -2.5mm !important;
+    border-width: 0 0 1pt 1pt !important;
+  }
+
+  .cropBR {
+    bottom: -2.5mm !important;
+    right: -2.5mm !important;
+    border-width: 0 1pt 1pt 0 !important;
+  }
+
+  .withCutBorder {
+    outline: 1px dashed #64748b !important;
+    outline-offset: 0 !important;
   }
 
   /* Exact 102 mm × 155 mm Physical Acrylic Stand Calibration */

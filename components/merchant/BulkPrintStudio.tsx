@@ -52,12 +52,14 @@ function StandeeCard({
   theme,
   showCurves = true,
   cornerStyle = "rounded",
+  showCutGuides = true,
 }: {
   standee: PrintableStandee;
   themeClass: string;
   theme: "wave" | "crystal" | "obsidian" | "navy";
   showCurves?: boolean;
   cornerStyle?: "rounded" | "sharp" | "deep";
+  showCutGuides?: boolean;
 }) {
   const isAssigned = standee.status === "assigned";
   const cornerClass =
@@ -74,8 +76,22 @@ function StandeeCard({
         ✂ 102 × 155 MM CROP GUIDE • {standee.standeeCode} • {standee.batchName}
       </span>
 
+      {/* 4-Corner Crosshair Crop Marks for Scale & Cutter Knife Straight Alignment */}
+      {showCutGuides && (
+        <div className={styles.cropMarksContainer} aria-hidden="true">
+          <span className={`${styles.cropCorner} ${styles.cropTL}`} title="Align ruler here" />
+          <span className={`${styles.cropCorner} ${styles.cropTR}`} title="Align ruler here" />
+          <span className={`${styles.cropCorner} ${styles.cropBL}`} title="Align ruler here" />
+          <span className={`${styles.cropCorner} ${styles.cropBR}`} title="Align ruler here" />
+        </div>
+      )}
+
       {/* The Actual Customer Standee Face */}
-      <div className={`${styles.standeeCard} ${themeClass} ${cornerClass}`}>
+      <div
+        className={`${styles.standeeCard} ${themeClass} ${cornerClass} ${
+          showCutGuides ? styles.withCutBorder : ""
+        }`}
+      >
         {/* Organic Google Brand Side Waves (From User's Reference Photo) */}
         {showCurves && (
           <>
@@ -211,6 +227,7 @@ export default function BulkPrintStudio({
   const [theme, setTheme] = useState<"wave" | "crystal" | "obsidian" | "navy">("wave");
   const [showCurves, setShowCurves] = useState<boolean>(true);
   const [cornerStyle, setCornerStyle] = useState<"rounded" | "sharp" | "deep">("rounded");
+  const [showCutGuides, setShowCutGuides] = useState<boolean>(true);
 
   // Keep full-screen focus and remove dashboard navigation dock while in print studio
   useEffect(() => {
@@ -367,6 +384,20 @@ export default function BulkPrintStudio({
               </select>
             </div>
 
+            {/* Cut Guides Toggle (Corner Marks + Dashed Border) */}
+            <div className={styles.controlItem}>
+              <span className={styles.controlLabel}>Cut Guides:</span>
+              <select
+                className={styles.controlSelect}
+                value={showCutGuides ? "on" : "off"}
+                onChange={(e) => setShowCutGuides(e.target.value === "on")}
+                aria-label="Toggle straight cutting guidelines"
+              >
+                <option value="on">✂️ Straight Guides: ON (Corners + Border)</option>
+                <option value="off">🚫 Straight Guides: OFF</option>
+              </select>
+            </div>
+
             {/* Print / Save PDF Button */}
             <button
               type="button"
@@ -500,7 +531,13 @@ export default function BulkPrintStudio({
           <div className={styles.tipItem}>
             <span>📏</span>
             <span>
-              Stand Fit: <strong className={styles.tipHighlight}>Exact 10 cm × 15 cm Clear Acrylic Stand</strong>
+              Stand Fit: <strong className={styles.tipHighlight}>Exact 102 mm × 155 mm Clear Acrylic Stand</strong>
+            </span>
+          </div>
+          <div className={styles.tipItem} style={{ background: "rgba(16, 185, 129, 0.15)", borderColor: "#10b981" }}>
+            <span>✂️</span>
+            <span>
+              Straight Cut: <strong className={styles.tipHighlight}>Steel Scale + Paper Cutter Knife</strong> use karein (Kainchi se cut tedha ho jata hai. Corner marks par scale align karke 1 stroke lagayein).
             </span>
           </div>
         </div>
@@ -536,6 +573,7 @@ export default function BulkPrintStudio({
                     theme={theme}
                     showCurves={showCurves}
                     cornerStyle={cornerStyle}
+                    showCutGuides={showCutGuides}
                   />
 
                   <div className={styles.pageFooterInfo}>
@@ -554,7 +592,7 @@ export default function BulkPrintStudio({
                   aria-label={`Sheet ${pageNumber} of ${pages.length}`}
                 >
                   <div className={styles.pageHeaderInfo}>
-                    <span>10 × 15 cm Acrylic Stand Insert Sheet (A4 Parallel Side-by-Side)</span>
+                    <span>102 × 155 mm Standees (A4 Landscape Side-by-Side)</span>
                     <span>Sheet {pageNumber} of {pages.length}</span>
                   </div>
 
@@ -567,7 +605,8 @@ export default function BulkPrintStudio({
                           themeClass={themeClass}
                           theme={theme}
                           showCurves={showCurves}
-                    cornerStyle={cornerStyle}
+                          cornerStyle={cornerStyle}
+                          showCutGuides={showCutGuides}
                         />
                       </div>
                     ) : null}
@@ -576,7 +615,7 @@ export default function BulkPrintStudio({
                     {pageStandees.length > 1 ? (
                       <div className={styles.cutGuideVertical} aria-hidden="true">
                         <span className={styles.cutLineVertical} />
-                        <span className={styles.cutIconVertical}>✂ CUT (10 CM) ✂</span>
+                        <span className={styles.cutIconVertical}>✂ CUT (102 MM) ✂</span>
                         <span className={styles.cutLineVertical} />
                       </div>
                     ) : null}
@@ -589,14 +628,15 @@ export default function BulkPrintStudio({
                           themeClass={themeClass}
                           theme={theme}
                           showCurves={showCurves}
-                    cornerStyle={cornerStyle}
+                          cornerStyle={cornerStyle}
+                          showCutGuides={showCutGuides}
                         />
                       </div>
                     ) : null}
                   </div>
 
                   <div className={styles.pageFooterInfo}>
-                    <span>Pre-Printed Acrylic Standees • 2 Cards Side-by-Side Landscape • Exact 10 cm × 15 cm stand fit</span>
+                    <span>Pre-Printed Acrylic Standees • 2 Cards Side-by-Side Landscape • Exact 102 mm × 155 mm stand fit</span>
                     <span>Print on 250-350 GSM Glossy Cardstock</span>
                   </div>
                 </section>
@@ -625,14 +665,15 @@ export default function BulkPrintStudio({
                           themeClass={themeClass}
                           theme={theme}
                           showCurves={showCurves}
-                    cornerStyle={cornerStyle}
+                          cornerStyle={cornerStyle}
+                          showCutGuides={showCutGuides}
                         />
                       ) : null}
                       {pageStandees[1] ? (
                         <>
                           <div className={styles.cutGuideVertical} aria-hidden="true">
                             <span className={styles.cutLineVertical} />
-                            <span className={styles.cutIconVertical}>✂ 10 CM ✂</span>
+                            <span className={styles.cutIconVertical}>✂ 102 MM ✂</span>
                             <span className={styles.cutLineVertical} />
                           </div>
                           <StandeeCard
@@ -640,7 +681,8 @@ export default function BulkPrintStudio({
                             themeClass={themeClass}
                             theme={theme}
                             showCurves={showCurves}
-                    cornerStyle={cornerStyle}
+                            cornerStyle={cornerStyle}
+                            showCutGuides={showCutGuides}
                           />
                         </>
                       ) : null}
@@ -650,7 +692,7 @@ export default function BulkPrintStudio({
                     {pageStandees.length > 2 ? (
                       <div className={styles.cutGuideDivider} aria-hidden="true">
                         <span className={styles.cutLine} />
-                        <span className={styles.cutIcon}>✂ CUT HERE (15 CM INSERT) ✂</span>
+                        <span className={styles.cutIcon}>✂ CUT HERE (155 MM INSERT) ✂</span>
                         <span className={styles.cutLine} />
                       </div>
                     ) : null}
@@ -664,14 +706,15 @@ export default function BulkPrintStudio({
                             themeClass={themeClass}
                             theme={theme}
                             showCurves={showCurves}
-                    cornerStyle={cornerStyle}
+                            cornerStyle={cornerStyle}
+                            showCutGuides={showCutGuides}
                           />
                         ) : null}
                         {pageStandees[3] ? (
                           <>
                             <div className={styles.cutGuideVertical} aria-hidden="true">
                               <span className={styles.cutLineVertical} />
-                              <span className={styles.cutIconVertical}>✂ 10 CM ✂</span>
+                              <span className={styles.cutIconVertical}>✂ 102 MM ✂</span>
                               <span className={styles.cutLineVertical} />
                             </div>
                             <StandeeCard
@@ -679,7 +722,8 @@ export default function BulkPrintStudio({
                               themeClass={themeClass}
                               theme={theme}
                               showCurves={showCurves}
-                    cornerStyle={cornerStyle}
+                              cornerStyle={cornerStyle}
+                              showCutGuides={showCutGuides}
                             />
                           </>
                         ) : null}
@@ -688,7 +732,7 @@ export default function BulkPrintStudio({
                   </div>
 
                   <div className={styles.pageFooterInfo}>
-                    <span>Pre-Printed Acrylic Standees 4-Pack • Cut into 4 exact 10 × 15 cm inserts</span>
+                    <span>Pre-Printed Acrylic Standees 4-Pack • Cut into 4 exact 102 × 155 mm inserts</span>
                     <span>Print on 250-350 GSM Glossy Cardstock</span>
                   </div>
                 </section>
@@ -703,7 +747,7 @@ export default function BulkPrintStudio({
                 aria-label={`Sheet ${pageNumber} of ${pages.length}`}
               >
                 <div className={styles.pageHeaderInfo}>
-                  <span>10 × 15 cm Acrylic Stand Insert Sheet (A4 Dual)</span>
+                  <span>102 × 155 mm Acrylic Stand Insert Sheet (A4 Dual)</span>
                   <span>Sheet {pageNumber} of {pages.length}</span>
                 </div>
 
@@ -716,7 +760,8 @@ export default function BulkPrintStudio({
                         themeClass={themeClass}
                         theme={theme}
                         showCurves={showCurves}
-                    cornerStyle={cornerStyle}
+                        cornerStyle={cornerStyle}
+                        showCutGuides={showCutGuides}
                       />
                     </div>
                   ) : null}
@@ -725,7 +770,7 @@ export default function BulkPrintStudio({
                   {pageStandees.length > 1 ? (
                     <div className={styles.cutGuideDivider} aria-hidden="true">
                       <span className={styles.cutLine} />
-                      <span className={styles.cutIcon}>✂ CUT HERE (15 CM INSERT) ✂</span>
+                      <span className={styles.cutIcon}>✂ CUT HERE (155 MM INSERT) ✂</span>
                       <span className={styles.cutLine} />
                     </div>
                   ) : null}
@@ -738,7 +783,8 @@ export default function BulkPrintStudio({
                         themeClass={themeClass}
                         theme={theme}
                         showCurves={showCurves}
-                    cornerStyle={cornerStyle}
+                        cornerStyle={cornerStyle}
+                        showCutGuides={showCutGuides}
                       />
                     </div>
                   ) : null}
