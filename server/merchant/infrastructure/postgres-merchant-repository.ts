@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import type { MerchantRepository } from "@/server/merchant/application/ports/merchant-repository";
 import type {
+  AgentUser,
   DashboardSummary,
   FunnelPoint,
   MerchantIdentity,
@@ -40,7 +41,8 @@ const STANDEE_SELECT = `
   SELECT s.id, s.organization_id AS "organizationId", s.standee_code AS "standeeCode",
          s.public_token AS "publicToken", s.batch_name AS "batchName", s.location_id AS "locationId",
          COALESCE(l.name, '') AS "locationName", s.qr_code_id AS "qrCodeId", s.status,
-         s.assigned_at AS "assignedAt", s.notes, s.created_at AS "createdAt", s.updated_at AS "updatedAt"
+         s.assigned_at AS "assignedAt", s.assigned_by_user_id AS "assignedByUserId",
+         s.notes, s.created_at AS "createdAt", s.updated_at AS "updatedAt"
   FROM standee_inventory s
   LEFT JOIN locations l ON l.id = s.location_id`;
 
@@ -462,13 +464,16 @@ export class PostgresMerchantRepository implements MerchantRepository {
     return Boolean(result.rows[0]?.available);
   }
 
-  async createLocation(organizationId: string, input: Omit<MerchantLocation, "id" | "createdAt">): Promise<MerchantLocation> {
+  async createLocation(
+    organizationId: string,
+    input: Omit<MerchantLocation, "id" | "createdAt"> & { createdByUserId?: string | null },
+  ): Promise<MerchantLocation> {
     const result = await this.pool.query<MerchantLocation>(
-      `INSERT INTO locations (organization_id, public_id, name, subtitle, keywords, google_place_id, google_review_url, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      `INSERT INTO locations (organization_id, public_id, name, subtitle, keywords, google_place_id, google_review_url, is_active, created_by_user_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
        RETURNING id, public_id AS "publicId", name, subtitle, keywords, google_place_id AS "googlePlaceId",
                  google_review_url AS "googleReviewUrl", is_active AS "isActive", created_at AS "createdAt"`,
-      [organizationId, input.publicId, input.name, input.subtitle, input.keywords ?? "", input.googlePlaceId, input.googleReviewUrl, input.isActive],
+      [organizationId, input.publicId, input.name, input.subtitle, input.keywords ?? "", input.googlePlaceId, input.googleReviewUrl, input.isActive, input.createdByUserId ?? null],
     );
     return result.rows[0];
   }
@@ -560,7 +565,14 @@ export class PostgresMerchantRepository implements MerchantRepository {
     return result.rows[0] ?? null;
   }
 
-  async listStandees(organizationId: string): Promise<StandeeItem[]> {
+  async listStandees(organizationId: string, assignedByUserId?: string): Promise<StandeeItem[]> {
+    if (assignedByUserId) {
+      const result = await this.pool.query<StandeeItem>(
+        `${STANDEE_SELECT} WHERE s.organization_id = $1 AND s.assigned_by_user_id = $2 ORDER BY s.assigned_at DESC, s.created_at DESC`,
+        [organizationId, assignedByUserId],
+      );
+      return result.rows;
+    }
     const result = await this.pool.query<StandeeItem>(
       `${STANDEE_SELECT} WHERE s.organization_id = $1 ORDER BY s.created_at DESC, s.standee_code ASC`,
       [organizationId],
@@ -637,7 +649,7 @@ export class PostgresMerchantRepository implements MerchantRepository {
 
   async assignStandee(
     organizationId: string,
-    input: { standeeId?: string; standeeCode?: string; locationId: string; notes?: string },
+    input: { standeeId?: string; standeeCode?: string; locationId: string; notes?: string; assignedByUserId?: string | null },
   ): Promise<StandeeItem> {
     const client = await this.pool.connect();
     try {
@@ -692,14 +704,15 @@ export class PostgresMerchantRepository implements MerchantRepository {
              qr_code_id = $2,
              status = 'assigned',
              assigned_at = NOW(),
+             assigned_by_user_id = COALESCE($6, assigned_by_user_id),
              notes = COALESCE($3, notes),
              updated_at = NOW()
          WHERE id = $4
          RETURNING id, organization_id AS "organizationId", standee_code AS "standeeCode",
                    public_token AS "publicToken", batch_name AS "batchName", location_id AS "locationId",
                    $5::text AS "locationName", qr_code_id AS "qrCodeId", status, assigned_at AS "assignedAt",
-                   notes, created_at AS "createdAt", updated_at AS "updatedAt"`,
-        [location.id, qrId, input.notes ?? null, standee.id, location.name],
+                   assigned_by_user_id AS "assignedByUserId", notes, created_at AS "createdAt", updated_at AS "updatedAt"`,
+        [location.id, qrId, input.notes ?? null, standee.id, location.name, input.assignedByUserId ?? null],
       );
 
       await client.query("COMMIT");
@@ -745,6 +758,81 @@ export class PostgresMerchantRepository implements MerchantRepository {
 
       await client.query("COMMIT");
       return updated.rows[0];
+    } catch (err) {
+      await rollbackQuietly(client);
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async listAgents(organizationId: string): Promise<AgentUser[]> {
+    const result = await this.pool.query<AgentUser>(
+      `SELECT
+         u.id,
+         u.name,
+         u.email,
+         m.role,
+         u.is_active AS "isActive",
+         COALESCE((SELECT COUNT(*)::int FROM locations l WHERE l.created_by_user_id = u.id), 0) AS "shopsCount",
+         m.created_at AS "createdAt"
+       FROM organization_memberships m
+       JOIN merchant_users u ON u.id = m.user_id
+       WHERE m.organization_id = $1 AND m.role = 'agent'
+       ORDER BY m.created_at DESC`,
+      [organizationId],
+    );
+    return result.rows;
+  }
+
+  async createAgent(organizationId: string, input: { name: string; email: string; passwordHash: string }): Promise<AgentUser> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Check if user already exists
+      const userRes = await client.query<{ id: string; name: string; email: string; is_active: boolean }>(
+        `SELECT id, name, email, is_active FROM merchant_users WHERE LOWER(email) = LOWER($1)`,
+        [input.email],
+      );
+
+      let userId: string;
+      if (userRes.rows.length > 0) {
+        userId = userRes.rows[0].id;
+        // Update password & name
+        await client.query(
+          `UPDATE merchant_users SET password_hash = $1, name = $2, is_active = TRUE, updated_at = NOW() WHERE id = $3`,
+          [input.passwordHash, input.name, userId],
+        );
+      } else {
+        const insertUser = await client.query<{ id: string }>(
+          `INSERT INTO merchant_users (email, password_hash, name, is_active)
+           VALUES (LOWER($1), $2, $3, TRUE)
+           RETURNING id`,
+          [input.email, input.passwordHash, input.name],
+        );
+        userId = insertUser.rows[0].id;
+      }
+
+      // Add or update organization membership as agent
+      await client.query(
+        `INSERT INTO organization_memberships (organization_id, user_id, role)
+         VALUES ($1, $2, 'agent')
+         ON CONFLICT (organization_id, user_id) DO UPDATE SET role = 'agent'`,
+        [organizationId, userId],
+      );
+
+      await client.query("COMMIT");
+
+      return {
+        id: userId,
+        name: input.name,
+        email: input.email.toLowerCase(),
+        role: "agent",
+        isActive: true,
+        shopsCount: 0,
+        createdAt: new Date(),
+      };
     } catch (err) {
       await rollbackQuietly(client);
       throw err;

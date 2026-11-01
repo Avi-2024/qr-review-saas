@@ -103,6 +103,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
   const [handoffMessage, setHandoffMessage] = useState("");
   const [error, setError] = useState("");
   const [copyFailed, setCopyFailed] = useState(false);
+  const [isDone, setIsDone] = useState(false);
 
   const tokenRef = useRef(qrToken);
   const sessionVersionRef = useRef(0);
@@ -154,6 +155,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
       setCopied(false);
       setError("");
       setCopyFailed(false);
+      setIsDone(false);
       setIsGenerating(false);
       setIsOpeningGoogle(false);
       setHandoffMessage("");
@@ -319,6 +321,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
     setDraftId(null);
     setCopied(false);
     setCopyFailed(false);
+    setIsDone(false);
     setHandoffMessage("");
     setError("");
     setScreen("compose");
@@ -328,6 +331,7 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
     setReview(text);
     setCopied(false);
     setCopyFailed(false);
+    setIsDone(false);
     setHandoffMessage("");
     if (draftId && !editedDraftsRef.current.has(draftId)) {
       editedDraftsRef.current.add(draftId);
@@ -521,72 +525,95 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
             </div>
           ) : screen === "feedback" ? (
             <div className="contentPane feedbackPane minimalFeedbackPane">
-              <div className="feedbackSuccessCard">
-                <div className="feedbackSuccessBadge" aria-hidden="true">
-                  <UiIcon name="check" />
-                </div>
-                <h2 ref={feedbackHeadingRef} tabIndex={-1}>
-                  Thank you for your review!
-                </h2>
-                <p className="feedbackSuccessMessage">
-                  {rating >= 3
-                    ? "Your review has been copied! Paste and submit it on Google to finish."
-                    : "We appreciate your feedback and look forward to serving you better next time."}
-                </p>
-
-                {rating >= 3 && location?.googleReviewUrl ? (
-                  <a
-                    href={location.googleReviewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="reopenGoogleAction"
-                  >
-                    <span className="googleGWrapper">
-                      <GoogleColorIcon />
-                    </span>
-                    <span className="reopenGoogleText">Open Google Reviews</span>
-                    <span className="actionArrow">
-                      <UiIcon name="external" />
-                    </span>
-                  </a>
-                ) : null}
-
-                <div className="feedbackRatingPill thankYouRatingPill">
-                  <div className="ratingPillLeft">
-                    <div className="ratingPillStars" aria-hidden="true">
-                      {[1, 2, 3, 4, 5].map((val) => (
-                        <span
-                          key={val}
-                          className={`pillStarIcon ${val <= rating ? "filled" : "empty"}`}
-                        >
-                          <UiIcon name="star" />
-                        </span>
-                      ))}
-                    </div>
-                    <span className="pillSentimentText">
-                      {rating} Star{rating === 1 ? "" : "s"}
-                    </span>
+              {isDone ? (
+                <div className="feedbackSuccessCard">
+                  <div className="feedbackSuccessBadge" aria-hidden="true">
+                    <UiIcon name="check" />
                   </div>
+                  <h2>All set!</h2>
+                  <p className="feedbackSuccessMessage">
+                    You can safely close this browser window. Thank you for your feedback!
+                  </p>
                   <button
                     type="button"
                     className="pillChangeBtn"
+                    style={{ margin: "1rem auto 0", display: "inline-block" }}
                     onClick={changeRating}
                   >
-                    Change rating
+                    Rate another visit
                   </button>
                 </div>
-
-                <button
-                  type="button"
-                  className="primaryAction doneFeedbackBtn"
-                  onClick={changeRating}
-                >
-                  <span>Done</span>
-                  <span className="actionArrow">
+              ) : (
+                <div className="feedbackSuccessCard">
+                  <div className="feedbackSuccessBadge" aria-hidden="true">
                     <UiIcon name="check" />
-                  </span>
-                </button>
-              </div>
+                  </div>
+                  <h2 ref={feedbackHeadingRef} tabIndex={-1}>
+                    Thank you for your review!
+                  </h2>
+                  <p className="feedbackSuccessMessage">
+                    {rating >= 3
+                      ? "Your review has been copied! Paste and submit it on Google to finish."
+                      : "We appreciate your feedback and look forward to serving you better next time."}
+                  </p>
+
+                  {rating >= 3 && location?.googleReviewUrl ? (
+                    <a
+                      href={location.googleReviewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="reopenGoogleAction"
+                    >
+                      <span className="googleGWrapper">
+                        <GoogleColorIcon />
+                      </span>
+                      <span className="reopenGoogleText">Open Google Reviews</span>
+                      <span className="actionArrow">
+                        <UiIcon name="external" />
+                      </span>
+                    </a>
+                  ) : null}
+
+                  <div className="feedbackRatingPill thankYouRatingPill">
+                    <div className="ratingPillLeft">
+                      <div className="ratingPillStars" aria-hidden="true">
+                        {[1, 2, 3, 4, 5].map((val) => (
+                          <span
+                            key={val}
+                            className={`pillStarIcon ${val <= rating ? "filled" : "empty"}`}
+                          >
+                            <UiIcon name="star" />
+                          </span>
+                        ))}
+                      </div>
+                      <span className="pillSentimentText">
+                        {rating} Star{rating === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="pillChangeBtn"
+                      onClick={changeRating}
+                    >
+                      Change rating
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="primaryAction doneFeedbackBtn"
+                    onClick={() => {
+                      triggerHaptic();
+                      setIsDone(true);
+                    }}
+                  >
+                    <span>Done</span>
+                    <span className="actionArrow">
+                      <UiIcon name="check" />
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="contentPane reviewPane customerReviewPane minimalReviewPane">
@@ -656,28 +683,52 @@ export default function ReviewExperience({ qrToken = "mangal-counter-demo" }: Pr
                 </p>
               ) : null}
 
-              {/* Primary Google CTA */}
+              {/* Primary Review CTA */}
               <button
                 type="button"
-                className={`primaryAction googleAction ${isOpeningGoogle ? "isOpening" : ""}`}
+                className={`primaryAction ${rating >= 3 ? "googleAction" : "privateFeedbackAction"} ${isOpeningGoogle ? "isOpening" : ""}`}
                 onClick={() => void handleGoogle()}
                 disabled={!review.trim() || isOpeningGoogle}
               >
-                <span className="googleGWrapper">
-                  <GoogleColorIcon />
-                </span>
-                <span className="googleActionText">
-                  {isOpeningGoogle ? (
-                    <span className="openingGoogleState">
-                      <span className="buttonSpinner" aria-hidden="true" /> Opening Google…
+                {rating >= 3 ? (
+                  <>
+                    <span className="googleGWrapper">
+                      <GoogleColorIcon />
                     </span>
-                  ) : (
-                    "Copy & submit to Google"
-                  )}
-                </span>
-                <span className="actionArrow">
-                  <UiIcon name="external" />
-                </span>
+                    <span className="googleActionText">
+                      {isOpeningGoogle ? (
+                        <span className="openingGoogleState">
+                          <span className="buttonSpinner" aria-hidden="true" /> Opening Google…
+                        </span>
+                      ) : (
+                        "Copy & submit to Google"
+                      )}
+                    </span>
+                    <span className="actionArrow">
+                      <UiIcon name="external" />
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className="googleGWrapper"
+                      style={{
+                        background: "rgba(255, 255, 255, 0.15)",
+                        color: "#ffffff",
+                        display: "grid",
+                        placeItems: "center",
+                      }}
+                    >
+                      <UiIcon name="check" />
+                    </span>
+                    <span className="googleActionText">
+                      Submit Feedback
+                    </span>
+                    <span className="actionArrow">
+                      <UiIcon name="arrow" />
+                    </span>
+                  </>
+                )}
               </button>
 
               {/* Secondary Actions (Try Another / Copy Only) */}

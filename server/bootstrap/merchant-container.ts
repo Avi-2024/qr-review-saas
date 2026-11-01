@@ -11,16 +11,21 @@ const globalForMerchant = globalThis as typeof globalThis & {
 };
 
 export function getMerchantService() {
-  if (globalForMerchant.__merchantService) return globalForMerchant.__merchantService;
+  if (process.env.NODE_ENV === "production" && globalForMerchant.__merchantService) {
+    return globalForMerchant.__merchantService;
+  }
   const env = getEnv();
   if (!env.DATABASE_URL) {
     throw new Error("DATABASE_URL is required for merchant authentication and dashboard features.");
   }
-  globalForMerchant.__merchantService = new MerchantService(
+  const service = new MerchantService(
     new PostgresMerchantRepository(getPool()),
     env.AUTH_SESSION_TTL_HOURS,
   );
-  return globalForMerchant.__merchantService;
+  if (process.env.NODE_ENV === "production") {
+    globalForMerchant.__merchantService = service;
+  }
+  return service;
 }
 
 export function getMerchantLoginRateLimiter() {

@@ -8,7 +8,10 @@ const nav = [
   ["/dashboard", "grid", "Overview"],
   ["/dashboard/locations", "pin", "Merchants"],
   ["/dashboard/qr-codes", "qr", "QR Codes"],
+  ["/dashboard/agents", "people", "Agents"],
+  ["/dashboard/topics", "topics", "Topics"],
   ["/dashboard/analytics", "chart", "Analytics"],
+  ["/billing", "billing", "Billing"],
 ] as const;
 
 export default function MerchantNav({ mobile = false }: { mobile?: boolean }) {
@@ -19,7 +22,7 @@ export default function MerchantNav({ mobile = false }: { mobile?: boolean }) {
       aria-label={mobile ? "Mobile workspace navigation" : "Workspace navigation"}
     >
       {nav.map(([href, icon, label]) => {
-        const active = pathname === href;
+        const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
         return (
           <Link key={href} href={href} aria-current={active ? "page" : undefined}>
             <span className="merchantNavIcon"><UiIcon name={icon} /></span>

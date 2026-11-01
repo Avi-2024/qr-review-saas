@@ -160,10 +160,14 @@ export default function StandeeActivationScreen({
           ) : identity ? (
             /* Logged-in Admin View: On-the-spot Activation */
             <div>
-              <h2 className={styles.bodyHeading}>Activate Standee on Counter</h2>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <h2 className={styles.bodyHeading} style={{ margin: 0 }}>Activate Standee on Counter</h2>
+                <span style={{ fontSize: "0.75rem", background: "#ecfdf5", color: "#065f46", padding: "3px 8px", borderRadius: "999px", fontWeight: "700" }}>
+                  👤 {identity.name} ({identity.role === "agent" ? "Field Agent" : "Admin"})
+                </span>
+              </div>
               <p className={styles.bodySubtitle}>
-                Deploying for partner organization <strong>{identity.organizationName}</strong>. Link this standee code
-                to a business in seconds.
+                Deploying for <strong>{identity.organizationName}</strong>. Link this physical standee ({standee.standeeCode}) to a shop in seconds.
               </p>
 
               {/* Tab Switcher */}
@@ -282,10 +286,9 @@ export default function StandeeActivationScreen({
           ) : (
             /* Not Logged In View: Agent Login Gate */
             <div>
-              <h2 className={styles.bodyHeading}>Super Admin Activation</h2>
+              <h2 className={styles.bodyHeading}>Field Agent &amp; Admin Activation</h2>
               <p className={styles.bodySubtitle}>
-                This official Google Review Standee is awaiting activation. Sign in with your Super Admin credentials to
-                bind it to a merchant counter right now.
+                This official Google Review Standee ({standee.standeeCode}) is ready to deploy. Sign in with your Agent or Admin credentials to bind it to a merchant counter right now.
               </p>
 
               {error && <div className={styles.errorMessage}>{error}</div>}

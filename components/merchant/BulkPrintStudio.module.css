@@ -240,10 +240,10 @@
   justify-content: space-between;
 }
 
-/* Screen Size for A6: 105mm x 148mm (scaled for display: 397px x 560px) */
+/* Screen Size for Standee: 102mm x 155mm (scaled for display: 420px x 638px) */
 .pageA6 {
-  width: 440px;
-  min-height: 620px;
+  width: 420px;
+  min-height: 638px;
   padding: 30px 24px;
   display: flex;
   flex-direction: column;
@@ -402,8 +402,8 @@
 
 .standeeCard {
   width: 320px;
-  min-height: 480px;
-  aspect-ratio: 10 / 15;
+  min-height: 486px;
+  aspect-ratio: 102 / 155;
   border-radius: 1.1rem;
   padding: 1.5rem 1.25rem 1.35rem;
   text-align: center;
@@ -946,6 +946,75 @@
 }
 
 /* --------------------------------------------------------------------------
+   RESPONSIVE SCREEN MEDIA QUERIES (Workbench & Toolbar Adaptability)
+   -------------------------------------------------------------------------- */
+@media screen and (max-width: 1100px) {
+  .stickyBar {
+    padding: 0.75rem 1rem;
+  }
+
+  .barContent {
+    gap: 0.75rem;
+  }
+
+  .tipBanner {
+    margin: 1rem;
+  }
+
+  .sheetStage {
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 0 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .stickyBar {
+    position: relative;
+    padding: 0.75rem;
+  }
+
+  .barContent {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .barLeft {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .controlsGroup {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .controlItem {
+    justify-content: space-between;
+  }
+
+  .primaryPrintBtn {
+    grid-column: 1 / -1;
+    justify-content: center;
+    padding: 0.75rem;
+  }
+
+  .tipBanner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tipList {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
    PRINT STYLESHEET (High-DPI PDF & Paper Printing - Exact 1:1 match with Screen ss-1)
    -------------------------------------------------------------------------- */
 @media print {
@@ -1157,8 +1226,8 @@
   }
 
   .standeeCardWrapper {
-    width: 100mm !important;
-    max-width: 100mm !important;
+    width: 102mm !important;
+    max-width: 102mm !important;
     margin: 0 auto !important;
     display: flex !important;
     flex-direction: column !important;
@@ -1167,13 +1236,13 @@
     page-break-inside: avoid !important;
   }
 
-  /* Exact 10 cm × 15 cm Physical Acrylic Stand Calibration */
+  /* Exact 102 mm × 155 mm Physical Acrylic Stand Calibration */
   .standeeCard {
-    width: 100mm !important;
-    max-width: 100mm !important;
-    height: 150mm !important;
-    min-height: 150mm !important;
-    max-height: 150mm !important;
+    width: 102mm !important;
+    max-width: 102mm !important;
+    height: 155mm !important;
+    min-height: 155mm !important;
+    max-height: 155mm !important;
     border-radius: 4mm;
     padding: 6mm 5mm 5mm !important;
     box-sizing: border-box !important;
@@ -1538,15 +1607,15 @@
     letter-spacing: 0.05em !important;
   }
 
-  /* Single 10 × 15 cm Direct Layout */
+  /* Single 102 × 155 mm Direct Layout */
   .pageA6 {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 144mm !important;
-    min-height: 144mm !important;
-    max-height: 144mm !important;
+    width: 102mm !important;
+    max-width: 102mm !important;
+    height: 155mm !important;
+    min-height: 155mm !important;
+    max-height: 155mm !important;
     padding: 0 !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     border: none !important;
     box-shadow: none !important;
     background: transparent !important;
@@ -1558,6 +1627,7 @@
     break-after: page !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    box-sizing: border-box !important;
   }
 
   .pageA6:last-child {
@@ -1566,22 +1636,25 @@
   }
 
   .pageA6 .standeeCardWrapper {
-    width: 100mm !important;
+    width: 102mm !important;
+    max-width: 102mm !important;
     margin: 0 auto !important;
   }
 
   .pageA6 .standeeCard {
-    width: 96mm !important;
-    max-width: 96mm !important;
-    height: 140mm !important;
-    min-height: 140mm !important;
-    max-height: 140mm !important;
-    padding: 4.5mm 3.5mm 3.5mm !important;
+    width: 102mm !important;
+    max-width: 102mm !important;
+    height: 155mm !important;
+    min-height: 155mm !important;
+    max-height: 155mm !important;
+    padding: 6mm 5mm 5mm !important;
+    border: 1.5px solid #cbd5e1 !important;
+    box-sizing: border-box !important;
   }
 
   .pageA6 .qrImage {
-    width: 50mm !important;
-    height: 50mm !important;
+    width: 52mm !important;
+    height: 52mm !important;
   }
 
   /* Themes in Print */

@@ -1,0 +1,459 @@
+.shell {
+  min-height: 100svh;
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  padding-bottom: 5rem;
+}
+
+/* Topbar */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  color: #ffffff;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brandGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.brandLogo {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #10b981;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+}
+
+.brandTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.brandSubtitle {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #a7f3d0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.userGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.agentPill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  padding: 0.35rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.logoutBtn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* Container */
+.mainContainer {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Earnings Hero Card */
+.earningsHero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid #334155;
+  border-radius: 20px;
+  padding: 1.5rem;
+  color: #ffffff;
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.4);
+}
+
+.earningsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.earningsSubtitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.earningsAmount {
+  font-size: 2.25rem;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.ratePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+}
+
+.earningsMetaRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metaLabel {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.metaValue {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+/* Ground Scan Callout */
+.scanCalloutCard {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+  color: #ffffff;
+  border-radius: 18px;
+  padding: 1.35rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.1rem;
+  box-shadow: 0 10px 25px -5px rgba(6, 78, 59, 0.3);
+}
+
+.scanCalloutIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.scanCalloutBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.scanCalloutTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.25;
+}
+
+.scanCalloutDesc {
+  font-size: 0.85rem;
+  color: #d1fae5;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.scanCalloutActions {
+  margin-top: 0.65rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tryScanBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #ffffff;
+  color: #065f46;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  padding: 0.55rem 1.1rem;
+  border-radius: 10px;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease;
+}
+
+.tryScanBtn:hover {
+  transform: translateY(-1px);
+}
+
+/* Section Card */
+.sectionCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.35rem;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.sectionHeader {
+  margin-bottom: 1.25rem;
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sectionSub {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: 0.35rem 0 0;
+}
+
+/* Search input */
+.fieldInput {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.fieldInput:focus {
+  background: #ffffff;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: #f8fafc;
+  border-radius: 14px;
+  border: 2px dashed #e2e8f0;
+}
+
+.emptyIcon {
+  font-size: 2.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.emptyTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.5rem;
+}
+
+.emptyDesc {
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.5;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+/* Standees List */
+.shopList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.shopCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1rem 1.15rem;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  transition: all 0.15s ease;
+}
+
+.shopCard:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.shopInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.shopName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.standeeCodeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.earningBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.dateText {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.shopActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.configBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.configBtn:hover {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  transform: translateY(-1px);
+}
+
+.testFlowBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.testFlowBtn:hover {
+  background: #e2e8f0;
+}
+
+@media screen and (max-width: 600px) {
+  .earningsMetaRow {
+    grid-template-columns: 1fr;
+  }
+
+  .shopCard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .shopActions {
+    justify-content: flex-end;
+  }
+}

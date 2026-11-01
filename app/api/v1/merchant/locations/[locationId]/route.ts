@@ -5,6 +5,21 @@ import { handleRouteError, ok } from "@/server/http/response";
 import { merchantLocationUpdateSchema } from "@/server/http/merchant-schemas";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ locationId: string }> },
+) {
+  try {
+    const { identity } = await requireMerchantApiIdentity();
+    const { locationId } = await context.params;
+    const location = await getMerchantService().getLocation(identity, locationId);
+    return ok({ location }, { headers: { "cache-control": "no-store" } });
+  } catch (error) {
+    return handleRouteError(error);
+  }
+}
 
 export async function PATCH(
   request: Request,

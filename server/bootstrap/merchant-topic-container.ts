@@ -7,9 +7,14 @@ const globalForTopics = globalThis as typeof globalThis & {
 };
 
 export function getMerchantTopicService() {
-  if (globalForTopics.__merchantTopicService) return globalForTopics.__merchantTopicService;
-  globalForTopics.__merchantTopicService = new MerchantTopicService(
+  if (process.env.NODE_ENV === "production" && globalForTopics.__merchantTopicService) {
+    return globalForTopics.__merchantTopicService;
+  }
+  const service = new MerchantTopicService(
     new PostgresMerchantTopicRepository(getPool()),
   );
-  return globalForTopics.__merchantTopicService;
+  if (process.env.NODE_ENV === "production") {
+    globalForTopics.__merchantTopicService = service;
+  }
+  return service;
 }

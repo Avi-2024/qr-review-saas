@@ -16,7 +16,7 @@ import type {
 } from "@/server/merchant/domain/merchant";
 import { createSessionToken, hashSessionToken } from "@/server/auth/session-token";
 
-const WRITE_ROLES: MerchantRole[] = ["owner", "admin", "manager"];
+const WRITE_ROLES: MerchantRole[] = ["owner", "admin", "manager", "agent"];
 const ONBOARDING_ORDER: MerchantOnboardingStage[] = ["business", "location", "topics", "qr", "ready", "complete"];
 
 function slugify(value: string) {
@@ -133,6 +133,7 @@ export class MerchantService {
         googlePlaceId: placeId,
         googleReviewUrl: reviewUrl,
         isActive: true,
+        createdByUserId: identity.userId,
       });
       if (created) return created;
 
@@ -242,6 +243,19 @@ export class MerchantService {
     return this.repository.listLocations(identity.organizationId);
   }
 
+  async getLocation(identity: MerchantIdentity, locationId: string) {
+    const location = await this.repository.getLocation(identity.organizationId, locationId);
+    if (!location) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
+    if (identity.role === "agent") {
+      const standees = await this.repository.listStandees(identity.organizationId, identity.userId);
+      const isAssigned = location.createdByUserId === identity.userId || standees.some((s) => s.locationId === location.id);
+      if (!isAssigned) {
+        throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
+      }
+    }
+    return location;
+  }
+
   async createLocation(identity: MerchantIdentity, input: { name: string; subtitle?: string; keywords?: string; googlePlaceId: string; publicId?: string }) {
     this.assertCanWrite(identity);
     const publicId = await this.resolveLocationPublicId(input.publicId, input.name);
@@ -256,6 +270,7 @@ export class MerchantService {
         googlePlaceId: placeId,
         googleReviewUrl: reviewUrl,
         isActive: true,
+        createdByUserId: identity.userId,
       });
     } catch (error) {
       if (hasDatabaseCode(error, "23505")) {
@@ -267,6 +282,15 @@ export class MerchantService {
 
   async updateLocation(identity: MerchantIdentity, locationId: string, input: { name?: string; subtitle?: string; keywords?: string; googlePlaceId?: string; isActive?: boolean }) {
     this.assertCanWrite(identity);
+    if (identity.role === "agent") {
+      const location = await this.repository.getLocation(identity.organizationId, locationId);
+      if (!location) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
+      const standees = await this.repository.listStandees(identity.organizationId, identity.userId);
+      const isAssigned = location.createdByUserId === identity.userId || standees.some((s) => s.locationId === location.id);
+      if (!isAssigned) {
+        throw new ForbiddenError("You can only configure locations that you have installed.");
+      }
+    }
     const patch: Partial<Omit<MerchantLocation, "id" | "createdAt">> = {};
     if (input.name !== undefined) patch.name = input.name.trim();
     if (input.subtitle !== undefined) patch.subtitle = input.subtitle.trim();
@@ -379,6 +403,9 @@ export class MerchantService {
   }
 
   async listStandees(identity: MerchantIdentity) {
+    if (identity.role === "agent") {
+      return this.repository.listStandees(identity.organizationId, identity.userId);
+    }
     return this.repository.listStandees(identity.organizationId);
   }
 
@@ -399,12 +426,36 @@ export class MerchantService {
     input: { standeeId?: string; standeeCode?: string; locationId: string; notes?: string },
   ) {
     this.assertCanWrite(identity);
-    return this.repository.assignStandee(identity.organizationId, input);
+    return this.repository.assignStandee(identity.organizationId, {
+      ...input,
+      assignedByUserId: identity.userId,
+    });
   }
 
   async unbindStandee(identity: MerchantIdentity, standeeId: string) {
     this.assertCanWrite(identity);
     return this.repository.unbindStandee(identity.organizationId, standeeId);
+  }
+
+  async listAgents(identity: MerchantIdentity) {
+    if (identity.role === "agent") {
+      throw new ForbiddenError("Field agents cannot access user management.");
+    }
+    return this.repository.listAgents(identity.organizationId);
+  }
+
+  async createAgent(identity: MerchantIdentity, input: { name: string; email: string; password: string }) {
+    if (identity.role !== "owner" && identity.role !== "admin") {
+      throw new ForbiddenError("Only Super Admins can register field agents.");
+    }
+    const name = input.name.trim();
+    const email = input.email.trim().toLowerCase();
+    if (!name || !email) throw new ValidationError("Agent name and email are required.");
+    if (!input.password || input.password.length < 8) {
+      throw new ValidationError("Agent password must be at least 8 characters.");
+    }
+    const passwordHash = await bcrypt.hash(input.password, 12);
+    return this.repository.createAgent(identity.organizationId, { name, email, passwordHash });
   }
 
   private assertCanWrite(identity: MerchantIdentity) {

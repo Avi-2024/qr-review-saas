@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import LogoutButton from "@/components/merchant/LogoutButton";
 import { requireMerchantIdentity } from "@/server/auth/merchant-session";
 import { getBillingService } from "@/server/bootstrap/billing-container";
@@ -16,6 +17,7 @@ function inr(paise: number) {
 
 export default async function BillingPage() {
   const identity = await requireMerchantIdentity();
+  if (identity.role === "agent") redirect("/agent");
   const billing = getBillingService();
   const [subscription, plans] = await Promise.all([
     billing.getSnapshot(identity.organizationId),

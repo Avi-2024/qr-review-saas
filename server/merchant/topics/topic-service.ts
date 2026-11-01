@@ -3,7 +3,7 @@ import { ForbiddenError, NotFoundError, ValidationError } from "@/server/core/er
 import type { MerchantIdentity, MerchantRole, MerchantTopicConfig } from "@/server/merchant/domain/merchant";
 import type { MerchantTopicRepository } from "@/server/merchant/topics/topic-repository";
 
-const WRITE_ROLES: MerchantRole[] = ["owner", "admin", "manager"];
+const WRITE_ROLES: MerchantRole[] = ["owner", "admin", "manager", "agent"];
 
 function newTopicId() {
   return `custom-${randomBytes(7).toString("base64url").toLowerCase()}`;
@@ -13,7 +13,10 @@ export class MerchantTopicService {
   constructor(private readonly repository: MerchantTopicRepository) {}
 
   async list(identity: MerchantIdentity, locationId: string) {
-    const topics = await this.repository.list(identity.organizationId, locationId);
+    const agentUserId = identity.role === "agent" ? identity.userId : undefined;
+    const topics = agentUserId
+      ? await this.repository.list(identity.organizationId, locationId, agentUserId)
+      : await this.repository.list(identity.organizationId, locationId);
     if (!topics) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
     return topics;
   }
@@ -40,7 +43,8 @@ export class MerchantTopicService {
       throw new ValidationError("Active review topic labels must be unique.");
     }
 
-    const existing = await this.repository.list(identity.organizationId, locationId);
+    const agentUserId = identity.role === "agent" ? identity.userId : undefined;
+    const existing = await this.repository.list(identity.organizationId, locationId, agentUserId);
     if (!existing) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
 
     const byId = new Map(existing.map((topic) => [topic.id, topic]));
@@ -67,7 +71,9 @@ export class MerchantTopicService {
       };
     });
 
-    const saved = await this.repository.save(identity.organizationId, locationId, topics);
+    const saved = agentUserId
+      ? await this.repository.save(identity.organizationId, locationId, topics, agentUserId)
+      : await this.repository.save(identity.organizationId, locationId, topics);
     if (!saved) throw new NotFoundError("Location not found.", "LOCATION_NOT_FOUND");
     return saved;
   }

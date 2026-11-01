@@ -6,6 +6,7 @@ import { requireMerchantIdentity } from "@/server/auth/merchant-session";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const identity = await requireMerchantIdentity();
+  if (identity.role === "agent") redirect("/agent");
   if (!identity.onboardingCompletedAt) redirect("/onboarding");
 
   return (

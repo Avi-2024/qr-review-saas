@@ -266,7 +266,7 @@ describe("MerchantService", () => {
 
     const result = await service.assignStandee(owner, { standeeId: "s-1", locationId: "loc-1" });
     expect(result.status).toBe("assigned");
-    expect(assignStandee).toHaveBeenCalledWith("org-1", { standeeId: "s-1", locationId: "loc-1" });
+    expect(assignStandee).toHaveBeenCalledWith("org-1", { standeeId: "s-1", locationId: "loc-1", assignedByUserId: "user-1" });
   });
 
   it("unbinds a standee from a location", async () => {
@@ -276,5 +276,54 @@ describe("MerchantService", () => {
     const result = await service.unbindStandee(owner, "s-1");
     expect(result.status).toBe("unassigned");
     expect(unbindStandee).toHaveBeenCalledWith("org-1", "s-1");
+  });
+
+  it("allows owner to register a field agent", async () => {
+    const createAgent = vi.fn().mockResolvedValue({
+      id: "agent-1",
+      name: "Rahul Sharma",
+      email: "rahul@agency.com",
+      role: "agent",
+      isActive: true,
+      shopsCount: 0,
+      createdAt: new Date(),
+    });
+    const service = new MerchantService(repository({ createAgent }), 24);
+
+    const agent = await service.createAgent(owner, {
+      name: "Rahul Sharma",
+      email: "rahul@agency.com",
+      password: "securepassword123",
+    });
+
+    expect(agent.name).toBe("Rahul Sharma");
+    expect(agent.role).toBe("agent");
+    expect(createAgent).toHaveBeenCalled();
+  });
+
+  it("prevents an agent from creating other agents", async () => {
+    const service = new MerchantService(repository(), 24);
+    const agentIdentity = { ...owner, role: "agent" as const };
+
+    await expect(
+      service.createAgent(agentIdentity, {
+        name: "Second Agent",
+        email: "second@agency.com",
+        password: "securepassword123",
+      }),
+    ).rejects.toThrow("Only Super Admins can register field agents.");
+  });
+
+  it("allows an agent to onboard a location", async () => {
+    const createLocation = vi.fn().mockResolvedValue({ id: "loc-1", name: "Client Shop" });
+    const service = new MerchantService(repository({ createLocation, isLocationPublicIdAvailable: vi.fn().mockResolvedValue(true) }), 24);
+    const agentIdentity = { ...owner, role: "agent" as const };
+
+    const loc = await service.createLocation(agentIdentity, {
+      name: "Client Shop",
+      googlePlaceId: "ChIJN1t_tDeuEmsRUsoyG83frY4",
+    });
+
+    expect(loc.name).toBe("Client Shop");
   });
 });

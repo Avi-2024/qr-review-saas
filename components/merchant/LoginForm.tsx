@@ -22,7 +22,9 @@ export default function LoginForm() {
       });
       const body = await response.json();
       if (!response.ok || !body.success) throw new Error(body.error?.message || "Could not sign in.");
-      const nextPath = body.identity?.onboardingCompletedAt ? "/dashboard" : "/onboarding";
+      const nextPath = body.identity?.role === "agent"
+        ? "/agent"
+        : body.identity?.onboardingCompletedAt ? "/dashboard" : "/onboarding";
       router.replace(nextPath);
       router.refresh();
     } catch (cause) {

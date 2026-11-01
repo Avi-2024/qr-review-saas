@@ -17,6 +17,19 @@ const UNIVERSAL_TOPICS = [
 
 export const BUSINESS_PRESETS: BusinessPreset[] = [
   {
+    id: "jewellery",
+    label: "Jewellery / Gold & Diamonds",
+    description: "Jewellery showrooms, hallmark gold, silver and bridal collection",
+    topics: [
+      { label: "Gold / Diamond Purity", icon: "★" },
+      { label: "Designs & Variety", icon: "✨" },
+      { label: "Staff / Hospitality", icon: "🤝" },
+      { label: "Fair Making Charges", icon: "◎" },
+      { label: "Billing & Trust", icon: "✓" },
+    ],
+    qrSuggestions: ["Billing Counter", "Bridal Section", "Reception Desk", "Cash Counter"],
+  },
+  {
     id: "restaurant-cafe",
     label: "Restaurant / Cafe",
     description: "Food, service and dine-in experiences",

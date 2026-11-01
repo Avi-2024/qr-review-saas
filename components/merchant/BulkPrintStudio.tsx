@@ -71,7 +71,7 @@ function StandeeCard({
     <div className={styles.standeeCardWrapper}>
       {/* Printer/Operator crop margin identifier (outside customer card face) */}
       <span className={styles.cropEdgeLabel} aria-hidden="true">
-        ✂ 10 × 15 CM CROP GUIDE • {standee.standeeCode} • {standee.batchName}
+        ✂ 102 × 155 MM CROP GUIDE • {standee.standeeCode} • {standee.batchName}
       </span>
 
       {/* The Actual Customer Standee Face */}
@@ -281,12 +281,12 @@ export default function BulkPrintStudio({
               <div className={styles.barSub}>
                 {filteredStandees.length} Standees • {pages.length} {
                   layout === "a4_parallel"
-                    ? "A4 Landscape Sheets"
+                    ? "A4 Landscape Sheets (2 Cards of 102 × 155 mm)"
                     : layout === "a4_quad"
                     ? "A4 4-Pack Sheets"
                     : layout === "a4_duo"
                     ? "A4 Portrait Sheets"
-                    : "10 × 15 cm Pages"
+                    : "102 × 155 mm Standee Pages"
                 }
               </div>
             </div>
@@ -316,10 +316,10 @@ export default function BulkPrintStudio({
                 value={layout}
                 onChange={(e) => setLayout(e.target.value as PrintLayout)}
               >
-                <option value="a4_parallel">A4 Parallel (2 Cards Side-by-Side • Landscape)</option>
-                <option value="a4_quad">A4 4-Pack (4 Cards per Sheet • 2×2 Parallel Grid)</option>
+                <option value="a4_parallel">A4 Landscape (2 Standees of 102 × 155 mm Side-by-Side)</option>
+                <option value="a6_single">Exact Standee (102 × 155 mm Direct • 1 Card per Page)</option>
                 <option value="a4_duo">A4 Vertical (2 Cards Stacked Upar-Neeche • Portrait)</option>
-                <option value="a6_single">10 × 15 cm Direct (1 Card per Page • Exact Stand Size)</option>
+                <option value="a4_quad">A4 4-Pack (4 Cards per Sheet • 2×2 Parallel Grid)</option>
               </select>
             </div>
 
@@ -455,7 +455,7 @@ export default function BulkPrintStudio({
             __html: `
               @media print {
                 @page {
-                  size: 100mm 148mm;
+                  size: 102mm 155mm;
                   margin: 0;
                 }
                 .${styles.pageHeaderInfo},

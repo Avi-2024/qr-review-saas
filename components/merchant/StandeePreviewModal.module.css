@@ -174,6 +174,8 @@
 
 .standeePlate {
   width: 295px;
+  min-height: 448px;
+  aspect-ratio: 102 / 155;
   border-radius: 1.25rem;
   position: relative;
   padding: 1.75rem 1.25rem 1.5rem;
@@ -182,6 +184,10 @@
   transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   overflow: hidden;
   user-select: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
 }
 
 /* Subtle realistic glass light streak */
@@ -199,6 +205,80 @@
     rgba(255, 255, 255, 0) 55%
   );
   transform: rotate(-15deg);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 0. Theme Wave (Google Fluid Wave) */
+.themeWave {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  position: relative;
+  overflow: hidden;
+}
+
+.themeWave .standeeHeaderTitle {
+  color: #0f172a;
+}
+
+.themeWave .merchantTitle {
+  color: #0f172a;
+}
+
+.themeWave .standeeSubtext {
+  color: #475569;
+}
+
+.themeWave .standeeFooterNote {
+  color: #64748b;
+}
+
+.themeWave .footerAiNote {
+  color: #0f172a;
+}
+
+.themeWave .footerSubNote {
+  color: #94a3b8;
+}
+
+/* Organic Google Brand Side Waves */
+.waveLeftBlue {
+  position: absolute;
+  top: 25%;
+  left: 0;
+  width: 32px;
+  height: 130px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.waveTopRed {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 55px;
+  height: 65px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.waveBottomYellow {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 80px;
+  height: 110px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.waveBottomGreen {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 68px;
+  height: 65px;
   pointer-events: none;
   z-index: 2;
 }
@@ -341,14 +421,81 @@
   color: #94a3b8;
 }
 
+/* QR Code Container with Viewfinder Corner Brackets */
+.qrContainer {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+  z-index: 3;
+}
+
+.bracket {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.bracketTl {
+  top: -3px;
+  left: -3px;
+  border-top: 2.5px solid #4285f4;
+  border-left: 2.5px solid #4285f4;
+  border-top-left-radius: 4px;
+}
+
+.bracketTr {
+  top: -3px;
+  right: -3px;
+  border-top: 2.5px solid #ea4335;
+  border-right: 2.5px solid #ea4335;
+  border-top-right-radius: 4px;
+}
+
+.bracketBl {
+  bottom: -3px;
+  left: -3px;
+  border-bottom: 2.5px solid #34a853;
+  border-left: 2.5px solid #34a853;
+  border-bottom-left-radius: 4px;
+}
+
+.bracketBr {
+  bottom: -3px;
+  right: -3px;
+  border-bottom: 2.5px solid #fbbc05;
+  border-right: 2.5px solid #fbbc05;
+  border-bottom-right-radius: 4px;
+}
+
+.themeObsidian .bracketTl,
+.themeObsidian .bracketTr,
+.themeObsidian .bracketBl,
+.themeObsidian .bracketBr {
+  border-color: #f59e0b;
+}
+
+.themeNavy .bracketTl,
+.themeNavy .bracketTr,
+.themeNavy .bracketBl,
+.themeNavy .bracketBr {
+  border-color: #38bdf8;
+}
+
 /* Pristine QR Code Container */
 .qrCardWrap {
+  position: relative;
   background: #ffffff;
   padding: 0.85rem;
   border-radius: 1rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   border: 1px solid rgba(0, 0, 0, 0.06);
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin: 0 auto;
 }
 
@@ -357,6 +504,62 @@
   width: 172px;
   height: 172px;
   border-radius: 0.35rem;
+}
+
+.qrCenterBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  z-index: 5;
+}
+
+.qrCenterBadge svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* "— Your Feedback Matters —" Accent Line with Gold Dashes */
+.feedbackMattersRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  width: 100%;
+  z-index: 3;
+}
+
+.goldDash {
+  flex: 1;
+  max-width: 32px;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, #d4af37, transparent);
+}
+
+.feedbackText {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.02em;
+}
+
+.themeObsidian .feedbackText {
+  color: #cbd5e1;
+}
+
+.themeNavy .feedbackText {
+  color: #94a3b8;
 }
 
 /* Minimalist Clean Footer Note with 1-Tap AI Highlight */
@@ -602,9 +805,13 @@
 }
 
 /* --------------------------------------------------------------------------
-   PRINT STYLES
+   PRINT STYLES (CALIBRATED TO EXACT 102 MM × 155 MM PHYSICAL STANDEE)
    -------------------------------------------------------------------------- */
 @media print {
+  @page {
+    size: 102mm 155mm;
+    margin: 0;
+  }
   .modalBackdrop {
     position: fixed !important;
     inset: 0 !important;
@@ -619,20 +826,42 @@
     box-shadow: none !important;
     border: none !important;
     background: transparent !important;
-    width: auto !important;
-    max-width: none !important;
+    width: 102mm !important;
+    max-width: 102mm !important;
+    height: 155mm !important;
+    max-height: 155mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
   }
   .modalTopbar,
   .toolbarStrip,
   .acrylicStandBase,
   .acrylicStandShadow,
   .linkBar,
+  .quickAssignBox,
   .modalFooter {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
   }
   .standeePlate {
     box-shadow: none !important;
-    border: 2px solid #000000 !important;
-    transform: scale(1.15);
+    border: 1.5px solid #cbd5e1 !important;
+    width: 102mm !important;
+    max-width: 102mm !important;
+    height: 155mm !important;
+    min-height: 155mm !important;
+    max-height: 155mm !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    margin: 0 auto !important;
+    padding: 6mm 5mm 5mm !important;
+    border-radius: 4mm !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: center !important;
   }
 }

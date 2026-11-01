@@ -82,8 +82,8 @@ export default function StandeePreviewModal({
   onClose: () => void;
   onAssign?: (standeeId: string, locationId: string) => Promise<void>;
 }) {
-  // Theme styling switcher: obsidian, crystal, navy
-  const [theme, setTheme] = useState<"obsidian" | "crystal" | "navy">("obsidian");
+  // Theme styling switcher: wave, obsidian, crystal, navy
+  const [theme, setTheme] = useState<"wave" | "obsidian" | "crystal" | "navy">("wave");
   const [copied, setCopied] = useState(false);
   const [selectedLocId, setSelectedLocId] = useState(locations[0]?.id || "");
   const [assignLoading, setAssignLoading] = useState(false);
@@ -128,7 +128,9 @@ export default function StandeePreviewModal({
   }
 
   const themeClass =
-    theme === "obsidian"
+    theme === "wave"
+      ? styles.themeWave
+      : theme === "obsidian"
       ? styles.themeObsidian
       : theme === "crystal"
       ? styles.themeCrystal
@@ -160,12 +162,19 @@ export default function StandeePreviewModal({
           {/* Spec & Theme Switcher */}
           <div className={styles.toolbarStrip}>
             <div className={styles.specPills}>
-              <span className={styles.specBadge}>📐 A6 (105 × 148 mm)</span>
+              <span className={styles.specBadge}>📐 102 × 155 mm Standee</span>
               <span className={styles.specBadge}>💎 Laser Acrylic</span>
               <span className={styles.specBadge}>⚡ Vector 300 DPI</span>
             </div>
 
             <div className={styles.themeSelector} aria-label="Choose standee theme">
+              <button
+                type="button"
+                className={`${styles.themeButton} ${theme === "wave" ? styles.themeButtonActive : ""}`}
+                onClick={() => setTheme("wave")}
+              >
+                🌈 Wave
+              </button>
               <button
                 type="button"
                 className={`${styles.themeButton} ${theme === "obsidian" ? styles.themeButtonActive : ""}`}
@@ -194,6 +203,48 @@ export default function StandeePreviewModal({
           <div className={styles.standeeStage}>
             {/* The Acrylic Plate */}
             <div className={`${styles.standeePlate} ${themeClass}`}>
+              {/* Organic Google Brand Side Waves */}
+              {theme === "wave" && (
+                <>
+                  <svg
+                    className={styles.waveLeftBlue}
+                    viewBox="0 0 38 155"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path d="M0 0C12 25 38 48 38 82C38 116 14 135 0 155V0Z" fill="#4285F4" />
+                  </svg>
+                  <svg
+                    className={styles.waveTopRed}
+                    viewBox="0 0 65 75"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path d="M65 0H0C18 6 36 22 45 42C52 57 58 68 65 75V0Z" fill="#EA4335" fillOpacity="0.9" />
+                  </svg>
+                  <svg
+                    className={styles.waveBottomYellow}
+                    viewBox="0 0 95 130"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path d="M95 0C80 28 42 62 18 90C4 106 0 118 0 130H95V0Z" fill="#FBBC05" />
+                  </svg>
+                  <svg
+                    className={styles.waveBottomGreen}
+                    viewBox="0 0 80 75"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path d="M80 0C68 18 36 38 12 55C4 61 0 67 0 75H80V0Z" fill="#34A853" />
+                  </svg>
+                </>
+              )}
+
               {/* Google Header Branding */}
               <div className={styles.googleBrandRow}>
                 <GoogleColoredIcon />
@@ -217,14 +268,33 @@ export default function StandeePreviewModal({
                 Scan with camera for instant AI review
               </div>
 
-              {/* QR Code Container */}
-              <div className={styles.qrCardWrap}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={qrImageUrl}
-                  alt={`High resolution vector QR code for Standee ${standeeCode}`}
-                  className={styles.qrImage}
-                />
+              {/* QR Code Container with Viewfinder Corner Brackets & Center Google Badge */}
+              <div className={styles.qrContainer}>
+                <span className={`${styles.bracket} ${styles.bracketTl}`} aria-hidden="true" />
+                <span className={`${styles.bracket} ${styles.bracketTr}`} aria-hidden="true" />
+                <span className={`${styles.bracket} ${styles.bracketBl}`} aria-hidden="true" />
+                <span className={`${styles.bracket} ${styles.bracketBr}`} aria-hidden="true" />
+
+                <div className={styles.qrCardWrap}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={qrImageUrl}
+                    alt={`High resolution vector QR code for Standee ${standeeCode}`}
+                    className={styles.qrImage}
+                  />
+
+                  {/* Center Google Badge Overlay */}
+                  <div className={styles.qrCenterBadge} aria-hidden="true">
+                    <GoogleColoredIcon />
+                  </div>
+                </div>
+              </div>
+
+              {/* "— Your Feedback Matters —" Accent Line with Gold Dashes */}
+              <div className={styles.feedbackMattersRow}>
+                <span className={styles.goldDash} aria-hidden="true" />
+                <span className={styles.feedbackText}>Your Feedback Matters</span>
+                <span className={styles.goldDash} aria-hidden="true" />
               </div>
 
               {/* Clean, high-converting footer note */}

@@ -95,4 +95,23 @@ describe("MerchantTopicService", () => {
     const service = new MerchantTopicService(repo({ list: vi.fn().mockResolvedValue(null) }));
     await expect(service.list(owner, "other-location")).rejects.toMatchObject({ code: "LOCATION_NOT_FOUND" });
   });
+
+  it("allows agent to save review topics with agent scoping", async () => {
+    const repository = repo();
+    const service = new MerchantTopicService(repository);
+    const agent: MerchantIdentity = { ...owner, userId: "agent-1", role: "agent" };
+
+    await service.save(agent, "location-1", [
+      { id: "speed", label: "Fast Service", icon: "⚡" },
+      { id: "quality", label: "Care Quality", icon: "◎" },
+      { id: "staff", label: "Staff / Support", icon: "◉" },
+    ]);
+
+    expect(repository.save).toHaveBeenCalledWith(
+      "org-1",
+      "location-1",
+      expect.any(Array),
+      "agent-1",
+    );
+  });
 });

@@ -13,10 +13,15 @@ async function rollbackQuietly(client: PoolClient) {
 export class PostgresMerchantTopicRepository implements MerchantTopicRepository {
   constructor(private readonly pool: Pool) {}
 
-  async list(organizationId: string, locationId: string): Promise<MerchantTopicConfig[] | null> {
+  async list(organizationId: string, locationId: string, agentUserId?: string): Promise<MerchantTopicConfig[] | null> {
     const location = await this.pool.query<{ id: string }>(
-      `SELECT id FROM locations WHERE id=$1 AND organization_id=$2 LIMIT 1`,
-      [locationId, organizationId],
+      `SELECT id FROM locations
+       WHERE id=$1 AND organization_id=$2
+         AND ($3::text IS NULL OR created_by_user_id = $3 OR EXISTS (
+           SELECT 1 FROM standee_inventory WHERE location_id = locations.id AND assigned_by_user_id = $3
+         ))
+       LIMIT 1`,
+      [locationId, organizationId, agentUserId ?? null],
     );
     if (!location.rows[0]) return null;
 
@@ -31,13 +36,19 @@ export class PostgresMerchantTopicRepository implements MerchantTopicRepository 
     organizationId: string,
     locationId: string,
     topics: Array<{ id: string; label: string; icon: string; sortOrder: number }>,
+    agentUserId?: string,
   ): Promise<MerchantTopicConfig[] | null> {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
       const location = await client.query<{ id: string }>(
-        `SELECT id FROM locations WHERE id=$1 AND organization_id=$2 LIMIT 1 FOR UPDATE`,
-        [locationId, organizationId],
+        `SELECT id FROM locations
+         WHERE id=$1 AND organization_id=$2
+           AND ($3::text IS NULL OR created_by_user_id = $3 OR EXISTS (
+             SELECT 1 FROM standee_inventory WHERE location_id = locations.id AND assigned_by_user_id = $3
+           ))
+         LIMIT 1 FOR UPDATE`,
+        [locationId, organizationId, agentUserId ?? null],
       );
       if (!location.rows[0]) {
         await rollbackQuietly(client);

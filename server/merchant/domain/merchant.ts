@@ -1,4 +1,4 @@
-export type MerchantRole = "owner" | "admin" | "manager" | "viewer";
+export type MerchantRole = "owner" | "admin" | "manager" | "viewer" | "agent";
 export type MerchantOnboardingStage = "business" | "location" | "topics" | "qr" | "ready" | "complete";
 
 export interface MerchantIdentity {
@@ -31,6 +31,7 @@ export interface MerchantLocation {
   googleReviewUrl: string;
   isActive: boolean;
   createdAt: Date;
+  createdByUserId?: string | null;
 }
 
 export interface MerchantTopicConfig {
@@ -94,7 +95,18 @@ export interface StandeeItem {
   qrCodeId: string | null;
   status: StandeeStatus;
   assignedAt: Date | null;
+  assignedByUserId?: string | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface AgentUser {
+  id: string;
+  name: string;
+  email: string;
+  role: MerchantRole;
+  isActive: boolean;
+  shopsCount: number;
+  createdAt: Date;
 }
