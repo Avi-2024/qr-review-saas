@@ -1,15 +1,40 @@
 import type { GenerateReviewInput, GenerateReviewOutput, ReviewGenerator } from "@/server/application/ports/review-generator";
 
 export class GrokReviewGenerator implements ReviewGenerator {
+  private readonly apiKey: string;
+  private readonly fallback: ReviewGenerator;
+  private readonly model: string;
+
   constructor(
-    private readonly apiKey: string,
-    private readonly fallback: ReviewGenerator,
-    private readonly model: string = "grok-2-latest",
-  ) {}
+    apiKey: string,
+    fallback: ReviewGenerator,
+    model: string = "openai/gpt-oss-120b",
+  ) {
+    this.apiKey = apiKey;
+    this.fallback = fallback;
+    this.model = model;
+  }
 
   async generate(input: GenerateReviewInput): Promise<GenerateReviewOutput> {
+    const trimmedKey = this.apiKey.trim();
+    if (!trimmedKey) {
+      return this.fallback.generate(input);
+    }
+
     try {
-      const shouldIncludeKeyword = (Math.abs(input.variation) % 10) < 7; // ~70% organic keywords, 30% general praise
+      const isGroq = trimmedKey.startsWith("gsk_");
+      const endpoint = isGroq
+        ? "https://api.groq.com/openai/v1/chat/completions"
+        : "https://api.x.ai/v1/chat/completions";
+
+      const modelsToTry = isGroq
+        ? [this.model, "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"]
+        : [this.model, "grok-2-latest", "grok-beta"];
+
+      // Deduplicate model list
+      const uniqueModels = Array.from(new Set(modelsToTry));
+
+      const shouldIncludeKeyword = (Math.abs(input.variation) % 10) < 7;
       let keywordInstruction = "";
       if (input.keywords && input.keywords.length > 0 && input.rating >= 4 && shouldIncludeKeyword) {
         const kws = input.keywords;
@@ -39,54 +64,57 @@ export class GrokReviewGenerator implements ReviewGenerator {
 
       const userPrompt = `Write a ${input.rating}-star Google review for "${input.businessName}" (${input.businessType || "local business"}). Variation style #${input.variation}.`;
 
-      // Support xAI models with fallback
-      const modelsToTry = [this.model, "grok-beta", "grok-2"];
-      const activeModel = modelsToTry[0];
+      for (const activeModel of uniqueModels) {
+        try {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${trimmedKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: activeModel,
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt },
+              ],
+              temperature: 0.85,
+              max_tokens: 160,
+              stream: false,
+            }),
+            signal: AbortSignal.timeout(4500),
+          });
 
-      const response = await fetch("https://api.x.ai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.apiKey.trim()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: activeModel,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0.85,
-          max_tokens: 140,
-          stream: false,
-        }),
-        signal: AbortSignal.timeout(4500),
-      });
+          if (!response.ok) {
+            const errorText = await response.text().catch(() => "");
+            console.warn(`[GrokReviewGenerator] ${isGroq ? "Groq" : "xAI"} model ${activeModel} status ${response.status}: ${errorText}`);
+            continue;
+          }
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "");
-        console.warn(`[GrokReviewGenerator] Grok API returned status ${response.status}: ${errorText}`);
-        return this.fallback.generate(input);
+          const data = (await response.json()) as {
+            choices?: Array<{ message?: { content?: string } }>;
+          };
+
+          const rawContent = data.choices?.[0]?.message?.content?.trim();
+          if (!rawContent) continue;
+
+          // Clean up stray surrounding quotes if model added them
+          const cleaned = rawContent.replace(/^["'“”]+|["'“”]+$/g, "").trim();
+          if (cleaned.length < 20) continue;
+
+          return {
+            text: cleaned,
+            provider: isGroq ? `groq-${activeModel}` : `grok-${activeModel}`,
+          };
+        } catch (callErr) {
+          console.warn(`[GrokReviewGenerator] Call failed for model ${activeModel}:`, callErr);
+        }
       }
 
-      const data = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
-      };
-
-      const rawContent = data.choices?.[0]?.message?.content?.trim();
-      if (!rawContent) {
-        console.warn("[GrokReviewGenerator] Grok API returned empty response, falling back");
-        return this.fallback.generate(input);
-      }
-
-      // Clean up stray surrounding quotes if model added them
-      const cleaned = rawContent.replace(/^["'“”]+|["'“”]+$/g, "").trim();
-
-      return {
-        text: cleaned,
-        provider: `grok-ai-${activeModel}`,
-      };
+      console.warn("[GrokReviewGenerator] All AI models failed, using local fallback");
+      return this.fallback.generate(input);
     } catch (err) {
-      console.warn("[GrokReviewGenerator] Grok API call failed or timed out, falling back to local engine:", err);
+      console.warn("[GrokReviewGenerator] Error in generate, falling back to local engine:", err);
       return this.fallback.generate(input);
     }
   }

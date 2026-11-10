@@ -19,6 +19,7 @@ const envSchema = z.object({
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(16).optional(),
   GROK_API_KEY: z.string().trim().min(5).optional(),
+  GROQ_API_KEY: z.string().trim().min(5).optional(),
   XAI_API_KEY: z.string().trim().min(5).optional(),
   GOOGLE_PLACES_API_KEY: z.string().trim().min(20).optional(),
   GOOGLE_PLACES_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(500).max(15_000).default(4_000),

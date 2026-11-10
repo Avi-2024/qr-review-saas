@@ -16,7 +16,9 @@ const globalForReview = globalThis as typeof globalThis & {
 };
 
 export function getReviewService() {
-  if (globalForReview.__reviewService) return globalForReview.__reviewService;
+  if (process.env.NODE_ENV === "production" && globalForReview.__reviewService) {
+    return globalForReview.__reviewService;
+  }
 
   const env = getEnv();
   const repositoryMode = env.REVIEW_REPOSITORY ?? "memory";
@@ -24,17 +26,21 @@ export function getReviewService() {
     ? new PostgresReviewRepository(getPool())
     : new MemoryReviewRepository();
 
-  const grokApiKey = env.GROK_API_KEY || env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.XAI_API_KEY;
+  const aiApiKey = env.GROK_API_KEY || env.GROQ_API_KEY || env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.GROQ_API_KEY || process.env.XAI_API_KEY;
   const localGen = new LocalReviewGenerator();
-  const generator = grokApiKey ? new GrokReviewGenerator(grokApiKey, localGen) : localGen;
+  const generator = aiApiKey ? new GrokReviewGenerator(aiApiKey, localGen) : localGen;
 
-  globalForReview.__reviewService = new ReviewService(
+  const service = new ReviewService(
     repository,
     generator,
     env.REVIEW_SESSION_TTL_MINUTES,
   );
 
-  return globalForReview.__reviewService;
+  if (process.env.NODE_ENV === "production") {
+    globalForReview.__reviewService = service;
+  }
+
+  return service;
 }
 
 export function getSessionRateLimiter() {
